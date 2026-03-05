@@ -80,6 +80,11 @@ export interface UtilityDetails {
   rates: UtilityRate[]
 }
 
+export interface SplitParticipant {
+  profileId: string
+  percentage: number  // 0-100
+}
+
 export interface Expense {
   id: string
   name: string
@@ -87,6 +92,10 @@ export interface Expense {
   amount: number
   frequency: ExpenseFrequency
   utilityDetails?: UtilityDetails
+  splitGroupId?: string             // links copies across profiles
+  splitPercentage?: number          // this profile's share (absent = 100%)
+  splitOriginProfileId?: string     // which profile owns the split config
+  splitConfig?: SplitParticipant[]  // full breakdown (only on origin copy)
 }
 
 export interface PensionCarryForward {

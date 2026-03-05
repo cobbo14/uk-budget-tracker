@@ -42,6 +42,16 @@ export function toAnnual(amount: number, frequency: Expense['frequency']): numbe
   }
 }
 
+/** Returns the effective amount for this profile (applies split percentage) */
+export function effectiveAmount(expense: Expense): number {
+  return expense.amount * (expense.splitPercentage ?? 100) / 100
+}
+
+/** Effective annual amount for a single expense (split-aware) */
+export function effectiveAnnual(expense: Expense): number {
+  return toAnnual(effectiveAmount(expense), expense.frequency)
+}
+
 export function selectTotalAnnualExpenses(state: AppState): number {
-  return state.expenses.reduce((sum, e) => sum + toAnnual(e.amount, e.frequency), 0)
+  return state.expenses.reduce((sum, e) => sum + effectiveAnnual(e), 0)
 }

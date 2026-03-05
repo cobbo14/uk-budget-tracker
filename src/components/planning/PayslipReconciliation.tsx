@@ -83,15 +83,15 @@ export function PayslipReconciliation() {
                 </div>
                 <div className="flex justify-between border-t pt-1.5">
                   <span className="text-muted-foreground">Difference</span>
-                  <span className={`font-semibold tabular-nums ${diff! >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
-                    {diff! >= 0 ? '+' : ''}{formatCurrency(diff!)}
+                  <span className={`font-semibold tabular-nums ${(diff ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                    {(diff ?? 0) >= 0 ? '+' : ''}{formatCurrency(diff ?? 0)}
                   </span>
                 </div>
               </>
             )}
           </div>
 
-          {hasPayslip && Math.abs(diff!) > 10 && (
+          {hasPayslip && Math.abs(diff ?? 0) > 10 && (
             <div className="space-y-2">
               <p className="text-xs font-medium">Common reasons for the difference:</p>
               <ul className="space-y-1.5">

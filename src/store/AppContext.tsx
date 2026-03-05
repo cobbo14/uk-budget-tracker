@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, useEffect, useRef, useState, use
 import type { AppState } from '@/types'
 import type { AppAction } from './actions'
 import { reducer, DEFAULT_STATE } from './reducer'
-import { loadProfileState, saveProfileState } from '@/services/localStorage'
+import { loadProfileState, saveProfileState, syncSplitToOtherProfiles } from '@/services/localStorage'
 import {
   ADD_INCOME, UPDATE_INCOME, DELETE_INCOME,
   ADD_GAIN, UPDATE_GAIN, DELETE_GAIN,
@@ -44,7 +44,9 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
   const undoStackRef = useRef<AppState[]>([])
   // Keep a live ref to state so the dispatch callback can read it without going stale
   const stateRef = useRef(state)
-  stateRef.current = state
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
 
   // Wrapped dispatch: push snapshot for data-modifying actions
   const dispatch = useCallback((action: AppAction) => {
@@ -55,10 +57,19 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
       ]
       setCanUndo(true)
       baseDispatch(action)
+
+      // Cross-profile split sync
+      if (
+        (action.type === ADD_EXPENSE || action.type === UPDATE_EXPENSE) &&
+        action.payload.splitGroupId &&
+        action.payload.splitConfig
+      ) {
+        syncSplitToOtherProfiles(action.payload, profileId)
+      }
     } else {
       baseDispatch(action)
     }
-  }, [])
+  }, [profileId])
 
   const undo = useCallback(() => {
     const stack = undoStackRef.current

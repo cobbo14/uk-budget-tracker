@@ -138,14 +138,13 @@ export function calculateTax(
     childBenefitAnnual = rules.childBenefitEldestWeekly * 52
       + Math.max(0, n - 1) * rules.childBenefitAdditionalWeekly * 52
     // HICBC taper: 1% of benefit per £200 over threshold → fully clawed back at taperEnd
+    const taperRange = rules.hicbcTaperEnd - rules.hicbcThreshold
     if (adjustedTotal > rules.hicbcThreshold) {
-      const taperRange = rules.hicbcTaperEnd - rules.hicbcThreshold
       const excessOverThreshold = Math.min(adjustedTotal - rules.hicbcThreshold, taperRange)
       hicbc = Math.round((excessOverThreshold / taperRange) * childBenefitAnnual)
+      // Additional effective marginal rate within the taper zone
+      hicbcMarginalRate = childBenefitAnnual / taperRange
     }
-    // Additional effective marginal rate within the taper zone
-    const taperRange = rules.hicbcTaperEnd - rules.hicbcThreshold
-    hicbcMarginalRate = childBenefitAnnual / taperRange
   }
 
   // --- Blind Person's Allowance ---

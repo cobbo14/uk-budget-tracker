@@ -658,16 +658,19 @@ describe('calculateTax — 2025/26 rules', () => {
     it('calculates top-slicing relief and net income tax for 5-year hold', () => {
       // Employment £45,000 + bond £20,000 (5-year hold)
       // incomeTax before relief: £37,700×20% + £14,730×40% = £7,540 + £5,892 = £13,432
-      // marginalOnSlice = 0 (4,000 slice stays in basic band of other income)
-      // relief = taxOnFullGain = £13,432 − £6,486 = £6,946
-      // incomeTaxAfterRelief = £13,432 − £6,946 = £6,486
+      // baseWithoutBonds = 65,000 − 20,000 − 12,570 = £32,430
+      // slice = £20,000 / 5 = £4,000
+      // marginalOnSlice = (32,430 + 4,000)×20% − 32,430×20% = 7,286 − 6,486 = £800
+      // taxOnFullGain = 13,432 − 6,486 = £6,946
+      // relief = 6,946 − 800×5 = £2,946
+      // incomeTaxAfterRelief = 13,432 − 2,946 = £10,486
       const result = calculateTax(
         [employment(45000, '1'), bond(20000, 5, '2')],
         defaultSettings,
         rules,
       )
-      expectGBP(result.bondTopSlicingRelief, 6946)
-      expectGBP(result.incomeTax, 6486)
+      expectGBP(result.bondTopSlicingRelief, 2946)
+      expectGBP(result.incomeTax, 10486)
     })
   })
 

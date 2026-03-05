@@ -11,7 +11,7 @@ import { BroadbandComparisonDialog } from './BroadbandComparisonDialog'
 import { OPEN_ADD_EXPENSE_DIALOG } from '@/store/actions'
 import { EXPENSE_CATEGORY_LIST, getCategoryMeta } from '@/constants/expenseCategories'
 import { formatCurrency } from '@/utils/formatting'
-import { toAnnual } from '@/store/selectors'
+import { effectiveAnnual } from '@/store/selectors'
 
 interface ExpensesViewProps {
   showMonthly: boolean
@@ -102,7 +102,7 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
           {categoriesWithExpenses.map(cat => {
             const catExpenses = expensesByCategory.get(cat) ?? []
             const catMeta = getCategoryMeta(cat, customExpenseCategories)
-            const catAnnual = catExpenses.reduce((sum, e) => sum + toAnnual(e.amount, e.frequency), 0)
+            const catAnnual = catExpenses.reduce((sum, e) => sum + effectiveAnnual(e), 0)
             const catDisplay = viewMode === 'monthly' ? catAnnual / 12 : catAnnual
 
             return (

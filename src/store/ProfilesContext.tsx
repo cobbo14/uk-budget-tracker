@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import type { Profile } from '@/types'
-import { loadProfiles, saveProfiles, deleteProfileState } from '@/services/localStorage'
+import { loadProfiles, saveProfiles, deleteProfileState, loadProfileState, saveProfileState } from '@/services/localStorage'
 import { generateId } from '@/utils/ids'
 
 interface ProfilesContextValue {
@@ -51,6 +51,26 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       if (prev.profiles.length <= 1) return prev
       deleteProfileState(id)
       const remaining = prev.profiles.filter(p => p.id !== id)
+
+      // Clean up splitConfig references to the deleted profile
+      for (const profile of remaining) {
+        const state = loadProfileState(profile.id)
+        let dirty = false
+        const updatedExpenses = state.expenses.map(e => {
+          if (e.splitConfig?.some(p => p.profileId === id)) {
+            dirty = true
+            return {
+              ...e,
+              splitConfig: e.splitConfig.filter(p => p.profileId !== id),
+            }
+          }
+          return e
+        })
+        if (dirty) {
+          saveProfileState(profile.id, { ...state, expenses: updatedExpenses })
+        }
+      }
+
       const newActiveId = prev.activeProfileId === id ? remaining[0].id : prev.activeProfileId
       const next = { profiles: remaining, activeProfileId: newActiveId }
       saveProfiles(next)

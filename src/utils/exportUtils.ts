@@ -1,5 +1,5 @@
 import type { AppState, TaxSummary } from '@/types'
-import { toAnnual } from '@/store/selectors'
+import { effectiveAmount, toAnnual } from '@/store/selectors'
 
 function csvRow(...cells: (string | number)[]): string {
   return cells.map(cell => {
@@ -33,15 +33,33 @@ export function generateCSV(state: AppState, taxSummary: TaxSummary): string {
 
   // --- Expenses ---
   lines.push('Expenses')
-  lines.push(csvRow('Name', 'Category', 'Frequency', 'Amount (£)', 'Annual (£)'))
+  const hasAnySplit = state.expenses.some(e => e.splitPercentage != null)
+  if (hasAnySplit) {
+    lines.push(csvRow('Name', 'Category', 'Frequency', 'Full Amount (£)', 'Your Share (%)', 'Effective Amount (£)', 'Annual (£)'))
+  } else {
+    lines.push(csvRow('Name', 'Category', 'Frequency', 'Amount (£)', 'Annual (£)'))
+  }
   for (const exp of state.expenses) {
-    lines.push(csvRow(
-      exp.name,
-      exp.category,
-      exp.frequency,
-      currency(exp.amount),
-      currency(toAnnual(exp.amount, exp.frequency)),
-    ))
+    const effective = effectiveAmount(exp)
+    if (hasAnySplit) {
+      lines.push(csvRow(
+        exp.name,
+        exp.category,
+        exp.frequency,
+        currency(exp.amount),
+        exp.splitPercentage ?? 100,
+        currency(effective),
+        currency(toAnnual(effective, exp.frequency)),
+      ))
+    } else {
+      lines.push(csvRow(
+        exp.name,
+        exp.category,
+        exp.frequency,
+        currency(exp.amount),
+        currency(toAnnual(exp.amount, exp.frequency)),
+      ))
+    }
   }
   lines.push('')
 

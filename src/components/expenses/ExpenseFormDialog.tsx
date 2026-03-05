@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Plus, X } from 'lucide-react'
 import { useBudget } from '@/hooks/useBudget'
+import { useProfiles } from '@/store/ProfilesContext'
 import { generateId } from '@/utils/ids'
-import type { Expense, ExpenseCategory, ExpenseFrequency, UtilityType, UtilityDetails } from '@/types'
+import type { Expense, ExpenseCategory, ExpenseFrequency, UtilityType, UtilityDetails, SplitParticipant } from '@/types'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -42,6 +44,11 @@ interface UtilityRateForm {
   unit: string
 }
 
+interface SplitParticipantForm {
+  profileId: string
+  percentage: string
+}
+
 interface FormState {
   name: string
   category: ExpenseCategory
@@ -50,6 +57,8 @@ interface FormState {
   utilityType: UtilityType | ''
   utilityProvider: string
   utilityRates: UtilityRateForm[]
+  splitEnabled: boolean
+  splitParticipants: SplitParticipantForm[]
 }
 
 const DEFAULT_FORM: FormState = {
@@ -60,6 +69,8 @@ const DEFAULT_FORM: FormState = {
   utilityType: '',
   utilityProvider: '',
   utilityRates: [],
+  splitEnabled: false,
+  splitParticipants: [],
 }
 
 const FREQUENCY_LABELS: Record<ExpenseFrequency, string> = {
@@ -70,6 +81,8 @@ const FREQUENCY_LABELS: Record<ExpenseFrequency, string> = {
 
 export function ExpenseFormDialog() {
   const { state, dispatch, getExpenseById, customExpenseCategories } = useBudget()
+  const { profiles, activeProfileId } = useProfiles()
+  const otherProfiles = profiles.filter(p => p.id !== activeProfileId)
   const { expenseDialogMode, editingExpenseId } = state.ui
   const open = expenseDialogMode !== 'none'
   const isEdit = expenseDialogMode === 'edit'
@@ -101,6 +114,15 @@ export function ExpenseFormDialog() {
             value: String(r.value),
             unit: r.unit,
           })) ?? [],
+          splitEnabled: !!expense.splitGroupId,
+          splitParticipants: expense.splitConfig
+            ? expense.splitConfig.map(p => ({
+                profileId: p.profileId,
+                percentage: String(p.percentage),
+              }))
+            : expense.splitGroupId
+              ? [{ profileId: activeProfileId, percentage: String(expense.splitPercentage ?? 100) }]
+              : [],
         })
       }
     } else {
@@ -155,6 +177,12 @@ export function ExpenseFormDialog() {
     if (!form.name.trim()) errs.name = 'Name is required'
     const amount = parseFloat(form.amount)
     if (isNaN(amount) || amount < 0) errs.amount = 'Enter a valid amount'
+    if (form.splitEnabled) {
+      const total = form.splitParticipants.reduce(
+        (sum, p) => sum + (parseFloat(p.percentage) || 0), 0
+      )
+      if (Math.abs(total - 100) > 0.01) errs.splitParticipants = 'Percentages must add up to 100%'
+    }
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -179,6 +207,23 @@ export function ExpenseFormDialog() {
         }
       : undefined
 
+    const splitGroupId = form.splitEnabled
+      ? (isEdit && editingExpenseId
+          ? getExpenseById(editingExpenseId)?.splitGroupId ?? generateId()
+          : generateId())
+      : undefined
+
+    const currentPercentage = form.splitEnabled
+      ? (parseFloat(form.splitParticipants.find(p => p.profileId === activeProfileId)?.percentage ?? '100') || 100)
+      : undefined
+
+    const splitConfig: SplitParticipant[] | undefined = form.splitEnabled
+      ? form.splitParticipants.map(p => ({
+          profileId: p.profileId,
+          percentage: parseFloat(p.percentage) || 0,
+        }))
+      : undefined
+
     const expense: Expense = {
       id: isEdit && editingExpenseId ? editingExpenseId : generateId(),
       name: form.name.trim(),
@@ -186,6 +231,10 @@ export function ExpenseFormDialog() {
       amount: parseFloat(form.amount),
       frequency: form.frequency,
       utilityDetails,
+      splitGroupId,
+      splitPercentage: currentPercentage,
+      splitOriginProfileId: form.splitEnabled ? activeProfileId : undefined,
+      splitConfig,
     }
     dispatch({ type: isEdit ? UPDATE_EXPENSE : ADD_EXPENSE, payload: expense })
     handleClose()
@@ -361,6 +410,124 @@ export function ExpenseFormDialog() {
               </Select>
             </div>
           </div>
+
+          {/* Split across profiles */}
+          {otherProfiles.length > 0 && (() => {
+            const isNonOriginSplit = isEdit && editingExpenseId &&
+              getExpenseById(editingExpenseId)?.splitGroupId &&
+              getExpenseById(editingExpenseId)?.splitOriginProfileId !== activeProfileId
+
+            if (isNonOriginSplit) {
+              const originProfile = profiles.find(
+                p => p.id === getExpenseById(editingExpenseId!)?.splitOriginProfileId
+              )
+              return (
+                <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                  Split expense — managed from <span className="font-medium text-foreground">{originProfile?.name ?? 'another profile'}</span>.
+                  Switch to that profile to change the split.
+                </div>
+              )
+            }
+
+            return (
+              <div className="grid gap-3 rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="split-toggle">Split across profiles</Label>
+                  <Switch
+                    id="split-toggle"
+                    checked={form.splitEnabled}
+                    onCheckedChange={(checked) => {
+                      if (checked && form.splitParticipants.length === 0) {
+                        set('splitParticipants', [
+                          { profileId: activeProfileId, percentage: '50' },
+                          { profileId: otherProfiles[0].id, percentage: '50' },
+                        ])
+                      }
+                      set('splitEnabled', checked)
+                    }}
+                  />
+                </div>
+
+                {form.splitEnabled && (
+                  <div className="grid gap-2">
+                    {form.splitParticipants.map((p, i) => {
+                      const profile = profiles.find(pr => pr.id === p.profileId)
+                      return (
+                        <div key={p.profileId} className="flex items-center gap-2">
+                          <span className="text-sm flex-1 truncate">
+                            {profile?.name ?? 'Unknown'}
+                            {p.profileId === activeProfileId && ' (you)'}
+                          </span>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            className="w-20 h-8 text-sm"
+                            value={p.percentage}
+                            onChange={(e) => {
+                              const updated = [...form.splitParticipants]
+                              updated[i] = { ...updated[i], percentage: e.target.value }
+                              set('splitParticipants', updated)
+                            }}
+                          />
+                          <span className="text-sm text-muted-foreground">%</span>
+                          {form.splitParticipants.length > 2 && p.profileId !== activeProfileId && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={() => {
+                                set('splitParticipants', form.splitParticipants.filter((_, j) => j !== i))
+                              }}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      )
+                    })}
+
+                    {form.splitParticipants.length < profiles.length && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          const included = new Set(form.splitParticipants.map(p => p.profileId))
+                          const next = profiles.find(p => !included.has(p.id))
+                          if (next) {
+                            set('splitParticipants', [
+                              ...form.splitParticipants,
+                              { profileId: next.id, percentage: '0' },
+                            ])
+                          }
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Profile
+                      </Button>
+                    )}
+
+                    {(() => {
+                      const total = form.splitParticipants.reduce(
+                        (sum, p) => sum + (parseFloat(p.percentage) || 0), 0
+                      )
+                      if (Math.abs(total - 100) > 0.01) {
+                        return (
+                          <p className="text-xs text-destructive">
+                            Percentages must add up to 100% (currently {total.toFixed(1)}%)
+                          </p>
+                        )
+                      }
+                      return null
+                    })()}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
 
         <DialogFooter>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PoundSterling, Sun, Moon, AlertCircle, HelpCircle } from 'lucide-react'
+import { PoundSterling, Sun, Moon, AlertCircle, HelpCircle, Heart } from 'lucide-react'
 import { ProfileSwitcher } from './ProfileSwitcher'
 import { useBudget } from '@/hooks/useBudget'
 import { useTour } from '@/components/tour/TourContext'
@@ -70,6 +70,16 @@ export function Header() {
             </span>
           )}
           <ProfileSwitcher />
+          <a
+            href="https://ko-fi.com/cobbo14"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-pink-500 hover:bg-accent transition-colors flex items-center gap-1"
+            aria-label="Support on Ko-fi"
+          >
+            <Heart className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Show Some Love</span>
+          </a>
           <button
             onClick={startTour}
             className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"

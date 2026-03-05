@@ -25,6 +25,7 @@ export function useBudget() {
     [incomeSources, gainSources, state.settings, rules],
   )
 
+  // eslint-disable-next-line react-compiler/react-compiler -- selector only reads state.expenses
   const expensesByCategory = useMemo(
     () => selectExpensesByCategory(state),
     [state.expenses],

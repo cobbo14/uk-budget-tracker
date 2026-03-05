@@ -50,6 +50,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- co-locating hook with its Provider is intentional
 export function useTour() {
   const ctx = useContext(TourContext)
   if (!ctx) throw new Error('useTour must be used within TourProvider')

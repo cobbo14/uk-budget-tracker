@@ -1,4 +1,5 @@
-import type { AppState, Profile } from '@/types'
+import type { AppState, Expense, Profile } from '@/types'
+import { generateId } from '@/utils/ids'
 import { DEFAULT_TAX_YEAR } from '@/taxRules'
 
 const LEGACY_KEY = 'uk_budget_tracker_v1'
@@ -110,6 +111,60 @@ export function saveProfileState(profileId: string, state: AppState): boolean {
     return true
   } catch {
     return false
+  }
+}
+
+/**
+ * Sync a split expense to other profiles' localStorage.
+ * For each participant (excl. currentProfileId): load their state, upsert
+ * an expense copy with matching splitGroupId, save back.
+ */
+export function syncSplitToOtherProfiles(expense: Expense, currentProfileId: string): void {
+  if (!expense.splitConfig || !expense.splitGroupId) return
+
+  for (const participant of expense.splitConfig) {
+    if (participant.profileId === currentProfileId) continue
+
+    const profileState = loadProfileState(participant.profileId)
+    const existingIndex = profileState.expenses.findIndex(
+      e => e.splitGroupId === expense.splitGroupId
+    )
+    const copy: Expense = {
+      ...expense,
+      id: existingIndex >= 0
+        ? profileState.expenses[existingIndex].id
+        : generateId(),
+      splitPercentage: participant.percentage,
+      splitOriginProfileId: expense.splitOriginProfileId,
+      splitConfig: undefined, // only origin keeps the config
+    }
+
+    const updatedExpenses = existingIndex >= 0
+      ? profileState.expenses.map((e, i) => i === existingIndex ? copy : e)
+      : [...profileState.expenses, copy]
+
+    saveProfileState(participant.profileId, {
+      ...profileState,
+      expenses: updatedExpenses,
+    })
+  }
+}
+
+/**
+ * Remove a split expense from other profiles' localStorage.
+ */
+export function deleteSplitFromOtherProfiles(
+  splitGroupId: string,
+  currentProfileId: string,
+  allProfileIds: string[],
+): void {
+  for (const profileId of allProfileIds) {
+    if (profileId === currentProfileId) continue
+    const profileState = loadProfileState(profileId)
+    const filtered = profileState.expenses.filter(e => e.splitGroupId !== splitGroupId)
+    if (filtered.length !== profileState.expenses.length) {
+      saveProfileState(profileId, { ...profileState, expenses: filtered })
+    }
   }
 }
 
