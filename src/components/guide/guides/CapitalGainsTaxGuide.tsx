@@ -255,11 +255,21 @@ export function CapitalGainsTaxGuide() {
       </Card>
 
       <Card>
-        <CardContent className="pt-6 text-sm text-muted-foreground">
+        <CardContent className="pt-6 text-sm text-muted-foreground space-y-2">
           <p>
             Track your capital gains and see CGT calculated automatically.{' '}
             <a href="#gains" className="text-emerald-600 font-medium hover:underline">
               Go to Capital Gains &rarr;
+            </a>
+          </p>
+          <p>
+            <strong>Related guides:</strong>{' '}
+            <a href="#guide/uk-income-tax-rates" className="text-emerald-600 font-medium hover:underline">
+              Income Tax Rates &amp; Bands
+            </a>
+            {' · '}
+            <a href="#guide/reduce-tax-above-100k" className="text-emerald-600 font-medium hover:underline">
+              How to Reduce Tax Above &pound;100k
             </a>
           </p>
         </CardContent>

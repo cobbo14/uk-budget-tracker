@@ -1,11 +1,24 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, PoundSterling, Briefcase, AlertTriangle, BarChart3 } from 'lucide-react'
+import { ArrowLeft, PoundSterling, Briefcase, AlertTriangle, BarChart3, GraduationCap, PiggyBank, CircleDollarSign, Heart, Baby, Building2, Rocket, CalendarDays } from 'lucide-react'
 import { UkIncomeTaxRates } from './guides/UkIncomeTaxRates'
 import { SalarySacrificeGuide } from './guides/SalarySacrificeGuide'
 import { ReduceTaxAbove100k } from './guides/ReduceTaxAbove100k'
 import { CapitalGainsTaxGuide } from './guides/CapitalGainsTaxGuide'
+import { StudentLoanGuide } from './guides/StudentLoanGuide'
+import { IsaGuide } from './guides/IsaGuide'
+import { DividendTaxGuide } from './guides/DividendTaxGuide'
+import { MarriageAllowanceGuide } from './guides/MarriageAllowanceGuide'
+import { ChildBenefitGuide } from './guides/ChildBenefitGuide'
+import { SelfEmploymentTaxGuide } from './guides/SelfEmploymentTaxGuide'
+import { EisSeisTaxReliefGuide } from './guides/EisSeisTaxReliefGuide'
+import { TaxDatesGuide } from './guides/TaxDatesGuide'
 import type { LucideIcon } from 'lucide-react'
+
+interface FAQ {
+  question: string
+  answer: string
+}
 
 interface GuideEntry {
   slug: string
@@ -14,6 +27,7 @@ interface GuideEntry {
   pageTitle: string
   icon: LucideIcon
   component: React.ComponentType
+  faqs: FAQ[]
 }
 
 const GUIDES: GuideEntry[] = [
@@ -25,6 +39,20 @@ const GUIDES: GuideEntry[] = [
     pageTitle: 'UK Income Tax Rates & Bands 2024/25, 2025/26, 2026/27 — UK Budget Tracker',
     icon: PoundSterling,
     component: UkIncomeTaxRates,
+    faqs: [
+      {
+        question: 'What is the UK personal allowance for 2024/25, 2025/26, and 2026/27?',
+        answer: 'The personal allowance is £12,570 for all three tax years. It is reduced by £1 for every £2 of income above £100,000, meaning it reaches zero at £125,140.',
+      },
+      {
+        question: 'What are the current UK National Insurance rates?',
+        answer: 'For 2025/26, employees pay 8% on earnings between £12,570 and £50,270, and 2% above that. Employers pay 15% above £5,000. Self-employed pay Class 4 NI at 6% (basic) and 2% (higher).',
+      },
+      {
+        question: 'How do Scottish income tax rates differ from the rest of the UK?',
+        answer: 'Scotland has six income tax bands instead of three: Starter (19%), Basic (20%), Intermediate (21%), Higher (42%), Advanced (45%), and Top (48%). The thresholds differ from rUK, meaning Scottish taxpayers on middle incomes generally pay slightly more.',
+      },
+    ],
   },
   {
     slug: 'salary-sacrifice-guide',
@@ -34,6 +62,20 @@ const GUIDES: GuideEntry[] = [
     pageTitle: 'Salary Sacrifice Pension UK — Is It Worth It? — UK Budget Tracker',
     icon: Briefcase,
     component: SalarySacrificeGuide,
+    faqs: [
+      {
+        question: 'How much can I save with salary sacrifice?',
+        answer: 'Savings depend on your tax band. A basic-rate taxpayer sacrificing £5,000 saves around £600 in NI (8%) plus £1,000 in income tax. Higher-rate taxpayers save more — up to 42% combined tax and NI on each pound sacrificed.',
+      },
+      {
+        question: 'Do I save National Insurance with salary sacrifice?',
+        answer: 'Yes. Unlike relief-at-source pension contributions, salary sacrifice reduces your gross pay before NI is calculated, so you save employee NI (8% in 2025/26) on the sacrificed amount. Your employer also saves 15% employer NI.',
+      },
+      {
+        question: 'Who benefits most from salary sacrifice?',
+        answer: 'Higher and additional-rate taxpayers benefit most due to larger tax relief. Those earning just above £100,000 benefit enormously because sacrificing income below £125,140 restores the personal allowance, avoiding the 60% effective tax rate.',
+      },
+    ],
   },
   {
     slug: 'reduce-tax-above-100k',
@@ -43,6 +85,20 @@ const GUIDES: GuideEntry[] = [
     pageTitle: 'How to Reduce Tax Above £100k — 60% Tax Trap Explained — UK Budget Tracker',
     icon: AlertTriangle,
     component: ReduceTaxAbove100k,
+    faqs: [
+      {
+        question: 'Why is there a 60% tax rate above £100k?',
+        answer: 'For every £2 of income above £100,000, your £12,570 personal allowance is reduced by £1. This means you lose £1 of allowance (taxed at 40%) on top of the normal 40% rate — giving an effective 60% marginal rate on income between £100,000 and £125,140.',
+      },
+      {
+        question: 'What strategies reduce tax above £100k?',
+        answer: 'The most effective strategy is making pension contributions to bring adjusted net income below £100,000, restoring the full personal allowance. Other options include Gift Aid donations, salary sacrifice arrangements, and timing bonuses across tax years.',
+      },
+      {
+        question: 'How much pension contribution do I need to avoid the 60% trap?',
+        answer: 'You need to contribute enough to bring your adjusted net income to £100,000. For example, if you earn £120,000, a gross pension contribution of £20,000 (relief at source) or equivalent salary sacrifice would restore your full personal allowance.',
+      },
+    ],
   },
   {
     slug: 'capital-gains-tax-guide',
@@ -52,6 +108,204 @@ const GUIDES: GuideEntry[] = [
     pageTitle: 'Capital Gains Tax Guide UK 2024–27 — Rates, Reliefs & Examples — UK Budget Tracker',
     icon: BarChart3,
     component: CapitalGainsTaxGuide,
+    faqs: [
+      {
+        question: 'What are the UK Capital Gains Tax rates?',
+        answer: 'From 2024/25, basic-rate taxpayers pay 10% on most assets and 18% on residential property. Higher-rate taxpayers pay 20% on most assets and 24% on residential property. Business Asset Disposal Relief qualifies for a 10% rate up to a £1m lifetime limit.',
+      },
+      {
+        question: 'What is the Capital Gains Tax annual exempt amount?',
+        answer: 'The annual exempt amount (AEA) is £3,000 for 2024/25 onwards, down from £6,000 in 2023/24 and £12,300 in 2022/23. This means the first £3,000 of gains each tax year is tax-free.',
+      },
+      {
+        question: 'Can I use capital losses to reduce my CGT bill?',
+        answer: 'Yes. Capital losses from the same tax year are automatically offset against gains. Unused losses can be carried forward indefinitely and used in future years, but only to reduce gains above the annual exempt amount.',
+      },
+    ],
+  },
+  {
+    slug: 'student-loan-guide',
+    title: 'Student Loan Repayment Guide UK',
+    description:
+      'Repayment thresholds, rates, and write-off rules for Plan 1, 2, 4, 5, and Postgraduate Loans across the 2024/25–2026/27 tax years.',
+    pageTitle: 'Student Loan Repayment Guide UK — Thresholds & Rates — UK Budget Tracker',
+    icon: GraduationCap,
+    component: StudentLoanGuide,
+    faqs: [
+      {
+        question: 'What is the student loan repayment threshold for Plan 2?',
+        answer: 'The Plan 2 repayment threshold is £27,295 per year for 2024/25, 2025/26, and 2026/27. You repay 9% of income above this threshold.',
+      },
+      {
+        question: 'When is my student loan written off?',
+        answer: 'Plan 1 loans are written off 25 years after you were first due to repay. Plan 2 and Postgraduate loans are written off after 30 years. Plan 5 loans are written off 40 years after graduation.',
+      },
+      {
+        question: 'Should I overpay my student loan?',
+        answer: 'For most Plan 2 borrowers, no — the loan is written off after 30 years and most graduates will never repay in full. Overpaying may make sense for Plan 1 borrowers with small balances or high earners who would repay before write-off.',
+      },
+    ],
+  },
+  {
+    slug: 'isa-guide',
+    title: 'ISA Guide UK — Types, Allowances & Rules',
+    description:
+      'Cash ISA, Stocks & Shares ISA, Lifetime ISA, and IFISA explained. Allowances, tax benefits, LISA rules, and strategies for 2024–27.',
+    pageTitle: 'ISA Guide UK — Types, Allowances & Rules 2024–27 — UK Budget Tracker',
+    icon: PiggyBank,
+    component: IsaGuide,
+    faqs: [
+      {
+        question: 'What is the ISA allowance for 2024/25, 2025/26, and 2026/27?',
+        answer: 'The annual ISA allowance is £20,000 per tax year. You can split this across Cash ISA, Stocks & Shares ISA, Lifetime ISA (max £4,000), and Innovative Finance ISA.',
+      },
+      {
+        question: 'What is a Lifetime ISA and how does it work?',
+        answer: 'A Lifetime ISA (LISA) lets you save up to £4,000/year towards your first home or retirement. The government adds a 25% bonus (up to £1,000/year). Withdrawing for other purposes incurs a 25% penalty.',
+      },
+      {
+        question: 'Do I pay tax on ISA investments?',
+        answer: 'No. All interest, dividends, and capital gains within an ISA are completely tax-free. This makes ISAs one of the most tax-efficient ways to save and invest in the UK.',
+      },
+    ],
+  },
+  {
+    slug: 'dividend-tax-guide',
+    title: 'Dividend Tax Guide UK 2024–27',
+    description:
+      'Dividend tax rates, allowances, how dividends stack on income, strategies for company directors, and worked examples.',
+    pageTitle: 'Dividend Tax Guide UK 2024–27 — Rates & Allowances — UK Budget Tracker',
+    icon: CircleDollarSign,
+    component: DividendTaxGuide,
+    faqs: [
+      {
+        question: 'What is the UK dividend allowance?',
+        answer: 'The dividend allowance is £500 for 2024/25 onwards, reduced from £1,000 in 2023/24 and £2,000 in 2022/23. The first £500 of dividends is taxed at 0% regardless of your tax band.',
+      },
+      {
+        question: 'What are the UK dividend tax rates?',
+        answer: 'Basic-rate taxpayers pay 8.75% on dividends above the £500 allowance. Higher-rate taxpayers pay 33.75%, and additional-rate taxpayers pay 39.35%. These rates are lower than income tax because companies have already paid Corporation Tax.',
+      },
+      {
+        question: 'Is it more tax-efficient to take dividends or salary?',
+        answer: 'Dividends are generally more tax-efficient because they are not subject to National Insurance. Many company directors pay a small salary up to the Personal Allowance (£12,570) and take remaining profits as dividends.',
+      },
+    ],
+  },
+  {
+    slug: 'marriage-allowance-guide',
+    title: 'Marriage Allowance Guide UK',
+    description:
+      'How Marriage Allowance works, eligibility rules, how much you save (up to £252/year), how to claim, and when it is not worth it.',
+    pageTitle: 'Marriage Allowance Guide UK — Eligibility & How to Claim — UK Budget Tracker',
+    icon: Heart,
+    component: MarriageAllowanceGuide,
+    faqs: [
+      {
+        question: 'What is Marriage Allowance and how much can I save?',
+        answer: 'Marriage Allowance lets you transfer £1,260 of your Personal Allowance to your spouse or civil partner, saving them up to £252 per year in income tax. You can backdate claims by 4 years.',
+      },
+      {
+        question: 'Who is eligible for Marriage Allowance?',
+        answer: 'The lower earner must earn less than £12,570 (not paying income tax) and the higher earner must be a basic-rate taxpayer (earning between £12,571 and £50,270). Higher and additional-rate taxpayers are not eligible.',
+      },
+      {
+        question: 'When is Marriage Allowance not worth claiming?',
+        answer: 'It is not worth it if the lower earner has income above £12,570, if the recipient is a higher-rate taxpayer, or if the lower earner has savings/dividend income that uses their Personal Allowance.',
+      },
+    ],
+  },
+  {
+    slug: 'child-benefit-guide',
+    title: 'Child Benefit & HICBC Guide',
+    description:
+      'Child Benefit payment rates, the High Income Child Benefit Charge taper (£60k–£80k), worked examples, and whether to claim or opt out.',
+    pageTitle: 'Child Benefit & HICBC Guide UK — Rates & Thresholds — UK Budget Tracker',
+    icon: Baby,
+    component: ChildBenefitGuide,
+    faqs: [
+      {
+        question: 'What is the High Income Child Benefit Charge?',
+        answer: 'HICBC is a tax charge that claws back Child Benefit when either parent earns above £60,000. You lose 1% of the benefit for every £200 above £60,000, meaning it is fully clawed back at £80,000.',
+      },
+      {
+        question: 'How much is Child Benefit per child?',
+        answer: 'In 2025/26, the eldest or only child receives £26.05/week (£1,354.60/year) and each additional child receives £17.25/week (£897/year).',
+      },
+      {
+        question: 'Should I claim Child Benefit even if I earn over £80,000?',
+        answer: 'Yes — claim but opt out of payments. The claiming parent still receives National Insurance credits towards their State Pension, which is especially valuable if they are not working or earning below the NI threshold.',
+      },
+    ],
+  },
+  {
+    slug: 'self-employment-tax-guide',
+    title: 'Self-Employment Tax Guide UK',
+    description:
+      'How self-employment tax works — trading allowance, allowable expenses, Class 2 & 4 NI, payments on account, and tips to reduce your bill.',
+    pageTitle: 'Self-Employment Tax Guide UK — Expenses, NI & Payments on Account — UK Budget Tracker',
+    icon: Building2,
+    component: SelfEmploymentTaxGuide,
+    faqs: [
+      {
+        question: 'What expenses can I claim as self-employed?',
+        answer: 'You can claim costs wholly and exclusively for business: office rent, travel (45p/mile), equipment, professional fees, marketing, and working-from-home costs (£6/week flat rate). You cannot claim personal expenses or entertainment.',
+      },
+      {
+        question: 'What National Insurance do self-employed people pay?',
+        answer: 'Self-employed pay Class 2 NI (flat rate ~£3.50/week if profits exceed £6,725) and Class 4 NI (6% on profits between £12,570–£50,270, 2% above £50,270).',
+      },
+      {
+        question: 'What are payments on account for self-assessment?',
+        answer: 'If your tax bill exceeds £1,000, you make two advance payments: 50% by 31 January and 50% by 31 July. A balancing payment follows the next January. In your first year, this means paying 150% of your tax bill in January.',
+      },
+    ],
+  },
+  {
+    slug: 'eis-seis-vct-guide',
+    title: 'EIS, SEIS & VCT Tax Relief Guide',
+    description:
+      'How EIS, SEIS, and VCT schemes work — income tax relief, CGT exemption, deferral, loss relief, and key risks.',
+    pageTitle: 'EIS, SEIS & VCT Tax Relief Guide UK — UK Budget Tracker',
+    icon: Rocket,
+    component: EisSeisTaxReliefGuide,
+    faqs: [
+      {
+        question: 'What tax relief do EIS investments offer?',
+        answer: 'EIS provides 30% income tax relief on up to £1m invested per year, CGT exemption on gains after 3 years, CGT deferral on reinvested gains, and loss relief if the company fails.',
+      },
+      {
+        question: 'What is the difference between EIS and SEIS?',
+        answer: 'SEIS targets earlier-stage companies and offers 50% income tax relief (vs 30% for EIS) on up to £200,000/year. SEIS also provides 50% CGT reinvestment relief. The qualifying companies must be under 3 years old with fewer than 25 employees.',
+      },
+      {
+        question: 'Are EIS and SEIS investments risky?',
+        answer: 'Yes — many qualifying companies are early-stage startups with high failure rates. However, loss relief limits downside: a higher-rate taxpayer effectively risks only ~38.5p per £1 invested after income tax relief and loss relief.',
+      },
+    ],
+  },
+  {
+    slug: 'tax-dates-guide',
+    title: 'UK Tax Year Dates & Deadlines',
+    description:
+      'Key UK tax dates — Self Assessment deadlines, payment dates, late filing penalties, PAYE dates, and a year-end planning checklist.',
+    pageTitle: 'UK Tax Year Dates & Deadlines — Self Assessment Calendar — UK Budget Tracker',
+    icon: CalendarDays,
+    component: TaxDatesGuide,
+    faqs: [
+      {
+        question: 'When does the UK tax year start and end?',
+        answer: 'The UK tax year runs from 6 April to 5 April the following year. For example, the 2025/26 tax year runs from 6 April 2025 to 5 April 2026.',
+      },
+      {
+        question: 'What is the Self Assessment deadline?',
+        answer: 'Online Self Assessment returns must be filed by 31 January following the end of the tax year. Paper returns are due by 31 October. Tax owed must be paid by 31 January.',
+      },
+      {
+        question: 'What are the penalties for late Self Assessment filing?',
+        answer: 'Filing 1 day late incurs a £100 penalty. After 3 months, a £10/day penalty applies (up to £900). At 6 months and 12 months, further penalties of 5% of tax due (or £300, whichever is higher) apply.',
+      },
+    ],
   },
 ]
 
@@ -69,8 +323,9 @@ function GuideIndex() {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">UK Tax Guides</h1>
         <p className="text-muted-foreground">
-          In-depth guides covering UK income tax, pension planning, and capital gains
-          tax for the 2024/25, 2025/26, and 2026/27 tax years.
+          In-depth guides covering UK income tax, pension planning, capital gains tax,
+          student loans, ISAs, dividends, and more for the 2024/25, 2025/26, and
+          2026/27 tax years.
         </p>
       </div>
 
@@ -109,16 +364,63 @@ export function GuideView() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
-  // Update document title and meta description for SEO
+  // Update document title, meta description, canonical link, and FAQ JSON-LD for SEO
   useEffect(() => {
     const guide = slug ? GUIDES.find(g => g.slug === slug) : null
     const meta = document.querySelector('meta[name="description"]')
+
+    // Title & description
     if (guide) {
       document.title = guide.pageTitle
       if (meta) meta.setAttribute('content', guide.description)
     } else {
       document.title = 'UK Tax Guides — Income Tax, Pension, CGT — UK Budget Tracker'
       if (meta) meta.setAttribute('content', 'In-depth UK tax guides covering income tax rates, salary sacrifice, the £100k tax trap, and capital gains tax for 2024/25, 2025/26, and 2026/27.')
+    }
+
+    // Canonical link
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null
+    if (!canonical) {
+      canonical = document.createElement('link')
+      canonical.setAttribute('rel', 'canonical')
+      document.head.appendChild(canonical)
+    }
+    if (guide) {
+      canonical.setAttribute('href', `https://uk-budget-tracker.com/guide/${guide.slug}/`)
+    } else if (slug === null && window.location.hash.startsWith('#guide')) {
+      canonical.setAttribute('href', 'https://uk-budget-tracker.com/guide/')
+    } else {
+      canonical.setAttribute('href', 'https://uk-budget-tracker.com/')
+    }
+
+    // FAQ JSON-LD
+    const existingScript = document.getElementById('faq-jsonld')
+    if (existingScript) existingScript.remove()
+
+    if (guide && guide.faqs.length > 0) {
+      const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: guide.faqs.map(faq => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer,
+          },
+        })),
+      }
+      const script = document.createElement('script')
+      script.id = 'faq-jsonld'
+      script.type = 'application/ld+json'
+      script.textContent = JSON.stringify(jsonLd)
+      document.head.appendChild(script)
+    }
+
+    return () => {
+      const script = document.getElementById('faq-jsonld')
+      if (script) script.remove()
+      if (canonical) canonical.setAttribute('href', 'https://uk-budget-tracker.com/')
     }
   }, [slug])
 

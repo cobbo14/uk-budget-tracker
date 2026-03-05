@@ -253,11 +253,17 @@ export function UkIncomeTaxRates() {
       </Card>
 
       <Card>
-        <CardContent className="pt-6 text-sm text-muted-foreground">
+        <CardContent className="pt-6 text-sm text-muted-foreground space-y-2">
           <p>
             Model your own salary and see a full tax breakdown instantly.{' '}
             <a href="#income" className="text-emerald-600 font-medium hover:underline">
               Try the tax calculator &rarr;
+            </a>
+          </p>
+          <p>
+            <strong>Related guide:</strong>{' '}
+            <a href="#guide/salary-sacrifice-guide" className="text-emerald-600 font-medium hover:underline">
+              Salary Sacrifice: Is It Worth It? &rarr;
             </a>
           </p>
         </CardContent>

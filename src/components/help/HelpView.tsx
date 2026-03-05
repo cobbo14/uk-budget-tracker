@@ -7,6 +7,7 @@ import {
   Settings,
   Download,
   Users,
+  BookOpen,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -182,6 +183,86 @@ export function HelpView() {
           Benefit, and more. All settings feed directly into the tax
           calculations across every tab.
         </p>
+      </Section>
+
+      <Section icon={BookOpen} title="Tax Guides" tabHash="guide">
+        <p>
+          In-depth guides to help you understand and optimise your UK tax position:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <a href="#guide/uk-income-tax-rates" className="text-emerald-600 font-medium hover:underline">
+              UK Income Tax Rates &amp; Bands 2024&ndash;27
+            </a>{' '}
+            &mdash; full rate tables, personal allowance, Scottish rates, and worked examples.
+          </li>
+          <li>
+            <a href="#guide/salary-sacrifice-guide" className="text-emerald-600 font-medium hover:underline">
+              Salary Sacrifice: Is It Worth It?
+            </a>{' '}
+            &mdash; NI savings, pension vs other schemes, and who benefits most.
+          </li>
+          <li>
+            <a href="#guide/reduce-tax-above-100k" className="text-emerald-600 font-medium hover:underline">
+              How to Reduce Tax Above &pound;100k
+            </a>{' '}
+            &mdash; the 60% tax trap explained and strategies to avoid it.
+          </li>
+          <li>
+            <a href="#guide/capital-gains-tax-guide" className="text-emerald-600 font-medium hover:underline">
+              Capital Gains Tax Guide UK
+            </a>{' '}
+            &mdash; CGT rates, annual exempt amount, loss relief, and examples.
+          </li>
+          <li>
+            <a href="#guide/student-loan-guide" className="text-emerald-600 font-medium hover:underline">
+              Student Loan Repayment Guide
+            </a>{' '}
+            &mdash; thresholds, rates, and write-off rules for all plan types.
+          </li>
+          <li>
+            <a href="#guide/isa-guide" className="text-emerald-600 font-medium hover:underline">
+              ISA Guide
+            </a>{' '}
+            &mdash; types, allowances, LISA rules, and tax benefits.
+          </li>
+          <li>
+            <a href="#guide/dividend-tax-guide" className="text-emerald-600 font-medium hover:underline">
+              Dividend Tax Guide
+            </a>{' '}
+            &mdash; rates, allowances, and strategies for company directors.
+          </li>
+          <li>
+            <a href="#guide/marriage-allowance-guide" className="text-emerald-600 font-medium hover:underline">
+              Marriage Allowance
+            </a>{' '}
+            &mdash; eligibility, how to claim, and when it is not worth it.
+          </li>
+          <li>
+            <a href="#guide/child-benefit-guide" className="text-emerald-600 font-medium hover:underline">
+              Child Benefit &amp; HICBC
+            </a>{' '}
+            &mdash; payment rates, the income taper, and whether to claim or opt out.
+          </li>
+          <li>
+            <a href="#guide/self-employment-tax-guide" className="text-emerald-600 font-medium hover:underline">
+              Self-Employment Tax Guide
+            </a>{' '}
+            &mdash; expenses, NI, payments on account, and tips to reduce your bill.
+          </li>
+          <li>
+            <a href="#guide/eis-seis-vct-guide" className="text-emerald-600 font-medium hover:underline">
+              EIS, SEIS &amp; VCT Tax Relief
+            </a>{' '}
+            &mdash; income tax relief, CGT exemptions, and key risks.
+          </li>
+          <li>
+            <a href="#guide/tax-dates-guide" className="text-emerald-600 font-medium hover:underline">
+              UK Tax Year Dates &amp; Deadlines
+            </a>{' '}
+            &mdash; Self Assessment calendar, penalties, and year-end planning.
+          </li>
+        </ul>
       </Section>
 
       <Card>

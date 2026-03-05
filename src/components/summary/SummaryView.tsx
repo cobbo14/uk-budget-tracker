@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatPercent } from '@/utils/formatting'
 import { cn } from '@/lib/utils'
-import { PoundSterling } from 'lucide-react'
+import { PoundSterling, BookOpen } from 'lucide-react'
 import { IncomeAndTaxCharts } from './IncomeAndTaxCharts'
 import { UPDATE_SETTINGS } from '@/store/actions'
 import type { ISAContributions } from '@/types'
@@ -369,6 +369,33 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
           </Card>
         )
       })()}
+
+      {/* Tax Guides */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpen className="h-4 w-4 text-emerald-600" />
+            <span className="text-sm font-medium">Tax Guides</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            <a href="#guide/uk-income-tax-rates" className="text-emerald-600 font-medium hover:underline">Income Tax</a>
+            {' · '}
+            <a href="#guide/salary-sacrifice-guide" className="text-emerald-600 font-medium hover:underline">Salary Sacrifice</a>
+            {' · '}
+            <a href="#guide/reduce-tax-above-100k" className="text-emerald-600 font-medium hover:underline">£100k Trap</a>
+            {' · '}
+            <a href="#guide/capital-gains-tax-guide" className="text-emerald-600 font-medium hover:underline">CGT</a>
+            {' · '}
+            <a href="#guide/student-loan-guide" className="text-emerald-600 font-medium hover:underline">Student Loans</a>
+            {' · '}
+            <a href="#guide/isa-guide" className="text-emerald-600 font-medium hover:underline">ISAs</a>
+            {' · '}
+            <a href="#guide/dividend-tax-guide" className="text-emerald-600 font-medium hover:underline">Dividends</a>
+            {' · '}
+            <a href="#guide" className="text-emerald-600 font-medium hover:underline">All guides &rarr;</a>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

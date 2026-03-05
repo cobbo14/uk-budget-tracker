@@ -214,11 +214,17 @@ export function SalarySacrificeGuide() {
       </Card>
 
       <Card>
-        <CardContent className="pt-6 text-sm text-muted-foreground">
+        <CardContent className="pt-6 text-sm text-muted-foreground space-y-2">
           <p>
             Model salary sacrifice and see the impact on your tax bill instantly.{' '}
             <a href="#income" className="text-emerald-600 font-medium hover:underline">
               Try the calculator &rarr;
+            </a>
+          </p>
+          <p>
+            <strong>Related guide:</strong>{' '}
+            <a href="#guide/uk-income-tax-rates" className="text-emerald-600 font-medium hover:underline">
+              UK Income Tax Rates &amp; Bands 2024&ndash;27 &rarr;
             </a>
           </p>
         </CardContent>

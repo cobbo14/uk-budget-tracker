@@ -196,11 +196,21 @@ export function ReduceTaxAbove100k() {
       </Card>
 
       <Card>
-        <CardContent className="pt-6 text-sm text-muted-foreground">
+        <CardContent className="pt-6 text-sm text-muted-foreground space-y-2">
           <p>
             See exactly how much pension you need to contribute to avoid the 60% trap.{' '}
             <a href="#planning" className="text-emerald-600 font-medium hover:underline">
               Use the pension optimiser &rarr;
+            </a>
+          </p>
+          <p>
+            <strong>Related guides:</strong>{' '}
+            <a href="#guide/capital-gains-tax-guide" className="text-emerald-600 font-medium hover:underline">
+              Capital Gains Tax Guide
+            </a>
+            {' · '}
+            <a href="#guide/uk-income-tax-rates" className="text-emerald-600 font-medium hover:underline">
+              Income Tax Rates &amp; Bands
             </a>
           </p>
         </CardContent>
