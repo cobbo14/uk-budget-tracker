@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Receipt, Settings2, Undo2, Wifi, Zap } from 'lucide-react'
+import { Heart, Plus, Receipt, Settings2, Undo2, Wifi, X, Zap } from 'lucide-react'
 import { useBudget } from '@/hooks/useBudget'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,11 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
   const [manageOpen, setManageOpen] = useState(false)
   const [energyCompareOpen, setEnergyCompareOpen] = useState(false)
   const [broadbandCompareOpen, setBroadbandCompareOpen] = useState(false)
+
+  const [supportDismissed, setSupportDismissed] = useState(
+    () => localStorage.getItem('support_banner_dismissed') === '1'
+  )
+  const showSupportBanner = expenses.length >= 3 && !supportDismissed
 
   const hasEnergyExpenses = expenses.some(
     e => e.utilityDetails?.type === 'electricity' || e.utilityDetails?.type === 'gas'
@@ -123,6 +128,34 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
               </div>
             )
           })}
+        </div>
+      )}
+
+      {showSupportBanner && (
+        <div className="flex items-center gap-3 rounded-lg border border-pink-200 bg-pink-50 px-4 py-3 text-sm dark:border-pink-900 dark:bg-pink-950/30">
+          <Heart className="h-4 w-4 shrink-0 text-pink-500" />
+          <p className="flex-1 text-muted-foreground">
+            Finding UK Budget Tracker useful?{' '}
+            <a
+              href="https://ko-fi.com/cobbo14"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-pink-600 hover:underline dark:text-pink-400"
+            >
+              Support the project on Ko-fi
+            </a>{' '}
+            to help keep it free and maintained.
+          </p>
+          <button
+            onClick={() => {
+              setSupportDismissed(true)
+              localStorage.setItem('support_banner_dismissed', '1')
+            }}
+            className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 

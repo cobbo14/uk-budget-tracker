@@ -63,16 +63,47 @@ export function HelpView() {
 
       <Section icon={Download} title="Getting Started">
         <p>
-          <strong>Install as an app:</strong> UK Budget Tracker is a Progressive
-          Web App (PWA). On Chrome or Edge, click the install icon in the address
-          bar. On Safari (iOS), tap Share then &ldquo;Add to Home Screen&rdquo;.
-          Once installed it opens full-screen, works offline, and feels like a
-          native app.
+          UK Budget Tracker works in two ways: directly in your browser, or
+          installed as an app on your device. Both offer the full set of
+          features &mdash; the difference is in the experience.
         </p>
         <p>
-          All data is stored locally in your browser &mdash; nothing is sent to a
-          server. Your information stays private and is available even without an
-          internet connection.
+          <strong>In the browser:</strong> Simply visit the site and start
+          using it. Your data is saved automatically and will be there when you
+          return, as long as you use the same browser and don&rsquo;t clear
+          your browsing data. However, the browser toolbar and tabs remain
+          visible, and if you close all tabs, you&rsquo;ll need to navigate
+          back to the site to use it again.
+        </p>
+        <p>
+          <strong>Installed as an app:</strong> UK Budget Tracker is a
+          Progressive Web App (PWA), which means you can install it to your
+          device for a native app experience. Once installed it gets its own
+          window (no browser toolbar or tabs), its own icon in your dock,
+          taskbar, or home screen, and it works fully offline. To install:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Chrome / Edge (desktop):</strong> Click the install icon in
+            the address bar, or open the browser menu and select
+            &ldquo;Install UK Budget Tracker&rdquo;.
+          </li>
+          <li>
+            <strong>Chrome (Android):</strong> Tap the browser menu and select
+            &ldquo;Add to Home screen&rdquo; or &ldquo;Install app&rdquo;.
+          </li>
+          <li>
+            <strong>Safari (iOS / iPadOS):</strong> Tap the Share button, then
+            &ldquo;Add to Home Screen&rdquo;.
+          </li>
+        </ul>
+        <p>
+          <strong>Your data:</strong> All data is stored locally on your
+          device &mdash; nothing is ever sent to a server. Your information
+          stays completely private. Data persists automatically between
+          sessions whether you use the browser or the installed app. The only
+          ways to lose your data are clearing your browser&rsquo;s storage,
+          uninstalling the app, or switching to a different browser or device.
         </p>
       </Section>
 
@@ -130,19 +161,6 @@ export function HelpView() {
         </p>
       </Section>
 
-      <Section icon={TrendingUp} title="Capital Gains Tax" tabHash="gains">
-        <p>
-          Record disposals of shares, property, or business assets. The app
-          automatically applies the Annual Exempt Amount (£3,000 for 2024/25
-          onwards), carry-forward losses, and the correct Capital Gains Tax
-          rate based on your total taxable income.
-        </p>
-        <p>
-          Business Asset Disposal Relief (BADR), formerly Entrepreneurs&rsquo;
-          Relief, is supported for qualifying disposals at the reduced 10% rate.
-        </p>
-      </Section>
-
       <Section icon={Lightbulb} title="Tax Planning &amp; Pension Optimiser" tabHash="planning">
         <p>
           The Planning tab unlocks powerful UK tax optimisation tools once you
@@ -173,6 +191,19 @@ export function HelpView() {
             self-assessment payments on account for the following tax year.
           </li>
         </ul>
+      </Section>
+
+      <Section icon={TrendingUp} title="Capital Gains Tax" tabHash="gains">
+        <p>
+          Record disposals of shares, property, or business assets. The app
+          automatically applies the Annual Exempt Amount (£3,000 for 2024/25
+          onwards), carry-forward losses, and the correct Capital Gains Tax
+          rate based on your total taxable income.
+        </p>
+        <p>
+          Business Asset Disposal Relief (BADR), formerly Entrepreneurs&rsquo;
+          Relief, is supported for qualifying disposals at the reduced 10% rate.
+        </p>
       </Section>
 
       <Section icon={Settings} title="Settings &amp; Configuration" tabHash="settings">
@@ -282,6 +313,18 @@ export function HelpView() {
             >
               View on GitHub
             </a>
+          </p>
+          <p>
+            If you find this tool useful, consider{' '}
+            <a
+              href="https://ko-fi.com/cobbo14"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-600 font-medium hover:underline"
+            >
+              supporting the project on Ko-fi
+            </a>
+            . It helps keep the app free and maintained.
           </p>
           <p>
             Found a bug or have a suggestion?{' '}

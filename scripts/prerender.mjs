@@ -1,7 +1,5 @@
-import { createServer } from 'http'
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
-import { join, extname } from 'path'
-import { launch } from 'puppeteer'
+import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { join } from 'path'
 
 const DIST = join(import.meta.dirname, '..', 'dist')
 const BASE_URL = 'https://uk-budget-tracker.com'
@@ -22,61 +20,12 @@ const PAGES = [
   { hash: 'guide/tax-dates-guide', path: 'guide/tax-dates-guide', title: 'UK Tax Year Dates & Deadlines — Self Assessment Calendar — UK Budget Tracker', description: 'Key UK tax dates — Self Assessment deadlines, payment dates, late filing penalties, PAYE dates, and a year-end planning checklist.' },
 ]
 
-const MIME_TYPES = {
-  '.html': 'text/html',
-  '.js': 'application/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-  '.webmanifest': 'application/manifest+json',
-  '.xml': 'application/xml',
-  '.txt': 'text/plain',
-}
-
-function startServer(port) {
-  return new Promise((resolve) => {
-    const server = createServer((req, res) => {
-      let filePath = join(DIST, req.url === '/' ? 'index.html' : req.url)
-      if (!existsSync(filePath)) {
-        filePath = join(DIST, 'index.html')
-      }
-      try {
-        const content = readFileSync(filePath)
-        const ext = extname(filePath)
-        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' })
-        res.end(content)
-      } catch {
-        res.writeHead(404)
-        res.end('Not found')
-      }
-    })
-    server.listen(port, () => resolve(server))
-  })
-}
-
-async function prerender() {
-  const PORT = 4173 + Math.floor(Math.random() * 1000)
-  const server = await startServer(PORT)
-  console.log(`Prerender server running on port ${PORT}`)
-
-  const browser = await launch({ headless: true, args: ['--no-sandbox'] })
+function prerender() {
+  const template = readFileSync(join(DIST, 'index.html'), 'utf-8')
 
   for (const page of PAGES) {
-    const url = `http://localhost:${PORT}/#${page.hash}`
-    console.log(`Rendering: ${url}`)
-
-    const tab = await browser.newPage()
-    await tab.goto(url, { waitUntil: 'networkidle0' })
-    await tab.waitForSelector('h1', { timeout: 10000 })
-    // Small delay for any post-render effects (JSON-LD injection etc.)
-    await new Promise(r => setTimeout(r, 500))
-
-    let html = await tab.content()
+    let html = template
+    const canonicalUrl = `${BASE_URL}/${page.path}/`
 
     // Update <title>
     html = html.replace(/<title>[^<]*<\/title>/, `<title>${page.title}</title>`)
@@ -87,10 +36,11 @@ async function prerender() {
         /<meta\s+name="description"\s+content="[^"]*"/,
         `<meta name="description" content="${page.description}"`
       )
+    } else {
+      html = html.replace('</head>', `<meta name="description" content="${page.description}">\n</head>`)
     }
 
     // Update or insert canonical link
-    const canonicalUrl = `${BASE_URL}/${page.path}/`
     if (html.includes('rel="canonical"')) {
       html = html.replace(
         /<link\s+rel="canonical"\s+href="[^"]*"/,
@@ -126,16 +76,9 @@ async function prerender() {
     const outFile = join(outDir, 'index.html')
     writeFileSync(outFile, html)
     console.log(`  → ${outFile}`)
-
-    await tab.close()
   }
 
-  await browser.close()
-  server.close()
   console.log('Prerendering complete!')
 }
 
-prerender().catch((err) => {
-  console.error('Prerender failed:', err)
-  process.exit(1)
-})
+prerender()
