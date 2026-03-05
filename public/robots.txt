@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://uk-budget-tracker.vercel.app/sitemap.xml
