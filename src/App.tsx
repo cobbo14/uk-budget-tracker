@@ -8,6 +8,7 @@ import { IncomeView } from '@/components/income/IncomeView'
 import { ExpensesView } from '@/components/expenses/ExpensesView'
 import { SettingsView } from '@/components/settings/SettingsView'
 import { GainsView } from '@/components/gains/GainsView'
+import { HelpView } from '@/components/help/HelpView'
 import { useBudget } from '@/hooks/useBudget'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import type { TabId } from '@/components/layout/TabNav'
@@ -16,7 +17,7 @@ import type { TabId } from '@/components/layout/TabNav'
 const SummaryView = lazy(() => import('@/components/summary/SummaryView').then(m => ({ default: m.SummaryView })))
 const PlanningView = lazy(() => import('@/components/planning/PlanningView').then(m => ({ default: m.PlanningView })))
 
-const VALID_TABS: TabId[] = ['summary', 'income', 'gains', 'expenses', 'planning', 'settings']
+const VALID_TABS: TabId[] = ['summary', 'income', 'gains', 'expenses', 'planning', 'settings', 'help']
 
 function getTabFromHash(): TabId {
   const hash = window.location.hash.slice(1) as TabId
@@ -69,6 +70,7 @@ function AppContent() {
           {activeTab === 'expenses' && <ExpensesView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
           {activeTab === 'planning' && <PlanningView />}
           {activeTab === 'settings' && <SettingsView />}
+          {activeTab === 'help' && <HelpView />}
         </Suspense>
       </ErrorBoundary>
     </AppShell>

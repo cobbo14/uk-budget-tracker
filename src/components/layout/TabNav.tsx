@@ -1,8 +1,8 @@
-import { LayoutDashboard, Wallet, TrendingUp, ShoppingCart, Lightbulb, Settings } from 'lucide-react'
+import { LayoutDashboard, Wallet, TrendingUp, ShoppingCart, Lightbulb, Settings, HelpCircle } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type TabId = 'summary' | 'income' | 'gains' | 'expenses' | 'planning' | 'settings'
+export type TabId = 'summary' | 'income' | 'gains' | 'expenses' | 'planning' | 'settings' | 'help'
 
 const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: 'summary', label: 'Summary', icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: 'planning', label: 'Planning', icon: Lightbulb },
   { id: 'gains', label: 'Gains', icon: TrendingUp },
   { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'help', label: 'Help', icon: HelpCircle },
 ]
 
 interface TabNavProps {
