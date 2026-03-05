@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PoundSterling, Sun, Moon, AlertCircle, HelpCircle, Heart } from 'lucide-react'
+import { PoundSterling, Sun, Moon, AlertCircle, HelpCircle, Heart, MessageSquarePlus } from 'lucide-react'
 import { ProfileSwitcher } from './ProfileSwitcher'
 import { useBudget } from '@/hooks/useBudget'
 import { useTour } from '@/components/tour/TourContext'
@@ -69,6 +69,7 @@ export function Header() {
               <AlertCircle className="h-3 w-3" /> Storage full
             </span>
           )}
+          <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">Profile</span>
           <ProfileSwitcher />
           <a
             href="https://ko-fi.com/cobbo14"
@@ -79,6 +80,15 @@ export function Header() {
           >
             <Heart className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Show Some Love</span>
+          </a>
+          <a
+            href="https://github.com/cobbo14/uk-budget-tracker/issues/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            aria-label="Give Feedback"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
           </a>
           <button
             onClick={startTour}

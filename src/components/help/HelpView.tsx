@@ -202,6 +202,17 @@ export function HelpView() {
               View on GitHub
             </a>
           </p>
+          <p>
+            Found a bug or have a suggestion?{' '}
+            <a
+              href="https://github.com/cobbo14/uk-budget-tracker/issues/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-600 font-medium hover:underline"
+            >
+              Give Feedback
+            </a>
+          </p>
         </CardContent>
       </Card>
     </div>

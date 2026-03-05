@@ -9,6 +9,7 @@ import { ExpensesView } from '@/components/expenses/ExpensesView'
 import { SettingsView } from '@/components/settings/SettingsView'
 import { GainsView } from '@/components/gains/GainsView'
 import { HelpView } from '@/components/help/HelpView'
+import { GuideView } from '@/components/guide/GuideView'
 import { useBudget } from '@/hooks/useBudget'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import type { TabId } from '@/components/layout/TabNav'
@@ -17,11 +18,12 @@ import type { TabId } from '@/components/layout/TabNav'
 const SummaryView = lazy(() => import('@/components/summary/SummaryView').then(m => ({ default: m.SummaryView })))
 const PlanningView = lazy(() => import('@/components/planning/PlanningView').then(m => ({ default: m.PlanningView })))
 
-const VALID_TABS: TabId[] = ['summary', 'income', 'gains', 'expenses', 'planning', 'settings', 'help']
+const VALID_TABS: TabId[] = ['summary', 'income', 'gains', 'expenses', 'planning', 'settings', 'help', 'guide']
 
 function getTabFromHash(): TabId {
-  const hash = window.location.hash.slice(1) as TabId
-  return VALID_TABS.includes(hash) ? hash : 'summary'
+  const hash = window.location.hash.slice(1)
+  if (hash === 'guide' || hash.startsWith('guide/')) return 'guide'
+  return VALID_TABS.includes(hash as TabId) ? (hash as TabId) : 'summary'
 }
 
 function AppContent() {
@@ -42,6 +44,22 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('showMonthly', showMonthly ? 'true' : 'false')
   }, [showMonthly])
+
+  // Update document title per tab (guide pages set their own titles)
+  useEffect(() => {
+    if (activeTab === 'guide') return
+    const BASE = 'UK Budget Tracker'
+    const TAB_TITLES: Record<string, string> = {
+      summary: `${BASE} — Free Tax Calculator & Pension Optimiser 2024-27`,
+      income: `Income Tax Calculator — ${BASE}`,
+      expenses: `Expenses & Budgeting — ${BASE}`,
+      planning: `Tax Planning & Pension Optimiser — ${BASE}`,
+      gains: `Capital Gains Tax Calculator — ${BASE}`,
+      settings: `Settings — ${BASE}`,
+      help: `Help & Guide — ${BASE}`,
+    }
+    document.title = TAB_TITLES[activeTab] ?? BASE
+  }, [activeTab])
 
   // Global Ctrl+Z / Cmd+Z undo shortcut
   useEffect(() => {
@@ -71,6 +89,7 @@ function AppContent() {
           {activeTab === 'planning' && <PlanningView />}
           {activeTab === 'settings' && <SettingsView />}
           {activeTab === 'help' && <HelpView />}
+          {activeTab === 'guide' && <GuideView />}
         </Suspense>
       </ErrorBoundary>
     </AppShell>
