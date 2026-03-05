@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, PoundSterling, Briefcase, AlertTriangle, BarChart3, GraduationCap, PiggyBank, CircleDollarSign, Heart, Baby, Building2, Rocket, CalendarDays } from 'lucide-react'
+import { ArrowLeft, PoundSterling, Briefcase, AlertTriangle, BarChart3, GraduationCap, PiggyBank, CircleDollarSign, Heart, Baby, Building2, Rocket, CalendarDays, Landmark, Home, Bitcoin, Shield } from 'lucide-react'
 import { UkIncomeTaxRates } from './guides/UkIncomeTaxRates'
 import { SalarySacrificeGuide } from './guides/SalarySacrificeGuide'
 import { ReduceTaxAbove100k } from './guides/ReduceTaxAbove100k'
@@ -13,6 +13,11 @@ import { ChildBenefitGuide } from './guides/ChildBenefitGuide'
 import { SelfEmploymentTaxGuide } from './guides/SelfEmploymentTaxGuide'
 import { EisSeisTaxReliefGuide } from './guides/EisSeisTaxReliefGuide'
 import { TaxDatesGuide } from './guides/TaxDatesGuide'
+import { PensionAnnualAllowanceGuide } from './guides/PensionAnnualAllowanceGuide'
+import { InheritanceTaxGuide } from './guides/InheritanceTaxGuide'
+import { RentalIncomeTaxGuide } from './guides/RentalIncomeTaxGuide'
+import { CryptoTaxGuide } from './guides/CryptoTaxGuide'
+import { NationalInsuranceGuide } from './guides/NationalInsuranceGuide'
 import type { LucideIcon } from 'lucide-react'
 
 interface FAQ {
@@ -44,6 +49,11 @@ const RELATED_GUIDES: Record<string, string[]> = {
   'self-employment-tax-guide': ['uk-income-tax-rates', 'tax-dates-guide', 'dividend-tax-guide'],
   'eis-seis-vct-guide': ['capital-gains-tax-guide', 'isa-guide', 'dividend-tax-guide'],
   'tax-dates-guide': ['self-employment-tax-guide', 'uk-income-tax-rates', 'child-benefit-guide'],
+  'pension-annual-allowance-guide': ['salary-sacrifice-guide', 'reduce-tax-above-100k', 'uk-income-tax-rates'],
+  'inheritance-tax-guide': ['eis-seis-vct-guide', 'isa-guide', 'tax-dates-guide'],
+  'rental-income-tax-guide': ['uk-income-tax-rates', 'self-employment-tax-guide', 'capital-gains-tax-guide'],
+  'crypto-tax-guide': ['capital-gains-tax-guide', 'uk-income-tax-rates', 'self-employment-tax-guide'],
+  'national-insurance-guide': ['uk-income-tax-rates', 'salary-sacrifice-guide', 'self-employment-tax-guide'],
 }
 
 const GUIDES: GuideEntry[] = [
@@ -320,6 +330,121 @@ const GUIDES: GuideEntry[] = [
       {
         question: 'What are the penalties for late Self Assessment filing?',
         answer: 'Filing 1 day late incurs a £100 penalty. After 3 months, a £10/day penalty applies (up to £900). At 6 months and 12 months, further penalties of 5% of tax due (or £300, whichever is higher) apply.',
+      },
+    ],
+  },
+  {
+    slug: 'pension-annual-allowance-guide',
+    title: 'Pension Annual Allowance Guide UK',
+    description:
+      'Annual Allowance limits, tapered allowance for high earners, MPAA, carry forward rules, and the Annual Allowance Tax Charge explained.',
+    pageTitle: 'Pension Annual Allowance Guide UK 2024–27 — Limits & Taper — UK Budget Tracker',
+    icon: PiggyBank,
+    component: PensionAnnualAllowanceGuide,
+    faqs: [
+      {
+        question: 'What is the pension Annual Allowance?',
+        answer: 'The Annual Allowance is the maximum amount of pension savings you can make each tax year with tax relief. It is £60,000 for 2024/25, 2025/26, and 2026/27. Contributions above this limit trigger an Annual Allowance Tax Charge at your marginal rate.',
+      },
+      {
+        question: 'How does the tapered Annual Allowance work?',
+        answer: 'If your threshold income exceeds £200,000 and your adjusted income exceeds £260,000, the Annual Allowance is reduced by £1 for every £2 of adjusted income above £260,000. The minimum tapered allowance is £10,000, reached at £360,000 adjusted income.',
+      },
+      {
+        question: 'What are the carry forward rules for pension contributions?',
+        answer: 'You can carry forward unused Annual Allowance from the previous 3 tax years, provided you were a member of a registered pension scheme in those years. Current year allowance is used first, then unused allowance from the earliest year.',
+      },
+    ],
+  },
+  {
+    slug: 'inheritance-tax-guide',
+    title: 'Inheritance Tax Guide UK',
+    description:
+      'IHT rates, nil-rate band, residence nil-rate band, exemptions, the 7-year rule, taper relief, trusts, and planning strategies.',
+    pageTitle: 'Inheritance Tax Guide UK — Rates, Nil-Rate Band & Planning — UK Budget Tracker',
+    icon: Landmark,
+    component: InheritanceTaxGuide,
+    faqs: [
+      {
+        question: 'What is the nil-rate band for Inheritance Tax?',
+        answer: 'The nil-rate band (NRB) is £325,000 — the amount you can pass on tax-free. The residence nil-rate band adds £175,000 when passing your main home to direct descendants. Married couples can combine both, giving up to £1,000,000 tax-free.',
+      },
+      {
+        question: 'How does the 7-year rule work for gifts?',
+        answer: 'Gifts made more than 7 years before death are fully exempt from IHT. Gifts within 7 years may be taxed, but taper relief reduces the rate for gifts made 3–7 years before death, from 32% down to 8%.',
+      },
+      {
+        question: 'Are transfers between spouses exempt from Inheritance Tax?',
+        answer: 'Yes. Transfers between married couples and civil partners are completely exempt from IHT, with no limit. Any unused nil-rate band can also be transferred to the surviving spouse.',
+      },
+    ],
+  },
+  {
+    slug: 'rental-income-tax-guide',
+    title: 'Rental Income Tax Guide UK',
+    description:
+      'How rental income is taxed, Section 24 mortgage interest restriction, allowable expenses, Rent-a-Room relief, and reporting requirements.',
+    pageTitle: 'Rental Income Tax Guide UK — Section 24, Expenses & Relief — UK Budget Tracker',
+    icon: Home,
+    component: RentalIncomeTaxGuide,
+    faqs: [
+      {
+        question: 'How does the Section 24 mortgage interest restriction work?',
+        answer: 'Individual landlords cannot deduct mortgage interest from rental income. Instead, they receive a 20% tax credit on interest payments. This means higher-rate taxpayers pay more tax than under the old rules, as they are taxed on gross rental income but only receive basic-rate relief on interest.',
+      },
+      {
+        question: 'What is the property allowance?',
+        answer: 'The property allowance lets you earn up to £1,000 per year from property income tax-free. If income exceeds £1,000, you can deduct the £1,000 allowance instead of actual expenses, or claim actual expenses — whichever is more beneficial.',
+      },
+      {
+        question: 'What is Rent-a-Room relief?',
+        answer: 'Rent-a-Room relief lets you earn up to £7,500 per year tax-free from letting a furnished room in your main home. It applies automatically and covers income from lodgers, but not from separate self-contained properties.',
+      },
+    ],
+  },
+  {
+    slug: 'crypto-tax-guide',
+    title: 'Crypto Tax Guide UK',
+    description:
+      'How HMRC taxes crypto — CGT on disposals, income tax on staking and mining, pooled cost basis, DeFi, NFTs, and record-keeping.',
+    pageTitle: 'Crypto Tax Guide UK — HMRC Rules, CGT & Record Keeping — UK Budget Tracker',
+    icon: Bitcoin,
+    component: CryptoTaxGuide,
+    faqs: [
+      {
+        question: 'How is cryptocurrency taxed in the UK?',
+        answer: 'HMRC treats crypto as property. Capital Gains Tax applies when you sell, swap, spend, or gift crypto. Income Tax applies to mining rewards, staking income, and airdrops. The CGT annual exempt amount is £3,000 from 2024/25.',
+      },
+      {
+        question: 'What counts as a crypto disposal for CGT?',
+        answer: 'Selling crypto for fiat currency, swapping one crypto for another, spending crypto on goods or services, and gifting crypto are all disposals. Transferring between your own wallets is not a disposal. Spouse transfers are at no gain/no loss.',
+      },
+      {
+        question: 'What records do I need to keep for crypto tax?',
+        answer: 'HMRC requires records of every transaction: date, type, number of tokens, GBP value at the time, fees, and running pool calculations. Records must be kept for at least 5 years after the Self Assessment deadline.',
+      },
+    ],
+  },
+  {
+    slug: 'national-insurance-guide',
+    title: 'National Insurance Rates Guide UK',
+    description:
+      'Employee, employer, and self-employed NI rates, thresholds, voluntary Class 3 contributions, Employment Allowance, and State Pension qualification.',
+    pageTitle: 'National Insurance Rates & Thresholds UK 2024–27 — UK Budget Tracker',
+    icon: Shield,
+    component: NationalInsuranceGuide,
+    faqs: [
+      {
+        question: 'What are the employee National Insurance rates?',
+        answer: 'Employees pay 8% NI on earnings between £12,570 and £50,270 (Primary Threshold to Upper Earnings Limit), and 2% on earnings above £50,270. These rates apply for 2024/25, 2025/26, and 2026/27.',
+      },
+      {
+        question: 'What NI do self-employed people pay?',
+        answer: 'Self-employed pay Class 2 NI (flat rate ~£3.50/week) and Class 4 NI (6% on profits between £12,570 and £50,270, 2% above £50,270). Both are collected via Self Assessment.',
+      },
+      {
+        question: 'How many NI qualifying years do I need for the full State Pension?',
+        answer: 'You need 35 qualifying years for the full new State Pension (£11,502/year in 2025/26) and a minimum of 10 qualifying years to receive any State Pension. Gaps can be filled with voluntary Class 3 contributions.',
       },
     ],
   },
