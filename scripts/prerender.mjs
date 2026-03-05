@@ -66,6 +66,53 @@ function prerender() {
       }
     }
 
+    // Update Twitter card tags with page-specific content
+    const twitterTags = [
+      { name: 'twitter:title', content: page.title },
+      { name: 'twitter:description', content: page.description },
+    ]
+    for (const tag of twitterTags) {
+      const regex = new RegExp(`<meta\\s+name="${tag.name}"\\s+content="[^"]*"`)
+      if (regex.test(html)) {
+        html = html.replace(regex, `<meta name="${tag.name}" content="${tag.content}"`)
+      } else {
+        html = html.replace('</head>', `<meta name="${tag.name}" content="${tag.content}">\n</head>`)
+      }
+    }
+
+    // Inject BreadcrumbList schema
+    const isGuideIndex = page.path === 'guide'
+    const breadcrumbItems = [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL + '/' },
+      { '@type': 'ListItem', position: 2, name: 'Guides', item: BASE_URL + '/guide/' },
+    ]
+    if (!isGuideIndex) {
+      breadcrumbItems.push({ '@type': 'ListItem', position: 3, name: page.title.split(' — ')[0], item: canonicalUrl })
+    }
+    const breadcrumbSchema = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: breadcrumbItems,
+    })
+    html = html.replace('</head>', `<script type="application/ld+json">${breadcrumbSchema}</script>\n</head>`)
+
+    // Inject Article schema for individual guide pages
+    if (!isGuideIndex) {
+      const articleSchema = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: page.title.split(' — ')[0],
+        description: page.description,
+        url: canonicalUrl,
+        datePublished: '2025-04-06',
+        dateModified: '2026-03-05',
+        author: { '@type': 'Organization', name: 'UK Budget Tracker' },
+        publisher: { '@type': 'Organization', name: 'UK Budget Tracker', url: BASE_URL + '/' },
+        mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+      })
+      html = html.replace('</head>', `<script type="application/ld+json">${articleSchema}</script>\n</head>`)
+    }
+
     // Inject hash-sync script so the React app picks up the route when real users visit
     const syncScript = `<script>if(!window.location.hash)window.location.hash='${page.hash}'</script>`
     html = html.replace('</head>', `${syncScript}\n</head>`)

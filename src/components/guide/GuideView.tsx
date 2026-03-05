@@ -30,6 +30,22 @@ interface GuideEntry {
   faqs: FAQ[]
 }
 
+// Related guides mapping — each slug maps to slugs of its most relevant guides
+const RELATED_GUIDES: Record<string, string[]> = {
+  'uk-income-tax-rates': ['salary-sacrifice-guide', 'reduce-tax-above-100k', 'self-employment-tax-guide'],
+  'salary-sacrifice-guide': ['uk-income-tax-rates', 'reduce-tax-above-100k', 'dividend-tax-guide'],
+  'reduce-tax-above-100k': ['salary-sacrifice-guide', 'uk-income-tax-rates', 'child-benefit-guide'],
+  'capital-gains-tax-guide': ['isa-guide', 'eis-seis-vct-guide', 'dividend-tax-guide'],
+  'student-loan-guide': ['uk-income-tax-rates', 'salary-sacrifice-guide', 'self-employment-tax-guide'],
+  'isa-guide': ['capital-gains-tax-guide', 'dividend-tax-guide', 'eis-seis-vct-guide'],
+  'dividend-tax-guide': ['uk-income-tax-rates', 'salary-sacrifice-guide', 'capital-gains-tax-guide'],
+  'marriage-allowance-guide': ['uk-income-tax-rates', 'child-benefit-guide', 'tax-dates-guide'],
+  'child-benefit-guide': ['reduce-tax-above-100k', 'marriage-allowance-guide', 'salary-sacrifice-guide'],
+  'self-employment-tax-guide': ['uk-income-tax-rates', 'tax-dates-guide', 'dividend-tax-guide'],
+  'eis-seis-vct-guide': ['capital-gains-tax-guide', 'isa-guide', 'dividend-tax-guide'],
+  'tax-dates-guide': ['self-employment-tax-guide', 'uk-income-tax-rates', 'child-benefit-guide'],
+}
+
 const GUIDES: GuideEntry[] = [
   {
     slug: 'uk-income-tax-rates',
@@ -393,33 +409,66 @@ export function GuideView() {
       canonical.setAttribute('href', 'https://uk-budget-tracker.com/')
     }
 
-    // FAQ JSON-LD
-    const existingScript = document.getElementById('faq-jsonld')
-    if (existingScript) existingScript.remove()
+    // JSON-LD structured data
+    const jsonLdIds = ['faq-jsonld', 'breadcrumb-jsonld', 'article-jsonld']
+    jsonLdIds.forEach(id => document.getElementById(id)?.remove())
 
-    if (guide && guide.faqs.length > 0) {
-      const jsonLd = {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: guide.faqs.map(faq => ({
-          '@type': 'Question',
-          name: faq.question,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: faq.answer,
-          },
-        })),
+    const baseUrl = 'https://uk-budget-tracker.com'
+
+    if (guide) {
+      // FAQ schema
+      if (guide.faqs.length > 0) {
+        const faqScript = document.createElement('script')
+        faqScript.id = 'faq-jsonld'
+        faqScript.type = 'application/ld+json'
+        faqScript.textContent = JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: guide.faqs.map(faq => ({
+            '@type': 'Question',
+            name: faq.question,
+            acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+          })),
+        })
+        document.head.appendChild(faqScript)
       }
-      const script = document.createElement('script')
-      script.id = 'faq-jsonld'
-      script.type = 'application/ld+json'
-      script.textContent = JSON.stringify(jsonLd)
-      document.head.appendChild(script)
+
+      // BreadcrumbList schema
+      const breadcrumbScript = document.createElement('script')
+      breadcrumbScript.id = 'breadcrumb-jsonld'
+      breadcrumbScript.type = 'application/ld+json'
+      breadcrumbScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${baseUrl}/` },
+          { '@type': 'ListItem', position: 2, name: 'Guides', item: `${baseUrl}/guide/` },
+          { '@type': 'ListItem', position: 3, name: guide.title, item: `${baseUrl}/guide/${guide.slug}/` },
+        ],
+      })
+      document.head.appendChild(breadcrumbScript)
+
+      // Article schema
+      const articleScript = document.createElement('script')
+      articleScript.id = 'article-jsonld'
+      articleScript.type = 'application/ld+json'
+      articleScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: guide.title,
+        description: guide.description,
+        url: `${baseUrl}/guide/${guide.slug}/`,
+        datePublished: '2025-04-06',
+        dateModified: '2026-03-05',
+        author: { '@type': 'Organization', name: 'UK Budget Tracker' },
+        publisher: { '@type': 'Organization', name: 'UK Budget Tracker', url: `${baseUrl}/` },
+        mainEntityOfPage: { '@type': 'WebPage', '@id': `${baseUrl}/guide/${guide.slug}/` },
+      })
+      document.head.appendChild(articleScript)
     }
 
     return () => {
-      const script = document.getElementById('faq-jsonld')
-      if (script) script.remove()
+      jsonLdIds.forEach(id => document.getElementById(id)?.remove())
       if (canonical) canonical.setAttribute('href', 'https://uk-budget-tracker.com/')
     }
   }, [slug])
@@ -430,6 +479,10 @@ export function GuideView() {
   if (!guide) return <GuideIndex />
 
   const GuideComponent = guide.component
+  const relatedSlugs = RELATED_GUIDES[guide.slug] || []
+  const relatedGuides = relatedSlugs
+    .map(s => GUIDES.find(g => g.slug === s))
+    .filter((g): g is GuideEntry => g !== undefined)
 
   return (
     <div className="space-y-6">
@@ -440,7 +493,31 @@ export function GuideView() {
         <ArrowLeft className="h-4 w-4" />
         All Guides
       </a>
-      <GuideComponent />
+      <article>
+        <GuideComponent />
+      </article>
+      {relatedGuides.length > 0 && (
+        <nav aria-label="Related guides">
+          <h2 className="text-lg font-semibold mb-3">Related Guides</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {relatedGuides.map(rg => {
+              const Icon = rg.icon
+              return (
+                <a key={rg.slug} href={`#guide/${rg.slug}`} className="block group">
+                  <Card className="h-full transition-colors group-hover:border-emerald-600/50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <Icon className="h-4 w-4 text-emerald-600" />
+                        {rg.title}
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </a>
+              )
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   )
 }
