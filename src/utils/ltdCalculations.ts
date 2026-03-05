@@ -40,9 +40,10 @@ export function calculateCorpTax(profit: number): number {
   if (profit >= CORP_TAX_MAIN_LIMIT) {
     return profit * CORP_TAX_MAIN_RATE
   }
-  // Marginal relief between £50k and £250k
+  // Marginal relief between £50k and £250k (HMRC standard fraction = 3/200)
   const mainRateTax = profit * CORP_TAX_MAIN_RATE
-  const marginalRelief = (CORP_TAX_MAIN_LIMIT - profit) * ((CORP_TAX_MAIN_RATE - CORP_TAX_SMALL_RATE) * CORP_TAX_MAIN_LIMIT / (CORP_TAX_MAIN_LIMIT - CORP_TAX_SMALL_LIMIT))
+  const standardFraction = (CORP_TAX_MAIN_RATE - CORP_TAX_SMALL_RATE) * CORP_TAX_SMALL_LIMIT / (CORP_TAX_MAIN_LIMIT - CORP_TAX_SMALL_LIMIT)
+  const marginalRelief = (CORP_TAX_MAIN_LIMIT - profit) * standardFraction
   return Math.max(0, mainRateTax - marginalRelief)
 }
 

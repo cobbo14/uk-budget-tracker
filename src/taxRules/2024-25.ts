@@ -65,6 +65,9 @@ const rules: TaxRules = {
   savingsAllowanceBasic: 1000,
   savingsAllowanceHigher: 500,
   savingsAllowanceAdditional: 0,
+  // Marriage Allowance (10% of PA = £1,257, rounded up to £1,260; credit = £1,260 × 20%)
+  marriageAllowanceTransfer: 1260,
+  marriageAllowanceCredit: 252,
 }
 
 export default rules

@@ -1,9 +1,6 @@
 import type { IncomeSource, GainSource, AppSettings, TaxSummary } from '@/types'
 import type { TaxRules, TaxBand } from '@/taxRules/types'
 
-const MARRIAGE_ALLOWANCE_TRANSFER = 1260
-const MARRIAGE_ALLOWANCE_CREDIT = 252
-
 // EIS / SEIS / VCT relief rates and investment limits
 const SEIS_RELIEF_RATE = 0.50
 const SEIS_INVESTMENT_LIMIT = 200_000
@@ -155,9 +152,9 @@ export function calculateTax(
   // --- Marriage Allowance ---
   let marriageAllowanceCredit = 0
   if (settings.marriageAllowance === 'transferring') {
-    effectivePersonalAllowance = Math.max(0, effectivePersonalAllowance - MARRIAGE_ALLOWANCE_TRANSFER)
+    effectivePersonalAllowance = Math.max(0, effectivePersonalAllowance - rules.marriageAllowanceTransfer)
   } else if (settings.marriageAllowance === 'receiving') {
-    marriageAllowanceCredit = MARRIAGE_ALLOWANCE_CREDIT
+    marriageAllowanceCredit = rules.marriageAllowanceCredit
   }
 
   // --- Taxable non-dividend income ---
