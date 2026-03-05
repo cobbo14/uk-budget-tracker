@@ -11,6 +11,12 @@ export interface TourStep {
 
 export const TOUR_STEPS: TourStep[] = [
   {
+    id: 'install-pwa',
+    title: 'Download for the best experience',
+    description:
+      "This app works best when installed to your device. On Chrome or Edge, click the install icon (\u229A) in the address bar. On Safari (iOS), tap the Share button then \"Add to Home Screen\". Once installed, the app opens full-screen, works offline, and feels just like a native app.",
+  },
+  {
     id: 'welcome',
     title: 'Welcome to UK Budget Tracker!',
     description:
