@@ -202,6 +202,7 @@ export interface TaxSummary {
   effectiveTaxRate: number
   // Breakdown by income type
   employmentGross: number
+  bonusTotal: number
   selfEmploymentGross: number
   selfEmploymentAllowableExpenses: number
   rentalGross: number

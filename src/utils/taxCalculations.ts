@@ -58,6 +58,7 @@ export function calculateTax(
   const savingsSources = incomeSources.filter(s => s.type === 'savings')
   const savingsGross = savingsSources.reduce((sum, s) => sum + s.grossAmount, 0)
 
+  const bonusTotal = employmentSources.reduce((sum, s) => sum + (s.bonus ?? 0), 0)
   const employmentGross = employmentSources.reduce((sum, s) => sum + s.grossAmount + (s.bonus ?? 0), 0)
 
   // --- Salary sacrifice ---
@@ -451,6 +452,7 @@ export function calculateTax(
     netIncome,
     effectiveTaxRate,
     employmentGross,
+    bonusTotal,
     selfEmploymentGross,
     selfEmploymentAllowableExpenses,
     rentalGross,
