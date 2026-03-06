@@ -397,9 +397,18 @@ export function calculateTax(
   const annualAllowanceExcess = Math.max(0, totalPensionFunding - totalAnnualAllowanceAvailable)
   const annualAllowanceRemaining = Math.max(0, effectiveAnnualAllowance - totalPensionFunding)
 
+  // --- Annual Allowance Tax Charge ---
+  // The excess is taxed at marginal income tax rate(s), sitting on top of all other taxable income
+  const annualAllowanceCharge = annualAllowanceExcess > 0
+    ? applyBands(adjustedBands, annualAllowanceExcess, taxableNonDividendIncome + taxableSavings + dividendAfterAllowance)
+    : 0
+  // Allow user to exclude AA charge from tax total (e.g. if using Scheme Pays)
+  const annualAllowanceChargeApplied = (settings.includeAnnualAllowanceCharge ?? true)
+    ? annualAllowanceCharge : 0
+
   // --- Self-Assessment Tax Estimate (for Payments on Account) ---
   // Approximation: total tax minus employee Class 1 NI (deducted via PAYE)
-  const selfAssessmentTaxEstimate = Math.max(0, incomeTaxAfterRelief + dividendTax - mortgageTaxCredit + studentLoan + postgradLoanRepayment + capitalGainsTax + class2NI + class4NI + hicbc - marriageAllowanceCredit)
+  const selfAssessmentTaxEstimate = Math.max(0, incomeTaxAfterRelief + dividendTax - mortgageTaxCredit + studentLoan + postgradLoanRepayment + capitalGainsTax + class2NI + class4NI + hicbc - marriageAllowanceCredit + annualAllowanceChargeApplied)
 
   // --- Totals ---
   // Child Benefit received is included in grossIncome (it's actual money in);
@@ -408,7 +417,8 @@ export function calculateTax(
   const totalTax = Math.max(
     0,
     incomeTaxAfterRelief + nationalInsurance + dividendTax - mortgageTaxCredit
-    + studentLoan + postgradLoanRepayment + capitalGainsTax - marriageAllowanceCredit + hicbc,
+    + studentLoan + postgradLoanRepayment + capitalGainsTax - marriageAllowanceCredit + hicbc
+    + annualAllowanceChargeApplied,
   )
   const netIncome = grossIncome - selfEmploymentAllowableExpenses - rentalAllowableExpenses - totalDeductions - totalSalarySacrifice - totalTax
   const effectiveTaxRate = grossIncome > 0 ? totalTax / grossIncome : 0
@@ -458,6 +468,7 @@ export function calculateTax(
     effectiveAnnualAllowance,
     totalAnnualAllowanceAvailable,
     annualAllowanceExcess,
+    annualAllowanceCharge,
     annualAllowanceRemaining,
     carryForwardLossesApplied,
     selfAssessmentTaxEstimate,

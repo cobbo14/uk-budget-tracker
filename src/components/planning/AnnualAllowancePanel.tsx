@@ -1,5 +1,6 @@
 import { useBudget } from '@/hooks/useBudget'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { formatCurrency } from '@/utils/formatting'
@@ -17,6 +18,7 @@ export function AnnualAllowancePanel() {
     effectiveAnnualAllowance,
     totalAnnualAllowanceAvailable,
     annualAllowanceExcess,
+    annualAllowanceCharge,
     annualAllowanceRemaining,
   } = taxSummary
 
@@ -109,12 +111,26 @@ export function AnnualAllowancePanel() {
             </p>
           )}
 
-          {/* Excess warning */}
+          {/* Excess warning + toggle */}
           {isOver && (
-            <p className="text-xs text-muted-foreground bg-red-50 dark:bg-red-900/20 rounded-md px-3 py-2">
-              ⚠ You have exceeded your total pension Annual Allowance by {formatCurrency(annualAllowanceExcess)}.
-              An Annual Allowance charge will apply at your marginal income tax rate on the excess.
-            </p>
+            <>
+              <p className="text-xs text-muted-foreground bg-red-50 dark:bg-red-900/20 rounded-md px-3 py-2">
+                ⚠ You have exceeded your total pension Annual Allowance by {formatCurrency(annualAllowanceExcess)}.
+                An Annual Allowance charge of {formatCurrency(annualAllowanceCharge)} applies at your marginal income tax rate.
+              </p>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="include-aa-charge"
+                  checked={settings.includeAnnualAllowanceCharge ?? true}
+                  onCheckedChange={v => dispatch({ type: UPDATE_SETTINGS, payload: { includeAnnualAllowanceCharge: v } })}
+                />
+                <Label htmlFor="include-aa-charge" className="text-xs">
+                  {(settings.includeAnnualAllowanceCharge ?? true)
+                    ? 'AA charge included in tax total'
+                    : 'AA charge excluded from tax total (e.g. Scheme Pays)'}
+                </Label>
+              </div>
+            </>
           )}
 
           {/* Carry-forward breakdown */}

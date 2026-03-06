@@ -61,6 +61,7 @@ export function IncomeAndTaxCharts({ showMonthly }: { showMonthly: boolean }) {
     { name: 'Dividend Tax', value: v(t.dividendTax) },
     { name: 'Capital Gains Tax', value: v(t.capitalGainsTax) },
     { name: 'Student Loan', value: v(t.studentLoan + t.postgradLoanRepayment) },
+    { name: 'Pension AA Charge', value: v(t.annualAllowanceCharge) },
   ].filter(d => d.value > 0)
 
   const budgetData: ChartEntry[] = [

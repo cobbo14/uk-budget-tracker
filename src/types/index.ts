@@ -139,6 +139,8 @@ export interface AppSettings {
   taxCode?: string
   // Basis period reform: extra transitional profit spread over tax years
   transitionalProfitSpread?: number
+  // Include pension Annual Allowance charge in tax total (default true)
+  includeAnnualAllowanceCharge?: boolean
   // Household / partner income (for household panel)
   partnerIncome: number
 }
@@ -217,6 +219,7 @@ export interface TaxSummary {
   effectiveAnnualAllowance: number      // AA after taper (£60k → £10k)
   totalAnnualAllowanceAvailable: number // effectiveAA + carry-forward
   annualAllowanceExcess: number         // amount over total available (0 = compliant)
+  annualAllowanceCharge: number         // tax charge on excess at marginal rate(s)
   annualAllowanceRemaining: number      // unused AA this year (before carry-forward)
   // Capital Gains: losses applied
   carryForwardLossesApplied: number

@@ -8,6 +8,7 @@ import { formatCurrency, formatPercent } from '@/utils/formatting'
 import { cn } from '@/lib/utils'
 import { PoundSterling, BookOpen } from 'lucide-react'
 import { IncomeAndTaxCharts } from './IncomeAndTaxCharts'
+import { ThresholdWarnings } from '@/components/planning/ThresholdWarnings'
 import { UPDATE_SETTINGS } from '@/store/actions'
 import type { ISAContributions } from '@/types'
 
@@ -157,6 +158,9 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
 
       {hasData && (
         <>
+          {/* Threshold alerts */}
+          <ThresholdWarnings />
+
           {/* Income → Net bar */}
           <BudgetBar netIncome={t.netIncome} totalExpenses={totalAnnualExpenses} />
 
@@ -247,6 +251,9 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               )}
               {t.childBenefitAnnual > 0 && t.hicbc === 0 && (
                 <Row label="Child Benefit received" value={formatCurrency(v(t.childBenefitAnnual))} highlight="green" />
+              )}
+              {t.annualAllowanceCharge > 0 && (
+                <Row label="Pension AA Charge" value={formatCurrency(v(t.annualAllowanceCharge))} highlight="red" />
               )}
 
               <Separator className="my-2" />

@@ -52,7 +52,7 @@ export function getThresholdAlerts(
     })
   }
 
-  return thresholds.map(({ name, description, threshold }) => {
+  const alerts = thresholds.map(({ name, description, threshold }) => {
     const gap = threshold - comparatorIncome
     const isOver = gap < 0
     const isNear = Math.abs(gap) <= 10000
@@ -70,6 +70,28 @@ export function getThresholdAlerts(
       pensionToReach,
     }
   })
+
+  // Pension Annual Allowance threshold (contributions vs allowance, not income-based)
+  if (t.totalPensionFunding > 0) {
+    const aaThreshold = t.totalAnnualAllowanceAvailable
+    const aaGap = aaThreshold - t.totalPensionFunding
+    const aaOver = aaGap < 0
+    const aaNear = Math.abs(aaGap) <= 10000
+    if (aaGap <= 20000) {
+      alerts.push({
+        name: 'Pension Annual Allowance',
+        description: 'Pension contributions above the Annual Allowance incur a tax charge at your marginal income tax rate.',
+        threshold: aaThreshold,
+        currentIncome: t.totalPensionFunding,
+        gap: aaGap,
+        isNear: aaNear,
+        isOver: aaOver,
+        pensionToReach: 0,
+      })
+    }
+  }
+
+  return alerts
 }
 
 export interface PensionScenario {
