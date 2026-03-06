@@ -189,6 +189,7 @@ export function parseImportedState(json: string): Partial<AppState> | null {
     if (!Array.isArray(parsed.incomeSources)) return null
     if (!Array.isArray(parsed.gainSources)) return null
     if (!Array.isArray(parsed.expenses)) return null
+    if (parsed.customExpenseCategories !== undefined && !Array.isArray(parsed.customExpenseCategories)) return null
     if (typeof parsed.settings !== 'object' || parsed.settings === null) return null
     return parsed as Partial<AppState>
   } catch {

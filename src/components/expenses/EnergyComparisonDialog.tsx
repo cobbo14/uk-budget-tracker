@@ -14,14 +14,14 @@ import { useBudget } from '@/hooks/useBudget'
 // Ofgem price cap reference rates (typical, direct debit, average consumption)
 // Source: https://www.ofgem.gov.uk/check-if-energy-price-cap-affects-you
 const OFGEM_CAP = {
-  updatedLabel: 'Q3 2025 (Jul–Sep)',
+  updatedLabel: 'Q1 2026 (Jan–Mar)',
   electricity: {
-    unitRate: { label: 'Unit Rate', value: 24.50, unit: 'p/kWh' },
-    standingCharge: { label: 'Standing Charge', value: 61.64, unit: 'p/day' },
+    unitRate: { label: 'Unit Rate', value: 27.69, unit: 'p/kWh' },
+    standingCharge: { label: 'Standing Charge', value: 54.75, unit: 'p/day' },
   },
   gas: {
-    unitRate: { label: 'Unit Rate', value: 6.24, unit: 'p/kWh' },
-    standingCharge: { label: 'Standing Charge', value: 31.65, unit: 'p/day' },
+    unitRate: { label: 'Unit Rate', value: 5.93, unit: 'p/kWh' },
+    standingCharge: { label: 'Standing Charge', value: 35.10, unit: 'p/day' },
   },
 }
 
