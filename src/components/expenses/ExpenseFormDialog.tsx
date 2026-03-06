@@ -54,6 +54,8 @@ interface FormState {
   category: ExpenseCategory
   amount: string
   frequency: ExpenseFrequency
+  contractStartDate: string
+  renewalDate: string
   utilityType: UtilityType | ''
   utilityProvider: string
   utilityRates: UtilityRateForm[]
@@ -66,6 +68,8 @@ const DEFAULT_FORM: FormState = {
   category: 'housing',
   amount: '',
   frequency: 'monthly',
+  contractStartDate: '',
+  renewalDate: '',
   utilityType: '',
   utilityProvider: '',
   utilityRates: [],
@@ -106,6 +110,8 @@ export function ExpenseFormDialog() {
           category: expense.category,
           amount: String(expense.amount),
           frequency: expense.frequency,
+          contractStartDate: expense.contractStartDate ?? '',
+          renewalDate: expense.renewalDate ?? '',
           utilityType: expense.utilityDetails?.type ?? '',
           utilityProvider: expense.utilityDetails?.provider ?? '',
           utilityRates: expense.utilityDetails?.rates.map(r => ({
@@ -230,6 +236,8 @@ export function ExpenseFormDialog() {
       category: form.category,
       amount: parseFloat(form.amount),
       frequency: form.frequency,
+      contractStartDate: form.contractStartDate || undefined,
+      renewalDate: form.renewalDate || undefined,
       utilityDetails,
       splitGroupId,
       splitPercentage: currentPercentage,
@@ -408,6 +416,28 @@ export function ExpenseFormDialog() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Contract dates (optional) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="contract-start">Contract start (optional)</Label>
+              <Input
+                id="contract-start"
+                type="date"
+                value={form.contractStartDate}
+                onChange={e => set('contractStartDate', e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="renewal-date">Renewal date (optional)</Label>
+              <Input
+                id="renewal-date"
+                type="date"
+                value={form.renewalDate}
+                onChange={e => set('renewalDate', e.target.value)}
+              />
             </div>
           </div>
 

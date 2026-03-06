@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatPercent } from '@/utils/formatting'
 import { cn } from '@/lib/utils'
-import { PoundSterling, BookOpen } from 'lucide-react'
+import { PoundSterling, BookOpen, CalendarClock } from 'lucide-react'
 import { IncomeAndTaxCharts } from './IncomeAndTaxCharts'
-import { ThresholdWarnings } from '@/components/planning/ThresholdWarnings'
 import { UPDATE_SETTINGS } from '@/store/actions'
+import { isRenewalSoon, effectiveAnnual } from '@/store/selectors'
 import type { ISAContributions } from '@/types'
 
 function HeadlineCard({ label, monthly, annual, description, color, showMonthly }: {
@@ -259,9 +259,6 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
             </CardContent>
           </Card>
 
-          {/* Threshold alerts */}
-          <ThresholdWarnings />
-
           {/* Expenses summary */}
           {expenses.length > 0 && (
             <Card>
@@ -289,6 +286,40 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               </CardContent>
             </Card>
           )}
+
+          {/* Upcoming renewals */}
+          {(() => {
+            const upcoming = expenses.filter(e => isRenewalSoon(e))
+            if (upcoming.length === 0) return null
+            return (
+              <Card className="border-amber-300 dark:border-amber-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    Upcoming Renewals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-2">
+                  {upcoming.map(e => {
+                    const annual = effectiveAnnual(e)
+                    const formatted = new Date(e.renewalDate! + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                    return (
+                      <div key={e.id} className="flex items-center justify-between py-1.5">
+                        <div>
+                          <span className="text-sm font-medium">{e.name}</span>
+                          <span className="text-xs text-amber-600 dark:text-amber-400 ml-2">Renews {formatted}</span>
+                        </div>
+                        <span className="text-sm font-medium tabular-nums">
+                          {formatCurrency(showMonthly ? annual / 12 : annual)}
+                          <span className="text-xs text-muted-foreground">{showMonthly ? '/mo' : '/yr'}</span>
+                        </span>
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            )
+          })()}
         </>
       )}
 

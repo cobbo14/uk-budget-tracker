@@ -55,3 +55,14 @@ export function effectiveAnnual(expense: Expense): number {
 export function selectTotalAnnualExpenses(state: AppState): number {
   return state.expenses.reduce((sum, e) => sum + effectiveAnnual(e), 0)
 }
+
+/** Returns true if the expense has a renewal date within the next `withinDays` days */
+export function isRenewalSoon(expense: Expense, withinDays = 30): boolean {
+  if (!expense.renewalDate) return false
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const renewal = new Date(expense.renewalDate + 'T00:00:00')
+  const diffMs = renewal.getTime() - now.getTime()
+  const diffDays = diffMs / (1000 * 60 * 60 * 24)
+  return diffDays >= 0 && diffDays <= withinDays
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2, Users } from 'lucide-react'
+import { CalendarClock, Pencil, Trash2, Users } from 'lucide-react'
 import type { Expense } from '@/types'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -10,7 +10,7 @@ import {
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@/components/ui/tooltip'
 import { formatCurrency } from '@/utils/formatting'
-import { effectiveAmount, toAnnual } from '@/store/selectors'
+import { effectiveAmount, toAnnual, isRenewalSoon } from '@/store/selectors'
 import { useBudget } from '@/hooks/useBudget'
 import { useProfiles } from '@/store/ProfilesContext'
 import { deleteSplitFromOtherProfiles } from '@/services/localStorage'
@@ -76,6 +76,16 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
             ].filter(Boolean).join(' · ')}
           </span>
         )}
+        {expense.renewalDate && (() => {
+          const soon = isRenewalSoon(expense)
+          const formatted = new Date(expense.renewalDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+          return (
+            <span className={`text-xs flex items-center gap-1 ${soon ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-muted-foreground'}`}>
+              <CalendarClock className="h-3 w-3" />
+              Renews {formatted}
+            </span>
+          )
+        })()}
       </div>
       <div className="flex items-center gap-1 shrink-0 ml-2 sm:ml-3">
         <Button

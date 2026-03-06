@@ -92,6 +92,8 @@ export interface Expense {
   amount: number
   frequency: ExpenseFrequency
   utilityDetails?: UtilityDetails
+  contractStartDate?: string        // ISO date (YYYY-MM-DD)
+  renewalDate?: string              // ISO date (YYYY-MM-DD)
   splitGroupId?: string             // links copies across profiles
   splitPercentage?: number          // this profile's share (absent = 100%)
   splitOriginProfileId?: string     // which profile owns the split config
