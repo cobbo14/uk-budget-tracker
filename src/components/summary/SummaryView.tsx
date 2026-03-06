@@ -158,9 +158,6 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
 
       {hasData && (
         <>
-          {/* Threshold alerts */}
-          <ThresholdWarnings />
-
           {/* Income → Net bar */}
           <BudgetBar netIncome={t.netIncome} totalExpenses={totalAnnualExpenses} />
 
@@ -261,6 +258,9 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               <Row label="Net Income" value={formatCurrency(v(t.netIncome))} bold highlight="green" />
             </CardContent>
           </Card>
+
+          {/* Threshold alerts */}
+          <ThresholdWarnings />
 
           {/* Expenses summary */}
           {expenses.length > 0 && (
