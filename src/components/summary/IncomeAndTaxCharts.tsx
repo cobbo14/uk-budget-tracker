@@ -43,29 +43,30 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name
   )
 }
 
-export function IncomeAndTaxCharts() {
+export function IncomeAndTaxCharts({ showMonthly }: { showMonthly: boolean }) {
   const { taxSummary: t, totalAnnualExpenses, leftoverIncome } = useBudget()
   const [activeTab, setActiveTab] = useState<Tab>('income')
+  const v = (amount: number) => showMonthly ? amount / 12 : amount
 
   const incomeData: ChartEntry[] = [
-    { name: 'Employment', value: t.employmentGross },
-    { name: 'Self-Employment', value: t.selfEmploymentGross },
-    { name: 'Rental', value: t.rentalGross },
-    { name: 'Dividends', value: t.dividendGross },
+    { name: 'Employment', value: v(t.employmentGross) },
+    { name: 'Self-Employment', value: v(t.selfEmploymentGross) },
+    { name: 'Rental', value: v(t.rentalGross) },
+    { name: 'Dividends', value: v(t.dividendGross) },
   ].filter(d => d.value > 0)
 
   const taxData: ChartEntry[] = [
-    { name: 'Income Tax', value: t.incomeTax },
-    { name: 'National Insurance', value: t.class1NI + t.class2NI + t.class4NI },
-    { name: 'Dividend Tax', value: t.dividendTax },
-    { name: 'Capital Gains Tax', value: t.capitalGainsTax },
-    { name: 'Student Loan', value: t.studentLoan + t.postgradLoanRepayment },
+    { name: 'Income Tax', value: v(t.incomeTax) },
+    { name: 'National Insurance', value: v(t.class1NI + t.class2NI + t.class4NI) },
+    { name: 'Dividend Tax', value: v(t.dividendTax) },
+    { name: 'Capital Gains Tax', value: v(t.capitalGainsTax) },
+    { name: 'Student Loan', value: v(t.studentLoan + t.postgradLoanRepayment) },
   ].filter(d => d.value > 0)
 
   const budgetData: ChartEntry[] = [
-    { name: 'Tax & Deductions', value: t.totalTax },
-    { name: 'Expenses', value: totalAnnualExpenses },
-    { name: 'Leftover', value: Math.max(0, leftoverIncome) },
+    { name: 'Tax & Deductions', value: v(t.totalTax) },
+    { name: 'Expenses', value: v(totalAnnualExpenses) },
+    { name: 'Leftover', value: Math.max(0, v(leftoverIncome)) },
   ].filter(d => d.value > 0)
 
   const tabData: Record<Tab, { data: ChartEntry[]; colors: string[]; emptyMsg: string }> = {

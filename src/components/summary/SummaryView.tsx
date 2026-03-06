@@ -161,7 +161,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
           <BudgetBar netIncome={t.netIncome} totalExpenses={totalAnnualExpenses} />
 
           {/* Visual breakdown charts */}
-          <IncomeAndTaxCharts />
+          <IncomeAndTaxCharts showMonthly={showMonthly} />
 
           {/* Tax breakdown */}
           <Card>
