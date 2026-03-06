@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ThresholdWarnings } from './ThresholdWarnings'
 import { PensionOptimiser } from './PensionOptimiser'
 import { AnnualAllowancePanel } from './AnnualAllowancePanel'
-import { PaymentsOnAccount } from './PaymentsOnAccount'
+
 import { WhatIfCalculator } from './WhatIfCalculator'
 import { TaxYearComparison } from './TaxYearComparison'
 import { PayslipReconciliation } from './PayslipReconciliation'
@@ -28,7 +28,6 @@ export function PlanningView() {
             <li>• Tax year comparison — see how next year's rules affect your bill</li>
             <li>• Payslip reconciliation — compare calculated vs actual take-home</li>
             <li>• Household overview — combined income with partner</li>
-            <li>• Payments on Account calculator</li>
             <li>• What-If Calculator — model income adjustments</li>
           </ul>
           <Button className="mt-4" onClick={() => { window.location.hash = 'income' }}>
@@ -45,8 +44,7 @@ export function PlanningView() {
           <TaxYearComparison />
           <PayslipReconciliation />
           <PartnerPanel />
-          <PaymentsOnAccount />
-          <WhatIfCalculator />
+<WhatIfCalculator />
         </>
       )}
     </div>

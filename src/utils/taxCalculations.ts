@@ -111,7 +111,8 @@ export function calculateTax(
   } else if (settings.pensionContributionType === 'flat') {
     pensionDeduction = Math.min(settings.pensionContributionValue, pensionEligibleIncome)
   }
-  const totalDeductions = pensionDeduction
+  const sippContribution = settings.sippContribution ?? 0
+  const totalDeductions = pensionDeduction + sippContribution
 
   // --- Gift Aid ---
   const grossedUpGiftAid = (settings.giftAidDonations ?? 0) / 0.8
@@ -119,7 +120,7 @@ export function calculateTax(
   // --- Adjusted net income (pension + grossed-up Gift Aid reduce it) ---
   // Bond income stacks on top of other non-savings income (no NI applies to bonds)
   const totalNonDividendGross = effectiveEmploymentGrossForIT + selfEmploymentProfit + rentalNetBeforeMortgage + bondIncome
-  const adjustedNetIncome = Math.max(0, totalNonDividendGross - pensionDeduction - grossedUpGiftAid)
+  const adjustedNetIncome = Math.max(0, totalNonDividendGross - totalDeductions - grossedUpGiftAid)
 
   // --- Effective personal allowance (tapers above £100k) ---
   const adjustedTotal = adjustedNetIncome + dividendGross + savingsGross
@@ -376,10 +377,10 @@ export function calculateTax(
   } else {
     employerPension = settings.employerPensionContributionValue ?? 0
   }
-  const totalPensionFunding = pensionDeduction + employerPension
+  const totalPensionFunding = pensionDeduction + sippContribution + employerPension
   // Threshold income = adjusted net income + dividends (before pension deduction being re-added)
   // Adjusted income for taper = threshold income + employer contributions
-  const thresholdIncomeForAA = adjustedNetIncome + dividendGross + pensionDeduction
+  const thresholdIncomeForAA = adjustedNetIncome + dividendGross + totalDeductions
   const adjustedIncomeForAA = thresholdIncomeForAA + employerPension
   let effectiveAnnualAllowance = rules.pensionAnnualAllowance
   if (

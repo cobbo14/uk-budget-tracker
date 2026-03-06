@@ -21,7 +21,7 @@ export function ThresholdWarnings() {
       {relevant.map(alert => {
         const pct = Math.min(100, (alert.currentIncome / alert.threshold) * 100)
         const barColor = alert.isOver
-          ? 'bg-red-500'
+          ? 'bg-amber-400'
           : alert.isNear
             ? 'bg-amber-400'
             : 'bg-emerald-500'
@@ -29,7 +29,7 @@ export function ThresholdWarnings() {
         return (
           <Card key={alert.name} className={cn(
             'border',
-            alert.isOver && 'border-red-300 dark:border-red-800',
+            alert.isOver && 'border-amber-200 dark:border-amber-800/60',
             !alert.isOver && alert.isNear && 'border-amber-300 dark:border-amber-800',
           )}>
             <CardHeader className="pb-2">
@@ -38,7 +38,7 @@ export function ThresholdWarnings() {
                 <span className={cn(
                   'text-xs font-medium px-2 py-0.5 rounded-full',
                   alert.isOver
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                    ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300'
                     : alert.isNear
                       ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
                       : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',

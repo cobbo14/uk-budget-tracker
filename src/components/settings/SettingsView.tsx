@@ -227,6 +227,26 @@ export function SettingsView() {
             </div>
           </div>
 
+          {/* SIPP contributions */}
+          <div className="space-y-3 pt-2 border-t">
+            <p className="text-sm font-medium">SIPP (Self-Invested Personal Pension)</p>
+            <div className="grid gap-1.5 w-full max-w-xs">
+              <Label htmlFor="sipp-contribution">Annual Contribution (£)</Label>
+              <Input
+                id="sipp-contribution"
+                type="number"
+                min="0"
+                step="100"
+                placeholder="0"
+                value={settings.sippContribution || ''}
+                onChange={e => update({ sippContribution: parseFloat(e.target.value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Personal SIPP contributions receive basic-rate tax relief at source. Higher/additional-rate relief reduces your taxable income. Counts toward the Annual Allowance.
+              </p>
+            </div>
+          </div>
+
         </CardContent>
       </Card>
 

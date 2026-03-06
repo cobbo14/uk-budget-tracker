@@ -24,23 +24,26 @@ export function getThresholdAlerts(
   // Use adjustedNetIncome directly from TaxSummary (avoids previous reconstruction bug)
   const comparatorIncome = t.adjustedNetIncome + t.dividendGross
 
-  const thresholds: Array<{ name: string; description: string; threshold: number; hicbcNote?: boolean }> = [
-    {
-      name: 'Higher Rate Tax',
-      description: 'Income tax jumps from 20% to 40% and NI falls from 8% to 2% above this point.',
-      threshold: rules.niUpperEarningsLimit,
-    },
-    {
-      name: 'Personal Allowance Taper',
-      description: 'Above £100,000 your personal allowance reduces by £1 for every £2 earned, creating a 60% effective marginal rate.',
-      threshold: rules.personalAllowanceTaperThreshold,
-    },
-    {
-      name: 'Personal Allowance Gone',
-      description: 'Above this point your personal allowance is fully withdrawn. The 60% effective rate zone ends and you pay 45% on all additional income.',
-      threshold: rules.personalAllowanceTaperThreshold + rules.personalAllowance,
-    },
-  ]
+  const taperStart = rules.personalAllowanceTaperThreshold
+  const taperEnd = taperStart + rules.personalAllowance * 2
+
+  const thresholds: Array<{ name: string; description: string; threshold: number; hicbcNote?: boolean }> = []
+
+  // Only show Personal Allowance taper thresholds if income is in the taper zone (£100k–£140k)
+  if (comparatorIncome >= taperStart && comparatorIncome <= taperEnd) {
+    thresholds.push(
+      {
+        name: 'Personal Allowance Taper',
+        description: 'Above £100,000 your personal allowance reduces by £1 for every £2 earned, creating a 60% effective marginal rate.',
+        threshold: taperStart,
+      },
+      {
+        name: 'Personal Allowance Gone',
+        description: 'Above this point your personal allowance is fully withdrawn. The 60% effective rate zone ends and you pay 45% on all additional income.',
+        threshold: taperStart + rules.personalAllowance,
+      },
+    )
+  }
 
   // Only show HICBC threshold if the user is claiming Child Benefit
   if (t.childBenefitAnnual > 0) {

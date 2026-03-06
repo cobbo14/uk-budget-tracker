@@ -116,6 +116,8 @@ export interface AppSettings {
   // Employer pension contributions (not salary sacrifice — recorded separately)
   employerPensionContributionType: 'flat' | 'percentage'
   employerPensionContributionValue: number
+  // SIPP (Self-Invested Personal Pension) — annual contribution in £
+  sippContribution: number
   // Unused pension Annual Allowance carried forward from prior 3 years
   pensionCarryForward: PensionCarryForward
   studentLoanPlan: StudentLoanPlan

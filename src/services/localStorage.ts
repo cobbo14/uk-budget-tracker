@@ -21,6 +21,7 @@ export const DEFAULT_STATE: AppState = {
     pensionContributionValue: 0,
     employerPensionContributionType: 'flat',
     employerPensionContributionValue: 0,
+    sippContribution: 0,
     pensionCarryForward: { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 },
     studentLoanPlan: 'none',
     hasPostgradLoan: false,
