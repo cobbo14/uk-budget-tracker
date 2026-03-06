@@ -8,7 +8,6 @@ import { WhatIfCalculator } from './WhatIfCalculator'
 import { TaxYearComparison } from './TaxYearComparison'
 import { PayslipReconciliation } from './PayslipReconciliation'
 import { PartnerPanel } from './PartnerPanel'
-import { LtdVsSoleTraderPanel } from './LtdVsSoleTraderPanel'
 
 export function PlanningView() {
   const { incomeSources } = useBudget()
@@ -31,7 +30,6 @@ export function PlanningView() {
             <li>• Household overview — combined income with partner</li>
             <li>• Payments on Account calculator</li>
             <li>• What-If Calculator — model income adjustments</li>
-            <li>• Limited company vs sole trader — compare net take-home under each structure</li>
           </ul>
           <Button className="mt-4" onClick={() => { window.location.hash = 'income' }}>
             Add income to unlock →
@@ -44,7 +42,6 @@ export function PlanningView() {
           <ThresholdWarnings />
           <AnnualAllowancePanel />
           <PensionOptimiser />
-          <LtdVsSoleTraderPanel />
           <TaxYearComparison />
           <PayslipReconciliation />
           <PartnerPanel />

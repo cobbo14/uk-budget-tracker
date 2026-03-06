@@ -179,10 +179,6 @@ export function HelpView() {
             contributions unlock extra tax relief.
           </li>
           <li>
-            <strong>Ltd vs sole trader comparison</strong> &mdash; model whether
-            incorporating would reduce your overall tax bill.
-          </li>
-          <li>
             <strong>What-If calculator</strong> &mdash; experiment with pay
             rises, bonus scenarios, or different pension contribution levels.
           </li>

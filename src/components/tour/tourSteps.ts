@@ -76,7 +76,7 @@ export const TOUR_STEPS: TourStep[] = [
     targetSelector: '[data-tour="tab-planning"]',
     title: 'Planning',
     description:
-      'The Planning tab unlocks powerful tax optimisation tools once you have added income. It includes threshold warnings, pension optimiser, Ltd vs sole trader comparison, What-If calculator, and more.',
+      'The Planning tab unlocks powerful tax optimisation tools once you have added income. It includes threshold warnings, pension optimiser, What-If calculator, and more.',
   },
   {
     id: 'threshold-warnings',
