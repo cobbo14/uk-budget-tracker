@@ -25,7 +25,8 @@ export function PensionOptimiser() {
   if (scenarios.length <= 1) return null
 
   const baseline = scenarios[0]
-  const thresholdMarkers = scenarios.filter(s => s.crossesThreshold).map(s => s.contributionFlat)
+  const thresholdMarkers = scenarios.filter(s => s.crossesThreshold && s.crossesThreshold !== 'Annual Allowance').map(s => s.contributionFlat)
+  const aaMarker = scenarios.find(s => s.crossesThreshold === 'Annual Allowance')?.contributionFlat
 
   return (
     <div data-tour="pension-optimiser" className="space-y-3">
@@ -70,6 +71,15 @@ export function PensionOptimiser() {
                     strokeWidth={1.5}
                   />
                 ))}
+                {aaMarker != null && (
+                  <ReferenceLine
+                    x={aaMarker}
+                    stroke="#f59e0b"
+                    strokeDasharray="4 2"
+                    strokeWidth={1.5}
+                    label={{ value: 'AA', position: 'top', fill: '#f59e0b', fontSize: 11 }}
+                  />
+                )}
                 <Line
                   type="monotone"
                   dataKey="takeHome"
@@ -97,7 +107,8 @@ export function PensionOptimiser() {
             <tbody>
               {scenarios.map((scenario, i) => {
                 const isBaseline = i === 0
-                const isGood = scenario.crossesThreshold !== undefined
+                const isGood = scenario.crossesThreshold !== undefined && !scenario.aaExcess
+                const exceedsAA = (scenario.aaExcess ?? 0) > 0
 
                 return (
                   <tr
@@ -106,15 +117,26 @@ export function PensionOptimiser() {
                       'border-b last:border-0',
                       isBaseline && 'font-medium',
                       isGood && 'bg-emerald-50 dark:bg-emerald-950/20',
+                      exceedsAA && 'bg-amber-50 dark:bg-amber-950/20',
                     )}
                   >
                     <td className="py-2 pr-2 sm:pr-4">
                       <div className={cn(isBaseline && 'text-foreground', !isBaseline && 'text-muted-foreground')}>
                         {scenario.label}
                       </div>
-                      {scenario.crossesThreshold && (
+                      {scenario.crossesThreshold && scenario.crossesThreshold !== 'Annual Allowance' && (
                         <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">
                           ↓ below {scenario.crossesThreshold}
+                        </div>
+                      )}
+                      {scenario.crossesThreshold === 'Annual Allowance' && (
+                        <div className="text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+                          Annual Allowance limit
+                        </div>
+                      )}
+                      {exceedsAA && (
+                        <div className="text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+                          AA charge: {formatCurrency(scenario.aaCharge!)}
                         </div>
                       )}
                       <div className="text-xs text-muted-foreground whitespace-nowrap">

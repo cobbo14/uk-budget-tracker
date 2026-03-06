@@ -101,6 +101,8 @@ export interface PensionScenario {
   taxSaved: number
   netCost: number
   crossesThreshold?: string
+  aaExcess?: number
+  aaCharge?: number
 }
 
 export function getPensionScenarios(
@@ -150,6 +152,18 @@ export function getPensionScenarios(
     }
   }
 
+  // Add AA limit candidate — max employee contribution before breaching annual allowance
+  const employerPension = settings.employerPensionContributionType === 'percentage'
+    ? (baseSummary.employmentGross + Math.max(0, baseSummary.selfEmploymentGross - baseSummary.selfEmploymentAllowableExpenses))
+      * ((settings.employerPensionContributionValue ?? 0) / 100)
+    : (settings.employerPensionContributionValue ?? 0)
+  const carryForward = settings.pensionCarryForward ?? { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 }
+  const totalCarryForward = (carryForward.threeYearsAgo ?? 0) + (carryForward.twoYearsAgo ?? 0) + (carryForward.oneYearAgo ?? 0)
+  const aaEmployeeLimit = Math.max(0, baseSummary.effectiveAnnualAllowance + totalCarryForward - employerPension)
+  if (aaEmployeeLimit > currentContributionFlat && aaEmployeeLimit < comparatorIncome) {
+    candidates.push({ amount: Math.ceil(aaEmployeeLimit), label: 'AA Limit', crossesThreshold: 'Annual Allowance' })
+  }
+
   const seen = new Set<number>()
   const sorted = candidates
     .filter(c => { if (seen.has(c.amount)) return false; seen.add(c.amount); return true })
@@ -172,6 +186,8 @@ export function getPensionScenarios(
       taxSaved,
       netCost,
       crossesThreshold,
+      aaExcess: scenarioSummary.annualAllowanceExcess > 0 ? scenarioSummary.annualAllowanceExcess : undefined,
+      aaCharge: scenarioSummary.annualAllowanceCharge > 0 ? scenarioSummary.annualAllowanceCharge : undefined,
     }
   })
 }
