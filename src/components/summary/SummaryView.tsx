@@ -99,6 +99,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
   const { taxSummary, totalAnnualExpenses, leftoverIncome, incomeSources, expenses, settings, rules, dispatch } = useBudget()
   const t = taxSummary
   const hasData = incomeSources.length > 0
+  const v = (amount: number) => showMonthly ? amount / 12 : amount
 
   return (
     <div className="space-y-6">
@@ -169,88 +170,88 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
             </CardHeader>
             <CardContent className="pt-0">
               {t.employmentGross > 0 && (
-                <Row label="Employment gross" value={formatCurrency(t.employmentGross)} />
+                <Row label="Employment gross" value={formatCurrency(v(t.employmentGross))} />
               )}
               {t.bikTotal > 0 && (
-                <Row label="Benefits in Kind (P11D)" value={`+${formatCurrency(t.bikTotal)}`} indent />
+                <Row label="Benefits in Kind (P11D)" value={`+${formatCurrency(v(t.bikTotal))}`} indent />
               )}
               {t.selfEmploymentGross > 0 && (
                 <>
-                  <Row label="Self-employment gross" value={formatCurrency(t.selfEmploymentGross)} />
+                  <Row label="Self-employment gross" value={formatCurrency(v(t.selfEmploymentGross))} />
                   {t.selfEmploymentAllowableExpenses > 0 && (
-                    <Row label="Allowable business expenses" value={`−${formatCurrency(t.selfEmploymentAllowableExpenses)}`} indent />
+                    <Row label="Allowable business expenses" value={`−${formatCurrency(v(t.selfEmploymentAllowableExpenses))}`} indent />
                   )}
                 </>
               )}
               {t.rentalGross > 0 && (
                 <>
-                  <Row label="Rental gross" value={formatCurrency(t.rentalGross)} />
+                  <Row label="Rental gross" value={formatCurrency(v(t.rentalGross))} />
                   {t.rentalAllowableExpenses > 0 && (
-                    <Row label="Rental expenses" value={`−${formatCurrency(t.rentalAllowableExpenses)}`} indent />
+                    <Row label="Rental expenses" value={`−${formatCurrency(v(t.rentalAllowableExpenses))}`} indent />
                   )}
                 </>
               )}
               {t.savingsIncome > 0 && (
                 <>
-                  <Row label="Savings / Interest income" value={formatCurrency(t.savingsIncome)} />
+                  <Row label="Savings / Interest income" value={formatCurrency(v(t.savingsIncome))} />
                   {t.savingsAllowanceApplied > 0 && (
-                    <Row label="Personal Savings Allowance" value={`−${formatCurrency(t.savingsAllowanceApplied)}`} indent />
+                    <Row label="Personal Savings Allowance" value={`−${formatCurrency(v(t.savingsAllowanceApplied))}`} indent />
                   )}
                 </>
               )}
               {t.dividendGross > 0 && (
-                <Row label="Dividend income" value={formatCurrency(t.dividendGross)} />
+                <Row label="Dividend income" value={formatCurrency(v(t.dividendGross))} />
               )}
 
               {t.totalDeductions > 0 && (
                 <>
                   <Separator className="my-2" />
-                  <Row label="Pension contributions" value={`−${formatCurrency(t.totalDeductions)}`} />
+                  <Row label="Pension contributions" value={`−${formatCurrency(v(t.totalDeductions))}`} />
                 </>
               )}
 
               <Separator className="my-2" />
-              <Row label="Personal allowance (effective)" value={`−${formatCurrency(t.effectivePersonalAllowance)}`} />
+              <Row label="Personal allowance (effective)" value={`−${formatCurrency(v(t.effectivePersonalAllowance))}`} />
               {t.blindPersonsAllowanceApplied > 0 && (
-                <Row label="incl. Blind Person's Allowance" value={`+${formatCurrency(t.blindPersonsAllowanceApplied)}`} indent />
+                <Row label="incl. Blind Person's Allowance" value={`+${formatCurrency(v(t.blindPersonsAllowanceApplied))}`} indent />
               )}
-              <Row label="Taxable income (non-dividend)" value={formatCurrency(t.taxableNonDividendIncome)} bold />
+              <Row label="Taxable income (non-dividend)" value={formatCurrency(v(t.taxableNonDividendIncome))} bold />
 
               <Separator className="my-2" />
-              <Row label="Income Tax" value={formatCurrency(t.incomeTax)} highlight="red" />
-              {t.class1NI > 0 && <Row label="National Insurance (Class 1)" value={formatCurrency(t.class1NI)} highlight="red" indent />}
-              {t.class2NI > 0 && <Row label="National Insurance (Class 2)" value={formatCurrency(t.class2NI)} highlight="red" indent />}
-              {t.class4NI > 0 && <Row label="National Insurance (Class 4)" value={formatCurrency(t.class4NI)} highlight="red" indent />}
-              {t.dividendTax > 0 && <Row label="Dividend Tax" value={formatCurrency(t.dividendTax)} highlight="red" />}
+              <Row label="Income Tax" value={formatCurrency(v(t.incomeTax))} highlight="red" />
+              {t.class1NI > 0 && <Row label="National Insurance (Class 1)" value={formatCurrency(v(t.class1NI))} highlight="red" indent />}
+              {t.class2NI > 0 && <Row label="National Insurance (Class 2)" value={formatCurrency(v(t.class2NI))} highlight="red" indent />}
+              {t.class4NI > 0 && <Row label="National Insurance (Class 4)" value={formatCurrency(v(t.class4NI))} highlight="red" indent />}
+              {t.dividendTax > 0 && <Row label="Dividend Tax" value={formatCurrency(v(t.dividendTax))} highlight="red" />}
               {t.mortgageTaxCredit > 0 && (
-                <Row label="Mortgage Interest Tax Credit" value={`−${formatCurrency(t.mortgageTaxCredit)}`} highlight="green" />
+                <Row label="Mortgage Interest Tax Credit" value={`−${formatCurrency(v(t.mortgageTaxCredit))}`} highlight="green" />
               )}
-              {t.studentLoan > 0 && <Row label="Student Loan Repayment" value={formatCurrency(t.studentLoan)} highlight="red" />}
+              {t.studentLoan > 0 && <Row label="Student Loan Repayment" value={formatCurrency(v(t.studentLoan))} highlight="red" />}
               {(t.seisRelief > 0 || t.eisRelief > 0 || t.vctRelief > 0) && (
                 <>
-                  {t.seisRelief > 0 && <Row label="SEIS Relief (50%)" value={`−${formatCurrency(t.seisRelief)}`} highlight="green" indent />}
-                  {t.eisRelief > 0 && <Row label="EIS Relief (30%)" value={`−${formatCurrency(t.eisRelief)}`} highlight="green" indent />}
-                  {t.vctRelief > 0 && <Row label="VCT Relief (30%)" value={`−${formatCurrency(t.vctRelief)}`} highlight="green" indent />}
+                  {t.seisRelief > 0 && <Row label="SEIS Relief (50%)" value={`−${formatCurrency(v(t.seisRelief))}`} highlight="green" indent />}
+                  {t.eisRelief > 0 && <Row label="EIS Relief (30%)" value={`−${formatCurrency(v(t.eisRelief))}`} highlight="green" indent />}
+                  {t.vctRelief > 0 && <Row label="VCT Relief (30%)" value={`−${formatCurrency(v(t.vctRelief))}`} highlight="green" indent />}
                 </>
               )}
               {t.hicbc > 0 && (
                 <>
-                  <Row label="Child Benefit received" value={formatCurrency(t.childBenefitAnnual)} highlight="green" />
+                  <Row label="Child Benefit received" value={formatCurrency(v(t.childBenefitAnnual))} highlight="green" />
                   <Row
                     label={`HICBC charge${t.hicbcMarginalRate > 0 ? ` (+${formatPercent(t.hicbcMarginalRate)} marginal)` : ''}`}
-                    value={formatCurrency(t.hicbc)}
+                    value={formatCurrency(v(t.hicbc))}
                     highlight="red"
                     indent
                   />
                 </>
               )}
               {t.childBenefitAnnual > 0 && t.hicbc === 0 && (
-                <Row label="Child Benefit received" value={formatCurrency(t.childBenefitAnnual)} highlight="green" />
+                <Row label="Child Benefit received" value={formatCurrency(v(t.childBenefitAnnual))} highlight="green" />
               )}
 
               <Separator className="my-2" />
-              <Row label="Total Tax &amp; Deductions" value={formatCurrency(t.totalTax)} bold highlight="red" />
-              <Row label="Net Income" value={formatCurrency(t.netIncome)} bold highlight="green" />
+              <Row label="Total Tax &amp; Deductions" value={formatCurrency(v(t.totalTax))} bold highlight="red" />
+              <Row label="Net Income" value={formatCurrency(v(t.netIncome))} bold highlight="green" />
             </CardContent>
           </Card>
 
