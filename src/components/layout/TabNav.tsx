@@ -53,7 +53,7 @@ export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeC
             </button>
           )
         })}
-        <div className="shrink-0 ml-1 mb-1.5 sm:mb-2 flex flex-col gap-1">
+        <div data-welcome="toggles" className="shrink-0 ml-1 mb-1.5 sm:mb-2 flex flex-col gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">

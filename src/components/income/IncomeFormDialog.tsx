@@ -31,6 +31,7 @@ interface BenefitInKindFormItem {
   type: BenefitInKindType
   name: string
   annualValue: string
+  bikRate: string
 }
 
 interface FormState {
@@ -139,6 +140,7 @@ export function IncomeFormDialog() {
             type: i.type,
             name: i.name,
             annualValue: String(i.annualValue),
+            bikRate: i.bikRate != null ? String(i.bikRate) : '',
           })),
         })
       }
@@ -182,6 +184,21 @@ export function IncomeFormDialog() {
       }, 0)
       if (totalSacrifice > gross) errs.grossAmount = 'Total salary sacrifice cannot exceed gross amount'
     }
+    if (form.type === 'employment' && form.benefitsInKindItems.length > 0) {
+      for (const item of form.benefitsInKindItems) {
+        if (item.type === 'companyCar' && (parseFloat(item.annualValue) || 0) > 0 && !item.bikRate) {
+          errs.grossAmount = 'Company car BIK requires a BIK rate (%). Check your P11D form or HMRC.'
+          break
+        }
+        if (item.type === 'companyCar' && item.bikRate) {
+          const rate = parseFloat(item.bikRate)
+          if (isNaN(rate) || rate < 0 || rate > 37) {
+            errs.grossAmount = 'Company car BIK rate must be between 0% and 37%'
+            break
+          }
+        }
+      }
+    }
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -218,6 +235,7 @@ export function IncomeFormDialog() {
             type: i.type,
             name: i.name.trim() || (BIK_TYPE_DEFAULT_NAMES[i.type] ?? i.type),
             annualValue: parseFloat(i.annualValue) || 0,
+            bikRate: i.type === 'companyCar' && i.bikRate ? parseFloat(i.bikRate) || undefined : undefined,
           }))
         : undefined,
     }
@@ -432,7 +450,7 @@ export function IncomeFormDialog() {
                   className="h-7 gap-1 text-xs"
                   onClick={() => set('benefitsInKindItems', [
                     ...form.benefitsInKindItems,
-                    { id: generateId(), type: 'other', name: '', annualValue: '' },
+                    { id: generateId(), type: 'other', name: '', annualValue: '', bikRate: '' },
                   ])}
                 >
                   <Plus className="h-3 w-3" />
@@ -497,7 +515,14 @@ export function IncomeFormDialog() {
                     </div>
                   )}
                   <div className="grid gap-1.5">
-                    <Label className="text-xs">Annual P11D value (£)</Label>
+                    <Label className="text-xs">
+                      {item.type === 'companyCar'
+                        ? 'P11D value — car list price (£)'
+                        : 'Annual taxable value (£)'}
+                      {item.type !== 'companyCar' && (
+                        <HelpTooltip content="The cash equivalent value from your P11D form — this is the amount your employer reports as the taxable benefit (e.g. the insurance premium for private healthcare)." />
+                      )}
+                    </Label>
                     <Input
                       className="h-8"
                       type="number"
@@ -509,6 +534,31 @@ export function IncomeFormDialog() {
                       ))}
                     />
                   </div>
+                  {item.type === 'companyCar' && (
+                    <div className="grid gap-1.5">
+                      <Label className="text-xs">
+                        BIK rate (%)
+                        <HelpTooltip content="The company car BIK rate depends on the car's CO2 emissions and fuel type. Check your P11D form or use the HMRC company car tax calculator to find your rate (typically 2% for electric up to 37% for high-emission vehicles)." />
+                      </Label>
+                      <Input
+                        className="h-8"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        placeholder="e.g. 25"
+                        value={item.bikRate}
+                        onChange={e => set('benefitsInKindItems', form.benefitsInKindItems.map((it, i) =>
+                          i === idx ? { ...it, bikRate: e.target.value } : it
+                        ))}
+                      />
+                      {item.annualValue && item.bikRate && (
+                        <p className="text-xs text-muted-foreground">
+                          Taxable benefit: £{((parseFloat(item.annualValue) || 0) * (parseFloat(item.bikRate) || 0) / 100).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} / year
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

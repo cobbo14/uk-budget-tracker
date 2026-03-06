@@ -18,6 +18,8 @@ export interface BenefitInKindItem {
   type: BenefitInKindType
   name: string
   annualValue: number
+  /** Company car BIK rate (%) based on CO2 emissions. Only used when type is 'companyCar'. */
+  bikRate?: number
 }
 
 export type ExpenseCategory = string

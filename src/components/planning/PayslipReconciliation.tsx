@@ -23,7 +23,7 @@ export function PayslipReconciliation() {
     },
     {
       show: taxSummary.bikTotal > 0,
-      text: `Benefits in Kind (${formatCurrency(taxSummary.bikTotal)}/yr P11D value) increase your tax code adjustment — the tax collection timing differs from Self Assessment.`,
+      text: `Benefits in Kind (${formatCurrency(taxSummary.bikTotal)}/yr taxable value) increase your tax code adjustment — the tax collection timing differs from Self Assessment.`,
     },
     {
       show: (settings.taxCode ?? '') !== '',

@@ -68,7 +68,11 @@ export function calculateTax(
   const effectiveEmploymentGross = Math.max(0, employmentGross - totalSalarySacrifice)
   // --- Benefits in Kind (P11D) ---
   const totalBIK = employmentSources.reduce((sum, s) =>
-    sum + (s.benefitsInKind ?? []).reduce((a, i) => a + i.annualValue, 0), 0)
+    sum + (s.benefitsInKind ?? []).reduce((a, i) => {
+      // Company car: taxable benefit = P11D value × BIK rate %
+      if (i.type === 'companyCar' && i.bikRate != null) return a + i.annualValue * (i.bikRate / 100)
+      return a + i.annualValue
+    }, 0), 0)
   // effectiveEmploymentGrossForIT: used for Income Tax (BIK adds to taxable income)
   const effectiveEmploymentGrossForIT = effectiveEmploymentGross + totalBIK
   const selfEmploymentGross = selfEmploymentSources.reduce((sum, s) => sum + s.grossAmount, 0)

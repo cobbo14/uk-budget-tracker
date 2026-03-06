@@ -15,6 +15,7 @@ import { CookieConsent } from '@/components/CookieConsent'
 import { useBudget } from '@/hooks/useBudget'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { SearchDialog } from '@/components/search/SearchDialog'
+import { WelcomeGuide } from '@/components/welcome/WelcomeGuide'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import type { TabId } from '@/components/layout/TabNav'
@@ -170,6 +171,7 @@ function AppContent() {
           </Suspense>
         </ErrorBoundary>
         <CookieConsent />
+        <WelcomeGuide />
       </AppShell>
       <SearchDialog
         open={searchOpen}

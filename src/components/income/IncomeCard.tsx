@@ -33,7 +33,10 @@ export function IncomeCard({ source }: IncomeCardProps) {
 
   const totalSacrifice = (source.salarySacrificeItems ?? []).reduce((sum, i) =>
     sum + (i.amountType === 'percentage' ? source.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
-  const totalBIK = (source.benefitsInKind ?? []).reduce((sum, i) => sum + i.annualValue, 0)
+  const totalBIK = (source.benefitsInKind ?? []).reduce((sum, i) => {
+    if (i.type === 'companyCar' && i.bikRate != null) return sum + i.annualValue * (i.bikRate / 100)
+    return sum + i.annualValue
+  }, 0)
 
   return (
     <div className="flex items-start justify-between rounded-lg border bg-card p-3 sm:p-4 sm:items-center">
@@ -78,9 +81,13 @@ export function IncomeCard({ source }: IncomeCardProps) {
         )}
         {totalBIK > 0 && source.benefitsInKind && source.benefitsInKind.length > 0 && (
           <div className="mt-0.5 text-xs text-muted-foreground/70">
-            {source.benefitsInKind.map(i => (
-              <span key={i.id} className="mr-2">{i.name}: {formatCurrency(i.annualValue)}</span>
-            ))}
+            {source.benefitsInKind.map(i => {
+              if (i.type === 'companyCar' && i.bikRate != null) {
+                const taxable = i.annualValue * (i.bikRate / 100)
+                return <span key={i.id} className="mr-2">{i.name}: {formatCurrency(i.annualValue)} × {i.bikRate}% = {formatCurrency(taxable)}</span>
+              }
+              return <span key={i.id} className="mr-2">{i.name}: {formatCurrency(i.annualValue)}</span>
+            })}
           </div>
         )}
       </div>
