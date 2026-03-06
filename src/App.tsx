@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ProfilesProvider, useProfiles } from '@/store/ProfilesContext'
 import { TourProvider } from '@/components/tour/TourContext'
@@ -15,6 +15,8 @@ import { CookieConsent } from '@/components/CookieConsent'
 import { useBudget } from '@/hooks/useBudget'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { SearchDialog } from '@/components/search/SearchDialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import type { TabId } from '@/components/layout/TabNav'
 
 // Lazy-load the two heaviest views for better initial bundle size
@@ -50,6 +52,7 @@ function AppContent() {
     () => localStorage.getItem('employeeMode') !== 'false',
   )
   const [searchOpen, setSearchOpen] = useState(false)
+  const [soleTraderBetaOpen, setSoleTraderBetaOpen] = useState(false)
   const { canUndo, undo } = useBudget()
 
   useEffect(() => {
@@ -130,6 +133,14 @@ function AppContent() {
     }
   }
 
+  const handleEmployeeModeChange = useCallback((enabled: boolean) => {
+    setEmployeeMode(enabled)
+    // Show beta warning the first time the user switches to Sole Trader mode
+    if (!enabled && localStorage.getItem('soleTraderBetaDismissed') !== 'true') {
+      setSoleTraderBetaOpen(true)
+    }
+  }, [])
+
   function handleBudgetingModeChange(enabled: boolean) {
     setBudgetingMode(enabled)
     if (enabled && (activeTab === 'planning' || activeTab === 'gains')) {
@@ -139,7 +150,7 @@ function AppContent() {
 
   return (
     <>
-      <AppShell activeTab={activeTab} onTabChange={handleTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={handleBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={setEmployeeMode} onSearchOpen={() => setSearchOpen(true)}>
+      <AppShell activeTab={activeTab} onTabChange={handleTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={handleBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={handleEmployeeModeChange} onSearchOpen={() => setSearchOpen(true)}>
         <ErrorBoundary>
           <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
             {legalPage ? (
@@ -166,6 +177,27 @@ function AppContent() {
         onNavigate={handleSearchNavigate}
         budgetingMode={budgetingMode}
       />
+      <Dialog open={soleTraderBetaOpen} onOpenChange={setSoleTraderBetaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sole Trader Mode — Beta</DialogTitle>
+            <DialogDescription>
+              This feature is still in beta and is incomplete. Please don&rsquo;t
+              get angry on Reddit.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                localStorage.setItem('soleTraderBetaDismissed', 'true')
+                setSoleTraderBetaOpen(false)
+              }}
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

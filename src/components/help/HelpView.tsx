@@ -9,6 +9,7 @@ import {
   Users,
   BookOpen,
   ToggleRight,
+  Keyboard,
 } from 'lucide-react'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -181,7 +182,13 @@ export function HelpView() {
         <p>
           Log your regular outgoings by category &mdash; housing, transport,
           food, utilities, and more. Enter amounts as weekly, monthly, or annual
-          figures and the app converts them automatically.
+          figures and the app converts them automatically. You can also create
+          custom categories and set contract renewal dates to get reminders
+          when bills are coming up for renewal.
+        </p>
+        <p>
+          If you use multiple profiles, expense splitting lets you share costs
+          across profiles with customisable percentage splits.
         </p>
         <p>
           The expenses view also includes tools to model energy and broadband
@@ -202,17 +209,35 @@ export function HelpView() {
             suggestions to stay below each threshold.
           </li>
           <li>
+            <strong>Annual Allowance panel</strong> &mdash; checks your pension
+            contributions against the Annual Allowance (including tapered AA
+            for high earners) with carry-forward from up to three prior years.
+          </li>
+          <li>
             <strong>Pension optimiser chart</strong> &mdash; shows how increasing
             pension contributions affects your take-home pay, highlighting where
             contributions unlock extra tax relief.
           </li>
           <li>
-            <strong>What-If calculator</strong> &mdash; experiment with pay
-            rises, bonus scenarios, or different pension contribution levels.
+            <strong>Tax year comparison</strong> &mdash; side-by-side comparison
+            of your tax position under current and next year&rsquo;s rules.
           </li>
           <li>
-            <strong>Payments on Account</strong> &mdash; estimate your
-            self-assessment payments on account for the following tax year.
+            <strong>Payslip reconciliation</strong> &mdash; enter your tax code
+            and actual take-home pay to check them against the app&rsquo;s
+            calculations.
+          </li>
+          <li>
+            <strong>Partner &amp; household panel</strong> &mdash; add your
+            partner&rsquo;s income for a combined household view, Marriage
+            Allowance recommendations, and Child Benefit optimal-claimer
+            suggestions.
+          </li>
+          <li>
+            <strong>What-If calculator</strong> &mdash; experiment with pay
+            rises, bonus scenarios, Scottish taxpayer status, or different
+            pension contribution levels and see the real-time impact on your
+            tax and net income.
           </li>
         </ul>
       </Section>
@@ -228,16 +253,54 @@ export function HelpView() {
           Business Asset Disposal Relief (BADR), formerly Entrepreneurs&rsquo;
           Relief, is supported for qualifying disposals at the reduced 10% rate.
         </p>
+        <p>
+          The Gains tab also includes an <strong>ISA Allowance Tracker</strong>{' '}
+          &mdash; record contributions across Cash ISA, Stocks &amp; Shares ISA,
+          Lifetime ISA (with the 25% government bonus), and Innovative Finance
+          ISA against the £20,000 annual limit.
+        </p>
       </Section>
 
       <Section icon={Settings} title="Settings &amp; Configuration" tabHash="settings">
         <p>
           Configure your personal tax details: tax year, Scottish taxpayer
-          status, pension contributions (relief at source or salary sacrifice),
-          student loan plan, Gift Aid donations, Marriage Allowance, Child
-          Benefit, and more. All settings feed directly into the tax
-          calculations across every tab.
+          status, pension contributions (employee, employer, and SIPP), student
+          loan plan, Gift Aid donations, Marriage Allowance, Child Benefit, and
+          more. All settings feed directly into the tax calculations across
+          every tab.
         </p>
+        <p>
+          Additional settings include EIS/SEIS/VCT investment tax relief,
+          Blind Person&rsquo;s Allowance, PAYE tax code, BADR lifetime
+          allowance, Basis Period Reform transitional profit, partner income,
+          and Payments on Account.
+        </p>
+        <p>
+          <strong>Data management:</strong> Export your data as JSON (full
+          backup) or CSV (spreadsheet-friendly) and import it back at any
+          time. Your data never leaves your device.
+        </p>
+      </Section>
+
+      <Section icon={Keyboard} title="Tips &amp; Shortcuts">
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Search (⌘K / Ctrl+K)</strong> &mdash; quickly jump to any
+            feature, setting, or guide from anywhere in the app.
+          </li>
+          <li>
+            <strong>Undo (⌘Z / Ctrl+Z)</strong> &mdash; undo your last change
+            across income, expenses, gains, and settings.
+          </li>
+          <li>
+            <strong>Dark mode</strong> &mdash; toggle between light and dark
+            themes using the button in the header.
+          </li>
+          <li>
+            <strong>Budgeting mode</strong> &mdash; simplify the interface by
+            hiding the Planning and Gains tabs. Toggle it in the navigation bar.
+          </li>
+        </ul>
       </Section>
 
       <Section icon={BookOpen} title="Tax Guides" tabHash="guide">
@@ -318,6 +381,36 @@ export function HelpView() {
               UK Tax Year Dates &amp; Deadlines
             </a>{' '}
             &mdash; Self Assessment calendar, penalties, and year-end planning.
+          </li>
+          <li>
+            <a href="#guide/pension-annual-allowance-guide" className="text-emerald-600 font-medium hover:underline">
+              Pension Annual Allowance
+            </a>{' '}
+            &mdash; limits, tapered allowance, MPAA, carry-forward, and the AA tax charge.
+          </li>
+          <li>
+            <a href="#guide/inheritance-tax-guide" className="text-emerald-600 font-medium hover:underline">
+              Inheritance Tax
+            </a>{' '}
+            &mdash; IHT rates, nil-rate band, the 7-year rule, and planning strategies.
+          </li>
+          <li>
+            <a href="#guide/rental-income-tax-guide" className="text-emerald-600 font-medium hover:underline">
+              Rental Income Tax
+            </a>{' '}
+            &mdash; Section 24 mortgage interest restriction, allowable expenses, and Rent-a-Room relief.
+          </li>
+          <li>
+            <a href="#guide/crypto-tax-guide" className="text-emerald-600 font-medium hover:underline">
+              Crypto Tax
+            </a>{' '}
+            &mdash; HMRC rules on disposals, staking, mining, and record-keeping.
+          </li>
+          <li>
+            <a href="#guide/national-insurance-guide" className="text-emerald-600 font-medium hover:underline">
+              National Insurance Rates
+            </a>{' '}
+            &mdash; employee, employer, and self-employed NI rates and State Pension qualification.
           </li>
         </ul>
       </Section>
