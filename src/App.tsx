@@ -10,6 +10,8 @@ import { SettingsView } from '@/components/settings/SettingsView'
 import { GainsView } from '@/components/gains/GainsView'
 import { HelpView } from '@/components/help/HelpView'
 import { GuideView } from '@/components/guide/GuideView'
+import { LegalView } from '@/components/legal/LegalView'
+import { CookieConsent } from '@/components/CookieConsent'
 import { useBudget } from '@/hooks/useBudget'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import type { TabId } from '@/components/layout/TabNav'
@@ -19,15 +21,24 @@ const SummaryView = lazy(() => import('@/components/summary/SummaryView').then(m
 const PlanningView = lazy(() => import('@/components/planning/PlanningView').then(m => ({ default: m.PlanningView })))
 
 const VALID_TABS: TabId[] = ['summary', 'income', 'gains', 'expenses', 'planning', 'settings', 'help', 'guide']
+const LEGAL_PAGES = ['disclaimer', 'privacy', 'terms'] as const
 
 function getTabFromHash(): TabId {
   const hash = window.location.hash.slice(1)
   if (hash === 'guide' || hash.startsWith('guide/')) return 'guide'
+  if (LEGAL_PAGES.includes(hash as typeof LEGAL_PAGES[number])) return 'summary' // legal pages render independently
   return VALID_TABS.includes(hash as TabId) ? (hash as TabId) : 'summary'
+}
+
+function getLegalPageFromHash(): typeof LEGAL_PAGES[number] | null {
+  const hash = window.location.hash.slice(1)
+  if (LEGAL_PAGES.includes(hash as typeof LEGAL_PAGES[number])) return hash as typeof LEGAL_PAGES[number]
+  return null
 }
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>(getTabFromHash)
+  const [legalPage, setLegalPage] = useState<typeof LEGAL_PAGES[number] | null>(getLegalPageFromHash)
   const [showMonthly, setShowMonthly] = useState(
     () => localStorage.getItem('showMonthly') !== 'false',
   )
@@ -36,6 +47,7 @@ function AppContent() {
   useEffect(() => {
     function handleHashChange() {
       setActiveTab(getTabFromHash())
+      setLegalPage(getLegalPageFromHash())
     }
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
@@ -82,16 +94,23 @@ function AppContent() {
     <AppShell activeTab={activeTab} onTabChange={handleTabChange}>
       <ErrorBoundary>
         <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
-          {activeTab === 'summary' && <SummaryView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
-          {activeTab === 'income' && <IncomeView />}
-          {activeTab === 'gains' && <GainsView />}
-          {activeTab === 'expenses' && <ExpensesView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
-          {activeTab === 'planning' && <PlanningView />}
-          {activeTab === 'settings' && <SettingsView />}
-          {activeTab === 'help' && <HelpView />}
-          {activeTab === 'guide' && <GuideView />}
+          {legalPage ? (
+            <LegalView page={legalPage} />
+          ) : (
+            <>
+              {activeTab === 'summary' && <SummaryView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
+              {activeTab === 'income' && <IncomeView />}
+              {activeTab === 'gains' && <GainsView />}
+              {activeTab === 'expenses' && <ExpensesView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
+              {activeTab === 'planning' && <PlanningView />}
+              {activeTab === 'settings' && <SettingsView />}
+              {activeTab === 'help' && <HelpView />}
+              {activeTab === 'guide' && <GuideView />}
+            </>
+          )}
         </Suspense>
       </ErrorBoundary>
+      <CookieConsent />
     </AppShell>
   )
 }

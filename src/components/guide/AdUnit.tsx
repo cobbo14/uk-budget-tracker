@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { getConsentStatus } from '@/lib/cookieConsent'
 
 declare global {
   interface Window {
@@ -16,6 +17,7 @@ export function AdUnit({ slot, format = 'auto' }: AdUnitProps) {
 
   useEffect(() => {
     if (pushed.current) return
+    if (getConsentStatus() !== 'granted') return
     pushed.current = true
     try {
       ;(window.adsbygoogle = window.adsbygoogle || []).push({})
@@ -23,6 +25,8 @@ export function AdUnit({ slot, format = 'auto' }: AdUnitProps) {
       // AdSense not loaded (e.g. ad blocker)
     }
   }, [])
+
+  if (getConsentStatus() !== 'granted') return null
 
   return (
     <div className="my-6">

@@ -3,6 +3,7 @@ import { join } from 'path'
 
 const DIST = join(import.meta.dirname, '..', 'dist')
 const BASE_URL = 'https://uk-budget-tracker.com'
+const TODAY = new Date().toISOString().slice(0, 10)
 
 const PAGES = [
   { hash: 'guide', path: 'guide', title: 'UK Tax Guides — Income Tax, Pension, CGT — UK Budget Tracker', description: 'In-depth UK tax guides covering income tax rates, salary sacrifice, the £100k tax trap, and capital gains tax for 2024/25, 2025/26, and 2026/27.' },
@@ -110,7 +111,7 @@ function prerender() {
         description: page.description,
         url: canonicalUrl,
         datePublished: '2025-04-06',
-        dateModified: '2026-03-05',
+        dateModified: TODAY,
         author: { '@type': 'Organization', name: 'UK Budget Tracker' },
         publisher: { '@type': 'Organization', name: 'UK Budget Tracker', url: BASE_URL + '/' },
         mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
