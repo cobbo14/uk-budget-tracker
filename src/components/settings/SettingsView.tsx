@@ -28,6 +28,7 @@ const STUDENT_LOAN_LABELS: Record<StudentLoanPlan, string> = {
 export function SettingsView() {
   const { state, settings, dispatch, rules, taxSummary, incomeSources } = useBudget()
   const employeeMode = useEmployeeMode()
+  const budgetingMode = localStorage.getItem('budgetingMode') === 'true'
   const years = getAvailableTaxYears()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -546,8 +547,8 @@ export function SettingsView() {
         </CardContent>
       </Card>
 
-      {/* Business Asset Disposal Relief */}
-      <Card data-search="settings-badr">
+      {/* Business Asset Disposal Relief — hidden in budgeting mode */}
+      {!budgetingMode && <Card data-search="settings-badr">
         <CardHeader>
           <CardTitle className="text-base">Business Asset Disposal Relief (BADR)</CardTitle>
           <CardDescription>
@@ -575,7 +576,7 @@ export function SettingsView() {
             Enter total BADR claimed in previous years. The remaining allowance is £{(1_000_000 - (settings.badrLifetimeUsed ?? 0)).toLocaleString()}.
           </p>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Basis Period Reform — only shown when self-employment income present and not in employee mode */}
       {!employeeMode && incomeSources.some(s => s.type === 'self-employment') && (
@@ -606,8 +607,8 @@ export function SettingsView() {
         </Card>
       )}
 
-      {/* Household */}
-      <Card data-search="settings-household">
+      {/* Household — hidden in budgeting mode */}
+      {!budgetingMode && <Card data-search="settings-household">
         <CardHeader>
           <CardTitle className="text-base">Household</CardTitle>
           <CardDescription>
@@ -628,7 +629,7 @@ export function SettingsView() {
             />
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Data management */}
       <Card data-search="settings-data">

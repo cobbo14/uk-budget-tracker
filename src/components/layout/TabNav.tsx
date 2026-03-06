@@ -53,26 +53,26 @@ export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeC
           )
         })}
         <div className="shrink-0 ml-1 mb-1.5 sm:mb-2 flex flex-col gap-1">
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+          <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">
+            <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
               <span className="hidden sm:inline">{employeeMode ? 'Employee' : 'Sole Trader'}</span>
               <span className="sm:hidden">{employeeMode ? 'E' : 'ST'}</span>
             </span>
             <Switch
               checked={!employeeMode}
               onCheckedChange={v => onEmployeeModeChange(!v)}
-              className="data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-emerald-500"
+              className="shrink-0 data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-emerald-500"
             />
           </label>
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-              <span className="hidden sm:inline">{budgetingMode ? 'Budgeting' : 'Standard'}</span>
-              <span className="sm:hidden">{budgetingMode ? 'B' : 'S'}</span>
+          <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">
+            <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
+              <span className="hidden sm:inline">{budgetingMode ? 'Budgeting' : 'Full Features'}</span>
+              <span className="sm:hidden">{budgetingMode ? 'B' : 'FF'}</span>
             </span>
             <Switch
               checked={budgetingMode}
               onCheckedChange={onBudgetingModeChange}
-              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-emerald-500"
+              className="shrink-0 data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-emerald-500"
             />
           </label>
         </div>
