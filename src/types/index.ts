@@ -53,6 +53,8 @@ export interface IncomeSource {
   fromISA?: boolean
   // Bond gains: complete years held (for top-slicing relief)
   yearsHeld?: number
+  // Employment: one-off bonus (annual, on top of base salary)
+  bonus?: number
   // Employment: salary sacrifice
   salarySacrificeItems?: SalarySacrificeItem[]
   // Employment: benefits in kind (P11D)

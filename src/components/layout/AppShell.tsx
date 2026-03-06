@@ -19,11 +19,11 @@ export function AppShell({ activeTab, onTabChange, budgetingMode, onBudgetingMod
     <div className="min-h-screen bg-background flex flex-col">
       <Header onSearchOpen={onSearchOpen} />
       <TabNav activeTab={activeTab} onTabChange={onTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={onBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={onEmployeeModeChange} />
-      <main className="mx-auto w-full max-w-4xl px-4 py-6 flex-1">
+      <main className="mx-auto w-full max-w-5xl px-4 py-6 flex-1">
         {children}
       </main>
       <footer className="border-t bg-muted/40 mt-8">
-        <div className="mx-auto max-w-4xl px-4 py-6 space-y-3">
+        <div className="mx-auto max-w-5xl px-4 py-6 space-y-3">
           <p className="text-xs text-muted-foreground">
             UK Budget Tracker is a free educational tool. It does not constitute financial, tax, or legal advice.
             Always consult a qualified tax adviser before making decisions based on these calculations.

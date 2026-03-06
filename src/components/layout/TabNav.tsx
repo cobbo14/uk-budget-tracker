@@ -2,6 +2,7 @@ import { LayoutDashboard, Wallet, TrendingUp, ShoppingCart, Lightbulb, Settings,
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 export type TabId = 'summary' | 'income' | 'gains' | 'expenses' | 'planning' | 'settings' | 'help' | 'guide'
 
@@ -32,7 +33,7 @@ export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeC
 
   return (
     <nav data-tour="tab-nav" className="sticky top-14 z-30 border-b bg-background">
-      <div className="mx-auto max-w-4xl px-4 flex items-end">
+      <div className="mx-auto max-w-5xl px-4 flex items-end">
         {visibleTabs.map(tab => {
           const Icon = tab.icon
           return (
@@ -53,28 +54,38 @@ export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeC
           )
         })}
         <div className="shrink-0 ml-1 mb-1.5 sm:mb-2 flex flex-col gap-1">
-          <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">
-            <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
-              <span className="hidden sm:inline">{employeeMode ? 'Employee' : 'Sole Trader'}</span>
-              <span className="sm:hidden">{employeeMode ? 'E' : 'ST'}</span>
-            </span>
-            <Switch
-              checked={!employeeMode}
-              onCheckedChange={v => onEmployeeModeChange(!v)}
-              className="shrink-0 data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-emerald-500"
-            />
-          </label>
-          <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">
-            <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
-              <span className="hidden sm:inline">{budgetingMode ? 'Budgeting' : 'Full Features'}</span>
-              <span className="sm:hidden">{budgetingMode ? 'B' : 'FF'}</span>
-            </span>
-            <Switch
-              checked={budgetingMode}
-              onCheckedChange={onBudgetingModeChange}
-              className="shrink-0 data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-emerald-500"
-            />
-          </label>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
+                  <span className="hidden sm:inline">{employeeMode ? 'Employee' : 'Sole Trader'}</span>
+                  <span className="sm:hidden">{employeeMode ? 'Emp' : 'Sole'}</span>
+                </span>
+                <Switch
+                  checked={!employeeMode}
+                  onCheckedChange={v => onEmployeeModeChange(!v)}
+                  className="shrink-0 data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-emerald-500"
+                />
+              </label>
+            </TooltipTrigger>
+            <TooltipContent>{employeeMode ? 'Employee mode' : 'Sole Trader mode'}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
+                  <span className="hidden sm:inline">{budgetingMode ? 'Budgeting' : 'Full Features'}</span>
+                  <span className="sm:hidden">{budgetingMode ? 'Budget' : 'Full'}</span>
+                </span>
+                <Switch
+                  checked={budgetingMode}
+                  onCheckedChange={onBudgetingModeChange}
+                  className="shrink-0 data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-emerald-500"
+                />
+              </label>
+            </TooltipTrigger>
+            <TooltipContent>{budgetingMode ? 'Budgeting mode' : 'Full Features mode'}</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </nav>

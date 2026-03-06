@@ -45,6 +45,9 @@ export function IncomeCard({ source }: IncomeCardProps) {
         </div>
         <div className="mt-1 text-sm text-muted-foreground flex flex-wrap gap-x-1.5">
           <span>Gross: {formatCurrency(source.grossAmount)}</span>
+          {source.bonus != null && source.bonus > 0 && (
+            <span>· Bonus: {formatCurrency(source.bonus)}</span>
+          )}
           {source.type === 'self-employment' && source.allowableExpenses != null && source.allowableExpenses > 0 && (
             <><span>· Expenses: {formatCurrency(source.allowableExpenses)}</span><span>· Net: {formatCurrency(netGross)}</span></>
           )}
@@ -85,18 +88,18 @@ export function IncomeCard({ source }: IncomeCardProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10"
+          className="h-8 w-8 sm:h-10 sm:w-10"
           onClick={() => dispatch({ type: OPEN_EDIT_INCOME_DIALOG, payload: source.id })}
         >
-          <Pencil className="h-4 w-4" />
+          <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 text-destructive hover:text-destructive"
+          className="h-8 w-8 sm:h-10 sm:w-10 text-destructive hover:text-destructive"
           onClick={() => setConfirmOpen(true)}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
       </div>
       <ConfirmDialog

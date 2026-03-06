@@ -37,6 +37,7 @@ interface FormState {
   name: string
   type: IncomeType
   grossAmount: string
+  bonus: string
   allowableExpenses: string
   mortgageInterestAnnual: string
   rentalExpenses: string
@@ -50,6 +51,7 @@ const DEFAULT_FORM: FormState = {
   name: '',
   type: 'employment',
   grossAmount: '',
+  bonus: '',
   allowableExpenses: '',
   mortgageInterestAnnual: '',
   rentalExpenses: '',
@@ -119,6 +121,7 @@ export function IncomeFormDialog() {
           name: source.name,
           type: source.type,
           grossAmount: String(source.grossAmount),
+          bonus: source.bonus != null && source.bonus > 0 ? String(source.bonus) : '',
           allowableExpenses: source.allowableExpenses != null ? String(source.allowableExpenses) : '',
           mortgageInterestAnnual: source.mortgageInterestAnnual != null ? String(source.mortgageInterestAnnual) : '',
           rentalExpenses: source.rentalExpenses != null ? String(source.rentalExpenses) : '',
@@ -190,6 +193,8 @@ export function IncomeFormDialog() {
       name: form.name.trim(),
       type: form.type,
       grossAmount: parseFloat(form.grossAmount) || 0,
+      bonus: form.type === 'employment' && form.bonus
+        ? parseFloat(form.bonus) : undefined,
       allowableExpenses: form.type === 'self-employment' && form.allowableExpenses
         ? parseFloat(form.allowableExpenses) : undefined,
       mortgageInterestAnnual: form.type === 'rental' && form.mortgageInterestAnnual
@@ -276,6 +281,24 @@ export function IncomeFormDialog() {
             />
             {errors.grossAmount && <p className="text-xs text-destructive">{errors.grossAmount}</p>}
           </div>
+
+          {/* Employment: one-off bonus */}
+          {form.type === 'employment' && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="income-bonus">
+                One-Off Bonus (£/year, optional)
+                <HelpTooltip content="A one-off bonus on top of your base salary. Taxed as regular employment income (Income Tax + Class 1 NI). Salary sacrifice percentages apply to base salary only." />
+              </Label>
+              <Input
+                id="income-bonus"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={form.bonus}
+                onChange={e => set('bonus', e.target.value)}
+              />
+            </div>
+          )}
 
           {/* Employment: salary sacrifice benefits */}
           {form.type === 'employment' && (

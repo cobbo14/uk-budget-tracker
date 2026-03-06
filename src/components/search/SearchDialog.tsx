@@ -89,7 +89,7 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
           </kbd>
         </div>
 
-        <div ref={listRef} className="max-h-72 overflow-y-auto py-1">
+        <div ref={listRef} className="max-h-[60vh] sm:max-h-72 overflow-y-auto py-1">
           {filtered.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-6">No results found</p>
           )}

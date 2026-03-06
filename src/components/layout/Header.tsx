@@ -45,7 +45,7 @@ export function Header({ onSearchOpen }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur overflow-x-hidden">
-      <div className="mx-auto flex h-14 max-w-4xl items-center gap-1 sm:gap-2 px-3 sm:px-4">
+      <div className="mx-auto flex h-14 max-w-5xl items-center gap-1 sm:gap-2 px-3 sm:px-4">
         <PoundSterling className="h-5 w-5 text-emerald-600 shrink-0" />
         <span className="font-semibold text-base sm:text-lg sm:whitespace-nowrap">UK Budget Tracker</span>
         <div className="ml-1 sm:ml-2 min-w-0 flex items-center gap-1 sm:gap-1.5">
@@ -70,7 +70,7 @@ export function Header({ onSearchOpen }: HeaderProps) {
           )}
           {saveError && (
             <span className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" /> Storage full
+              <AlertCircle className="h-3 w-3" /> Storage full — <a href="#settings" className="underline">export data</a>
             </span>
           )}
           <button
@@ -88,11 +88,11 @@ export function Header({ onSearchOpen }: HeaderProps) {
             href="https://ko-fi.com/cobbo14"
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-md p-2 text-xs text-pink-400 hover:text-pink-500 hover:bg-accent transition-colors flex items-center gap-1"
+            className="hidden sm:flex rounded-md p-2 text-xs text-pink-400 hover:text-pink-500 hover:bg-accent transition-colors items-center gap-1"
             aria-label="Support on Ko-fi"
           >
             <Heart className="h-4 w-4" />
-            <span className="hidden sm:inline">Show Some Love</span>
+            <span>Show Some Love</span>
           </a>
           <a
             href="https://github.com/cobbo14/uk-budget-tracker/issues/new"

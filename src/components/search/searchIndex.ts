@@ -20,7 +20,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { id: 'upcoming-renewals', label: 'Upcoming Renewals', description: 'Bills and subscriptions renewing soon', keywords: ['renewal', 'expiry', 'bills', 'subscription'], tab: 'summary' },
 
   // ── Income ──
-  { id: 'income-employment', label: 'Employment Income (PAYE)', description: 'Add salary, wages, or employment income', keywords: ['salary', 'paye', 'employment', 'wages', 'job'], tab: 'income' },
+  { id: 'income-employment', label: 'Employment Income (PAYE)', description: 'Add salary, wages, or employment income', keywords: ['salary', 'paye', 'employment', 'wages', 'job', 'bonus'], tab: 'income' },
   { id: 'income-self-employment', label: 'Self-Employment Income', description: 'Freelance or sole trader income', keywords: ['freelance', 'self employed', 'sole trader', 'business', 'self-employment'], tab: 'income' },
   { id: 'income-rental', label: 'Rental Income', description: 'Property and landlord income', keywords: ['property', 'landlord', 'rent', 'rental'], tab: 'income' },
   { id: 'income-dividends', label: 'Dividend Income', description: 'Dividends from shares or a company', keywords: ['dividends', 'shares', 'company director'], tab: 'income' },

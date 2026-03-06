@@ -93,7 +93,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
       </div>
 
       {/* Headline cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <HeadlineCard
           label="Gross Income"
           monthly={t.grossIncome / 12}
@@ -137,6 +137,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               <CardTitle className="text-base">Tax Breakdown</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Income</p>
               {t.employmentGross > 0 && (
                 <Row label="Employment gross" value={formatCurrency(v(t.employmentGross))} />
               )}
@@ -174,11 +175,13 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               {t.totalDeductions > 0 && (
                 <>
                   <Separator className="my-2" />
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Deductions</p>
                   <Row label="Pension contributions" value={`−${formatCurrency(v(t.totalDeductions))}`} />
                 </>
               )}
 
               <Separator className="my-2" />
+              {!t.totalDeductions && <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Deductions</p>}
               <Row label="Personal allowance (effective)" value={`−${formatCurrency(v(t.effectivePersonalAllowance))}`} />
               {t.blindPersonsAllowanceApplied > 0 && (
                 <Row label="incl. Blind Person's Allowance" value={`+${formatCurrency(v(t.blindPersonsAllowanceApplied))}`} indent />
@@ -186,6 +189,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               <Row label="Taxable income (non-dividend)" value={formatCurrency(v(t.taxableNonDividendIncome))} bold />
 
               <Separator className="my-2" />
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Tax & National Insurance</p>
               <Row label="Income Tax" value={formatCurrency(v(t.incomeTax))} highlight="red" />
               {t.class1NI > 0 && <Row label="National Insurance (Class 1)" value={formatCurrency(v(t.class1NI))} highlight="red" indent />}
               {t.class2NI > 0 && <Row label="National Insurance (Class 2)" value={formatCurrency(v(t.class2NI))} highlight="red" indent />}

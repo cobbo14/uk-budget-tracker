@@ -91,18 +91,18 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10"
+          className="h-8 w-8 sm:h-10 sm:w-10"
           onClick={() => dispatch({ type: OPEN_EDIT_EXPENSE_DIALOG, payload: expense.id })}
         >
-          <Pencil className="h-4 w-4" />
+          <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 text-destructive hover:text-destructive"
+          className="h-8 w-8 sm:h-10 sm:w-10 text-destructive hover:text-destructive"
           onClick={() => isSplit ? setSplitDeleteOpen(true) : setConfirmOpen(true)}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </Button>
       </div>
 
