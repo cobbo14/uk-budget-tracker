@@ -43,14 +43,20 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Expenses</h2>
-          <p className="text-sm text-muted-foreground">
-            Total annual: {formatCurrency(totalAnnualExpenses)} · Monthly avg: {formatCurrency(totalAnnualExpenses / 12)}
-          </p>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">Expenses</h2>
+            <p className="text-sm text-muted-foreground">
+              Total annual: {formatCurrency(totalAnnualExpenses)} · Monthly avg: {formatCurrency(totalAnnualExpenses / 12)}
+            </p>
+          </div>
+          <Button data-tour="add-expense-btn" onClick={() => dispatch({ type: OPEN_ADD_EXPENSE_DIALOG })}>
+            <Plus className="h-4 w-4" />
+            Add Expense
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-md border overflow-hidden text-sm">
             <button
               className={`px-3 py-1.5 ${viewMode === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
@@ -68,13 +74,13 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
           {hasEnergyExpenses && (
             <Button variant="outline" size="sm" onClick={() => setEnergyCompareOpen(true)}>
               <Zap className="h-4 w-4" />
-              Compare Energy
+              <span className="hidden sm:inline">Compare</span> Energy
             </Button>
           )}
           {hasBroadbandExpenses && (
             <Button variant="outline" size="sm" onClick={() => setBroadbandCompareOpen(true)}>
               <Wifi className="h-4 w-4" />
-              Compare Broadband
+              <span className="hidden sm:inline">Compare</span> Broadband
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={() => setManageOpen(true)}>
@@ -85,15 +91,11 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
             <Undo2 className="h-4 w-4" />
             Undo
           </Button>
-          <Button data-tour="add-expense-btn" onClick={() => dispatch({ type: OPEN_ADD_EXPENSE_DIALOG })}>
-            <Plus className="h-4 w-4" />
-            Add Expense
-          </Button>
         </div>
       </div>
 
       {expenses.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center">
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 sm:p-12 text-center">
           <Receipt className="mb-4 h-10 w-10 text-muted-foreground" />
           <p className="font-medium">No expenses yet</p>
           <p className="mt-1 text-sm text-muted-foreground">Add your expenses to see how much you have left over.</p>

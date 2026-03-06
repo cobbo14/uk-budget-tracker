@@ -47,7 +47,7 @@ export function IncomeView() {
       </div>
 
       {incomeSources.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center">
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 sm:p-12 text-center">
           <TrendingUp className="mb-4 h-10 w-10 text-muted-foreground" />
           <p className="font-medium">No income sources yet</p>
           <p className="mt-1 text-sm text-muted-foreground">Add your income sources to see your tax calculation.</p>

@@ -97,7 +97,7 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label>Tax Year</Label>
             <Select value={settings.taxYear} onValueChange={v => update({ taxYear: v })}>
               <SelectTrigger>
@@ -151,7 +151,7 @@ export function SettingsView() {
           {/* Employee contributions */}
           <div className="space-y-3">
             <p className="text-sm font-medium">Employee (your) contributions</p>
-            <div className="grid gap-1.5 max-w-xs">
+            <div className="grid gap-1.5 w-full max-w-xs">
               <Label>Contribution Type</Label>
               <Select
                 value={settings.pensionContributionType}
@@ -169,7 +169,7 @@ export function SettingsView() {
             </div>
 
             {settings.pensionContributionType !== 'none' && (
-              <div className="grid gap-1.5 max-w-xs">
+              <div className="grid gap-1.5 w-full max-w-xs">
                 <Label htmlFor="pension-value">
                   {settings.pensionContributionType === 'percentage' ? 'Contribution (%)' : 'Annual Amount (£)'}
                 </Label>
@@ -190,7 +190,7 @@ export function SettingsView() {
           {/* Employer contributions */}
           <div className="space-y-3 pt-2 border-t">
             <p className="text-sm font-medium">Employer contributions</p>
-            <div className="grid gap-1.5 max-w-xs">
+            <div className="grid gap-1.5 w-full max-w-xs">
               <Label>Contribution Type</Label>
               <Select
                 value={settings.employerPensionContributionType ?? 'flat'}
@@ -205,7 +205,7 @@ export function SettingsView() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-1.5 max-w-xs">
+            <div className="grid gap-1.5 w-full max-w-xs">
               <Label htmlFor="employer-pension">
                 {(settings.employerPensionContributionType ?? 'flat') === 'percentage'
                   ? 'Employer Contribution (%)'
@@ -239,7 +239,7 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label>Repayment Plan</Label>
             <Select
               value={settings.studentLoanPlan}
@@ -276,7 +276,7 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label htmlFor="gift-aid">
               Annual Gift Aid Donations (£)
               <HelpTooltip content="Donations extend your basic rate band, saving higher/additional rate taxpayers extra tax beyond the 20% already reclaimed by the charity." />
@@ -305,7 +305,7 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label>
               Marriage Allowance
               <HelpTooltip content="Transfer £1,260 of unused Personal Allowance to a basic-rate taxpayer spouse/civil partner for a £252 tax saving." />
@@ -394,7 +394,7 @@ export function SettingsView() {
             </Label>
           </div>
           {(settings.childBenefitClaiming ?? false) && (
-            <div className="grid gap-1.5 max-w-xs">
+            <div className="grid gap-1.5 w-full max-w-xs">
               <Label htmlFor="num-children">Number of children</Label>
               <Input
                 id="num-children"
@@ -429,7 +429,7 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label htmlFor="seis">
               SEIS investment this year (£)
               <HelpTooltip content="Enterprise Investment Scheme (30%), SEIS (50%), and Venture Capital Trusts (30%) offer income tax relief on qualifying investments." />
@@ -445,7 +445,7 @@ export function SettingsView() {
               onChange={e => update({ seisInvestment: parseFloat(e.target.value) || 0 })}
             />
           </div>
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label htmlFor="eis">EIS investment this year (£)</Label>
             <Input
               id="eis"
@@ -458,7 +458,7 @@ export function SettingsView() {
               onChange={e => update({ eisInvestment: parseFloat(e.target.value) || 0 })}
             />
           </div>
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label htmlFor="vct">VCT investment this year (£)</Label>
             <Input
               id="vct"
@@ -508,7 +508,7 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label htmlFor="tax-code">Tax Code (optional)</Label>
             <Input
               id="tax-code"
@@ -533,7 +533,7 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label htmlFor="badr-used">
               Prior BADR lifetime allowance used (£)
               <HelpTooltip content="Business Asset Disposal Relief (formerly Entrepreneurs' Relief) gives a reduced CGT rate on qualifying business disposals up to a £1m lifetime limit." />
@@ -565,7 +565,7 @@ export function SettingsView() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid gap-1.5 max-w-xs">
+            <div className="grid gap-1.5 w-full max-w-xs">
               <Label htmlFor="transitional-spread">Transitional profit spread added this year (£)</Label>
               <Input
                 id="transitional-spread"
@@ -593,7 +593,7 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-1.5 max-w-xs">
+          <div className="grid gap-1.5 w-full max-w-xs">
             <Label htmlFor="partner-income">Partner annual gross income (£)</Label>
             <Input
               id="partner-income"

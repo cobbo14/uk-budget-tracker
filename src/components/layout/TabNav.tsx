@@ -32,13 +32,13 @@ export function TabNav({ activeTab, onTabChange }: TabNavProps) {
               data-tour={`tab-${tab.id}`}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium border-b-2 transition-colors',
+                'flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium border-b-2 transition-colors sm:gap-1 sm:py-3 sm:text-xs',
                 activeTab === tab.id
                   ? 'border-emerald-600 text-emerald-600'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',
               )}
             >
-              <Icon className="h-6 w-6" />
+              <Icon className="h-4 w-4 sm:h-6 sm:w-6" />
               {tab.label}
             </button>
           )

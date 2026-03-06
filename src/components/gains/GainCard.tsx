@@ -19,7 +19,7 @@ export function GainCard({ gain }: GainCardProps) {
   const netGain = gain.gainAmount - gain.allowableCosts
 
   return (
-    <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+    <div className="flex items-start justify-between rounded-lg border bg-card p-3 sm:p-4 sm:items-center">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium truncate">{gain.name}</span>
@@ -27,14 +27,14 @@ export function GainCard({ gain }: GainCardProps) {
             <Badge variant="secondary" className="shrink-0">Property</Badge>
           )}
         </div>
-        <div className="mt-1 text-sm text-muted-foreground">
-          Gain: {formatCurrency(gain.gainAmount)}
+        <div className="mt-1 text-sm text-muted-foreground flex flex-wrap gap-x-1.5">
+          <span>Gain: {formatCurrency(gain.gainAmount)}</span>
           {gain.allowableCosts > 0 && (
-            <> · Costs: {formatCurrency(gain.allowableCosts)} · Net: {formatCurrency(netGain)}</>
+            <><span>· Costs: {formatCurrency(gain.allowableCosts)}</span><span>· Net: {formatCurrency(netGain)}</span></>
           )}
         </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0 ml-4">
+      <div className="flex items-center gap-1 shrink-0 ml-2 sm:ml-4">
         <Button
           variant="ghost"
           size="icon"

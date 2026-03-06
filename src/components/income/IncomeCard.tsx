@@ -35,29 +35,29 @@ export function IncomeCard({ source }: IncomeCardProps) {
   const totalBIK = (source.benefitsInKind ?? []).reduce((sum, i) => sum + i.annualValue, 0)
 
   return (
-    <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+    <div className="flex items-start justify-between rounded-lg border bg-card p-3 sm:p-4 sm:items-center">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium truncate">{source.name}</span>
           <Badge variant="secondary" className="shrink-0">{TYPE_LABELS[source.type]}</Badge>
           {source.fromISA && <Badge variant="outline" className="shrink-0 text-emerald-600 border-emerald-300">ISA</Badge>}
         </div>
-        <div className="mt-1 text-sm text-muted-foreground">
-          Gross: {formatCurrency(source.grossAmount)}
+        <div className="mt-1 text-sm text-muted-foreground flex flex-wrap gap-x-1.5">
+          <span>Gross: {formatCurrency(source.grossAmount)}</span>
           {source.type === 'self-employment' && source.allowableExpenses != null && source.allowableExpenses > 0 && (
-            <> · Expenses: {formatCurrency(source.allowableExpenses)} · Net: {formatCurrency(netGross)}</>
+            <><span>· Expenses: {formatCurrency(source.allowableExpenses)}</span><span>· Net: {formatCurrency(netGross)}</span></>
           )}
           {source.type === 'rental' && (
             <>
-              {source.rentalExpenses != null && source.rentalExpenses > 0 && <> · Expenses: {formatCurrency(source.rentalExpenses)}</>}
-              {source.mortgageInterestAnnual != null && source.mortgageInterestAnnual > 0 && <> · Mortgage interest: {formatCurrency(source.mortgageInterestAnnual)}</>}
+              {source.rentalExpenses != null && source.rentalExpenses > 0 && <span>· Expenses: {formatCurrency(source.rentalExpenses)}</span>}
+              {source.mortgageInterestAnnual != null && source.mortgageInterestAnnual > 0 && <span>· Mortgage interest: {formatCurrency(source.mortgageInterestAnnual)}</span>}
             </>
           )}
           {totalSacrifice > 0 && (
-            <> · Sacrifice: {formatCurrency(totalSacrifice)}</>
+            <span>· Sacrifice: {formatCurrency(totalSacrifice)}</span>
           )}
           {totalBIK > 0 && (
-            <> · BIK: {formatCurrency(totalBIK)}</>
+            <span>· BIK: {formatCurrency(totalBIK)}</span>
           )}
         </div>
         {totalSacrifice > 0 && source.salarySacrificeItems && source.salarySacrificeItems.length > 0 && (
@@ -75,7 +75,7 @@ export function IncomeCard({ source }: IncomeCardProps) {
           </div>
         )}
       </div>
-      <div className="flex items-center gap-1 shrink-0 ml-4">
+      <div className="flex items-center gap-1 shrink-0 ml-2 sm:ml-4">
         <Button
           variant="ghost"
           size="icon"

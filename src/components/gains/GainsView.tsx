@@ -39,7 +39,7 @@ export function GainsView() {
       </div>
 
       {gainSources.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center">
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 sm:p-12 text-center">
           <TrendingUp className="mb-4 h-10 w-10 text-muted-foreground" />
           <p className="font-medium">No capital gains recorded</p>
           <p className="mt-1 text-sm text-muted-foreground">Add disposals of shares, property, or other assets.</p>
@@ -72,7 +72,7 @@ export function GainsView() {
         <p className="text-xs text-muted-foreground">
           Enter capital losses carried forward from previous tax years. These are applied against this year's gains before the £{rules.cgtAnnualExemptAmount.toLocaleString()} annual exempt amount.
         </p>
-        <div className="grid gap-1.5 max-w-xs">
+        <div className="grid gap-1.5 w-full max-w-xs">
           <Label htmlFor="capital-loss-cf">Carried-forward capital losses (£)</Label>
           <Input
             id="capital-loss-cf"

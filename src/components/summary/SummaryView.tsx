@@ -76,7 +76,7 @@ function TwoColRow({ label, annual, monthly, bold, highlight }: {
         {label}
       </span>
       <div className={cn(
-        'flex gap-8 text-sm font-medium tabular-nums',
+        'flex gap-3 sm:gap-8 text-sm font-medium tabular-nums',
         highlight === 'green' && 'text-emerald-600 dark:text-emerald-400',
         highlight === 'red' && 'text-red-600 dark:text-red-400',
       )}>
@@ -263,7 +263,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               <CardContent className="pt-0">
                 <div className="grid grid-cols-2 gap-x-4 text-xs text-muted-foreground font-medium mb-1 px-0">
                   <span></span>
-                  <div className="flex justify-end gap-8 pr-0">
+                  <div className="flex justify-end gap-3 sm:gap-8 pr-0">
                     <span>Annual</span>
                     <span>Monthly</span>
                   </div>
@@ -285,7 +285,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
       )}
 
       {!hasData && (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center">
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 sm:p-12 text-center">
           <PoundSterling className="h-10 w-10 mb-4 text-muted-foreground" />
           <p className="font-medium">Get started with your tax summary</p>
           <p className="mt-1 text-sm text-muted-foreground">Add your income sources to see your personalised tax breakdown, ISA tracker, and budget overview.</p>
@@ -336,7 +336,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                   innovativeFinanceISA: 'Innovative Finance ISA (£)',
                 }
                 return (
-                  <div key={key} className="grid gap-1.5 max-w-xs">
+                  <div key={key} className="grid gap-1.5 w-full max-w-xs">
                     <Label htmlFor={`isa-${key}`}>{labels[key]}</Label>
                     <Input
                       id={`isa-${key}`}

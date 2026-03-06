@@ -108,26 +108,26 @@ export function PensionOptimiser() {
                       isGood && 'bg-emerald-50 dark:bg-emerald-950/20',
                     )}
                   >
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pr-2 sm:pr-4">
                       <div className={cn(isBaseline && 'text-foreground', !isBaseline && 'text-muted-foreground')}>
                         {scenario.label}
                       </div>
                       {scenario.crossesThreshold && (
-                        <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">
                           ↓ below {scenario.crossesThreshold}
                         </div>
                       )}
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-muted-foreground whitespace-nowrap">
                         {formatCurrency(scenario.contributionFlat)}/yr
                       </div>
                     </td>
-                    <td className="py-2 text-right tabular-nums">
+                    <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap">
                       {formatCurrency(scenario.taxSummary.netIncome)}
                       <div className="text-xs text-muted-foreground">
                         {formatCurrency(scenario.taxSummary.netIncome / 12)}/mo
                       </div>
                     </td>
-                    <td className="py-2 text-right tabular-nums">
+                    <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap">
                       {isBaseline ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (
@@ -136,7 +136,7 @@ export function PensionOptimiser() {
                         </span>
                       )}
                     </td>
-                    <td className="py-2 text-right tabular-nums">
+                    <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap">
                       {isBaseline ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (

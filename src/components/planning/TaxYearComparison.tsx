@@ -79,11 +79,11 @@ export function TaxYearComparison() {
             <tbody>
               {rows.map(row => (
                 <tr key={row.label} className="border-b last:border-0">
-                  <td className="py-2 text-muted-foreground">{row.label}</td>
-                  <td className={`py-2 text-right tabular-nums ${row.highlight ? 'font-medium' : ''}`}>
+                  <td className="py-2 pr-2 text-muted-foreground">{row.label}</td>
+                  <td className={`py-2 pl-2 text-right tabular-nums whitespace-nowrap ${row.highlight ? 'font-medium' : ''}`}>
                     {row.current}
                   </td>
-                  <td className={`py-2 text-right tabular-nums ${row.highlight ? 'font-medium' : ''}`}>
+                  <td className={`py-2 pl-2 text-right tabular-nums whitespace-nowrap ${row.highlight ? 'font-medium' : ''}`}>
                     {row.next}
                   </td>
                 </tr>

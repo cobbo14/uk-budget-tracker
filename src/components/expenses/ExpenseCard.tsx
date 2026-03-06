@@ -37,7 +37,7 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
   const annual = toAnnual(effectiveAmt, expense.frequency)
 
   return (
-    <div className="flex items-center justify-between rounded-lg border bg-card p-3">
+    <div className="flex items-start justify-between rounded-lg border bg-card p-3 sm:items-center">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="font-medium truncate">{expense.name}</span>
@@ -77,7 +77,7 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1 shrink-0 ml-3">
+      <div className="flex items-center gap-1 shrink-0 ml-2 sm:ml-3">
         <Button
           variant="ghost"
           size="icon"
