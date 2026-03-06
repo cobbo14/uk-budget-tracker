@@ -7,6 +7,8 @@ export interface SalarySacrificeItem {
   type: SalarySacrificeType
   name: string
   annualAmount: number
+  /** 'flat' (default) = fixed £ amount, 'percentage' = % of gross salary */
+  amountType?: 'flat' | 'percentage'
 }
 
 export type BenefitInKindType = 'companyCar' | 'privateHealthcare' | 'accommodation' | 'other'

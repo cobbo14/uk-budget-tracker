@@ -31,7 +31,8 @@ export function IncomeCard({ source }: IncomeCardProps) {
       ? source.grossAmount - (source.rentalExpenses ?? 0)
       : source.grossAmount
 
-  const totalSacrifice = (source.salarySacrificeItems ?? []).reduce((sum, i) => sum + i.annualAmount, 0)
+  const totalSacrifice = (source.salarySacrificeItems ?? []).reduce((sum, i) =>
+    sum + (i.amountType === 'percentage' ? source.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
   const totalBIK = (source.benefitsInKind ?? []).reduce((sum, i) => sum + i.annualValue, 0)
 
   return (
@@ -62,9 +63,14 @@ export function IncomeCard({ source }: IncomeCardProps) {
         </div>
         {totalSacrifice > 0 && source.salarySacrificeItems && source.salarySacrificeItems.length > 0 && (
           <div className="mt-0.5 text-xs text-muted-foreground/70">
-            {source.salarySacrificeItems.map(i => (
-              <span key={i.id} className="mr-2">{i.name}: {formatCurrency(i.annualAmount)}</span>
-            ))}
+            {source.salarySacrificeItems.map(i => {
+              const resolved = i.amountType === 'percentage' ? source.grossAmount * (i.annualAmount / 100) : i.annualAmount
+              return (
+                <span key={i.id} className="mr-2">
+                  {i.name}: {i.amountType === 'percentage' ? `${i.annualAmount}% (${formatCurrency(resolved)})` : formatCurrency(i.annualAmount)}
+                </span>
+              )
+            })}
           </div>
         )}
         {totalBIK > 0 && source.benefitsInKind && source.benefitsInKind.length > 0 && (

@@ -62,7 +62,8 @@ export function calculateTax(
 
   // --- Salary sacrifice ---
   const totalSalarySacrifice = employmentSources.reduce((sum, s) =>
-    sum + (s.salarySacrificeItems ?? []).reduce((a, i) => a + i.annualAmount, 0), 0)
+    sum + (s.salarySacrificeItems ?? []).reduce((a, i) =>
+      a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0), 0)
   // effectiveEmploymentGross: used for Class 1 NI (BIK does not attract employee NI)
   const effectiveEmploymentGross = Math.max(0, employmentGross - totalSalarySacrifice)
   // --- Benefits in Kind (P11D) ---

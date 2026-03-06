@@ -22,6 +22,7 @@ interface SalarySacrificeFormItem {
   type: SalarySacrificeType
   name: string
   annualAmount: string
+  amountType: 'flat' | 'percentage'
 }
 
 interface BenefitInKindFormItem {
@@ -126,6 +127,7 @@ export function IncomeFormDialog() {
             type: i.type,
             name: i.name,
             annualAmount: String(i.annualAmount),
+            amountType: i.amountType ?? 'flat',
           })),
           benefitsInKindItems: (source.benefitsInKind ?? []).map(i => ({
             id: i.id,
@@ -169,7 +171,10 @@ export function IncomeFormDialog() {
     }
     if (form.type === 'employment' && form.salarySacrificeItems.length > 0) {
       const gross = parseFloat(form.grossAmount) || 0
-      const totalSacrifice = form.salarySacrificeItems.reduce((sum, i) => sum + (parseFloat(i.annualAmount) || 0), 0)
+      const totalSacrifice = form.salarySacrificeItems.reduce((sum, i) => {
+        const val = parseFloat(i.annualAmount) || 0
+        return sum + (i.amountType === 'percentage' ? gross * (val / 100) : val)
+      }, 0)
       if (totalSacrifice > gross) errs.grossAmount = 'Total salary sacrifice cannot exceed gross amount'
     }
     setErrors(errs)
@@ -197,6 +202,7 @@ export function IncomeFormDialog() {
             type: i.type,
             name: i.name.trim() || (SACRIFICE_TYPE_DEFAULT_NAMES[i.type] ?? i.type),
             annualAmount: parseFloat(i.annualAmount) || 0,
+            amountType: i.amountType,
           }))
         : undefined,
       benefitsInKind: form.type === 'employment' && form.benefitsInKindItems.length > 0
@@ -282,7 +288,7 @@ export function IncomeFormDialog() {
                   className="h-7 gap-1 text-xs"
                   onClick={() => set('salarySacrificeItems', [
                     ...form.salarySacrificeItems,
-                    { id: generateId(), type: 'other', name: '', annualAmount: '' },
+                    { id: generateId(), type: 'other', name: '', annualAmount: '', amountType: 'flat' },
                   ])}
                 >
                   <Plus className="h-3 w-3" />
@@ -347,17 +353,37 @@ export function IncomeFormDialog() {
                     </div>
                   )}
                   <div className="grid gap-1.5">
-                    <Label className="text-xs">Annual amount (£)</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">
+                        {item.amountType === 'percentage' ? 'Percentage of gross (%)' : 'Annual amount (£)'}
+                      </Label>
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                        onClick={() => set('salarySacrificeItems', form.salarySacrificeItems.map((it, i) =>
+                          i === idx ? { ...it, amountType: it.amountType === 'percentage' ? 'flat' as const : 'percentage' as const, annualAmount: '' } : it
+                        ))}
+                      >
+                        Switch to {item.amountType === 'percentage' ? '£' : '%'}
+                      </button>
+                    </div>
                     <Input
                       className="h-8"
                       type="number"
                       min="0"
+                      max={item.amountType === 'percentage' ? '100' : undefined}
+                      step={item.amountType === 'percentage' ? '0.5' : undefined}
                       placeholder="0"
                       value={item.annualAmount}
                       onChange={e => set('salarySacrificeItems', form.salarySacrificeItems.map((it, i) =>
                         i === idx ? { ...it, annualAmount: e.target.value } : it
                       ))}
                     />
+                    {item.amountType === 'percentage' && (parseFloat(item.annualAmount) || 0) > 0 && (parseFloat(form.grossAmount) || 0) > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        = £{((parseFloat(form.grossAmount) || 0) * (parseFloat(item.annualAmount) || 0) / 100).toLocaleString('en-GB', { maximumFractionDigits: 0 })}/yr
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
