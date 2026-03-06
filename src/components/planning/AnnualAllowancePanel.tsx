@@ -50,7 +50,7 @@ export function AnnualAllowancePanel() {
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
           {/* Funding breakdown */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+          <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-1 text-xs">
             <span className="text-muted-foreground">Employee contributions</span>
             <span className="text-right font-medium">{formatCurrency(taxSummary.totalDeductions)}</span>
             {employerPensionFunding > 0 && (
@@ -64,7 +64,7 @@ export function AnnualAllowancePanel() {
           </div>
 
           {/* Allowance breakdown */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs mt-1">
+          <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-1 text-xs mt-1">
             <span className="text-muted-foreground">
               Annual Allowance{isTapered ? ' (tapered)' : ''}
             </span>

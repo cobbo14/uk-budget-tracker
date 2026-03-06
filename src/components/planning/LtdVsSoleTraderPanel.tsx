@@ -21,13 +21,13 @@ function Row({ label, ltd, sole, highlight }: {
     <div className="flex items-center py-1.5 border-b last:border-0">
       <span className="text-sm text-muted-foreground flex-1">{label}</span>
       <span className={cn(
-        'text-sm font-medium tabular-nums w-28 text-right',
+        'text-sm font-medium tabular-nums w-20 sm:w-28 text-right',
         highlight === 'ltd' && 'text-emerald-600 dark:text-emerald-400',
       )}>
         {ltd}
       </span>
       <span className={cn(
-        'text-sm font-medium tabular-nums w-28 text-right',
+        'text-sm font-medium tabular-nums w-20 sm:w-28 text-right',
         highlight === 'sole' && 'text-emerald-600 dark:text-emerald-400',
       )}>
         {sole}
@@ -138,8 +138,8 @@ export function LtdVsSoleTraderPanel() {
         <CardHeader className="pb-2">
           <div className="flex">
             <CardTitle className="text-sm flex-1">Metric</CardTitle>
-            <span className="text-sm font-semibold w-28 text-right">Ltd Co</span>
-            <span className="text-sm font-semibold w-28 text-right">Sole Trader</span>
+            <span className="text-sm font-semibold w-20 sm:w-28 text-right">Ltd Co</span>
+            <span className="text-sm font-semibold w-20 sm:w-28 text-right">Sole Trader</span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">

@@ -165,7 +165,7 @@ export function TourOverlay() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-5 pb-4">
+          <div className="flex items-center justify-between px-3 sm:px-5 pb-4 flex-wrap gap-2">
             <Button variant="ghost" size="sm" onClick={endTour} className="text-muted-foreground">
               Skip tour
             </Button>

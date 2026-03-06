@@ -15,9 +15,9 @@ function CompareRow({ label, current, scenario }: {
   return (
     <div className="flex items-center py-1.5 border-b last:border-0">
       <span className="text-sm text-muted-foreground flex-1">{label}</span>
-      <span className="text-sm font-medium tabular-nums w-28 text-right">{current}</span>
+      <span className="text-sm font-medium tabular-nums w-20 sm:w-28 text-right">{current}</span>
       <span className={cn(
-        'text-sm font-medium tabular-nums w-28 text-right',
+        'text-sm font-medium tabular-nums w-20 sm:w-28 text-right',
         changed && 'text-emerald-600 dark:text-emerald-400',
       )}>
         {scenario}
@@ -155,8 +155,8 @@ export function WhatIfCalculator() {
         <CardHeader className="pb-2">
           <div className="flex">
             <CardTitle className="text-sm flex-1">Metric</CardTitle>
-            <span className="text-sm font-semibold w-28 text-right">Current</span>
-            <span className="text-sm font-semibold w-28 text-right text-emerald-600 dark:text-emerald-400">Scenario</span>
+            <span className="text-sm font-semibold w-20 sm:w-28 text-right">Current</span>
+            <span className="text-sm font-semibold w-20 sm:w-28 text-right text-emerald-600 dark:text-emerald-400">Scenario</span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">

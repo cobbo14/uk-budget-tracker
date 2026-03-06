@@ -40,17 +40,17 @@ export function Header() {
   }, [savedAt])
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur overflow-x-hidden">
       <div className="mx-auto flex h-14 max-w-4xl items-center gap-1 sm:gap-2 px-3 sm:px-4">
         <PoundSterling className="h-5 w-5 text-emerald-600 shrink-0" />
-        <span className="font-semibold text-base sm:text-lg whitespace-nowrap">UK Budget Tracker</span>
-        <div className="ml-1 sm:ml-2 shrink-0 flex items-center gap-1 sm:gap-1.5">
+        <span className="font-semibold text-base sm:text-lg sm:whitespace-nowrap">UK Budget Tracker</span>
+        <div className="ml-1 sm:ml-2 min-w-0 flex items-center gap-1 sm:gap-1.5">
           <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">Tax Year</span>
           <Select
             value={settings.taxYear}
             onValueChange={v => dispatch({ type: UPDATE_SETTINGS, payload: { taxYear: v } })}
           >
-            <SelectTrigger className="h-8 text-xs w-24 sm:w-28">
+            <SelectTrigger className="h-8 text-xs w-20 sm:w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

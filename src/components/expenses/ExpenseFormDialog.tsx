@@ -290,7 +290,7 @@ export function ExpenseFormDialog() {
               <p className="text-sm font-medium">Utility Details</p>
 
               {/* Utility Type + Provider */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
                   <Label>Type</Label>
                   <Select
@@ -335,14 +335,14 @@ export function ExpenseFormDialog() {
                 </div>
                 {form.utilityRates.length > 0 && (
                   <div className="grid gap-1.5">
-                    <div className="grid grid-cols-[1fr_90px_90px_28px] gap-1.5 px-0.5">
+                    <div className="grid grid-cols-[1fr_70px_70px_28px] sm:grid-cols-[1fr_90px_90px_28px] gap-1.5 px-0.5">
                       <span className="text-xs text-muted-foreground">Label</span>
                       <span className="text-xs text-muted-foreground">Value</span>
                       <span className="text-xs text-muted-foreground">Unit</span>
                       <span />
                     </div>
                     {form.utilityRates.map((rate, i) => (
-                      <div key={rate.id} className="grid grid-cols-[1fr_90px_90px_28px] gap-1.5 items-center">
+                      <div key={rate.id} className="grid grid-cols-[1fr_70px_70px_28px] sm:grid-cols-[1fr_90px_90px_28px] gap-1.5 items-center">
                         <Input
                           placeholder="Unit Rate"
                           value={rate.label}
@@ -382,7 +382,7 @@ export function ExpenseFormDialog() {
           )}
 
           {/* Amount + Frequency */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="expense-amount">Amount (£)</Label>
               <Input

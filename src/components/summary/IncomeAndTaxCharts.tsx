@@ -104,8 +104,8 @@ export function IncomeAndTaxCharts() {
         {data.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">{emptyMsg}</p>
         ) : (
-          <div className="flex items-center gap-4">
-            <div className="h-[160px] w-[160px] shrink-0">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="h-[160px] w-[160px] shrink-0 mx-auto sm:mx-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

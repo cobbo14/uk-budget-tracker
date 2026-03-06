@@ -145,7 +145,7 @@ export function EnergyComparisonDialog({ open, onOpenChange }: EnergyComparisonD
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Ofgem cap reference ({OFGEM_CAP.updatedLabel})
           </p>
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div className="space-y-0.5">
               <p className="font-medium flex items-center gap-1.5">
                 <Zap className="h-3.5 w-3.5" /> Electricity
