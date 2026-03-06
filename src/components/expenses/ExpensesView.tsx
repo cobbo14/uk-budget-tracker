@@ -72,18 +72,18 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
             </button>
           </div>
           {hasEnergyExpenses && (
-            <Button variant="outline" size="sm" onClick={() => setEnergyCompareOpen(true)}>
+            <Button data-search="energy-comparison" variant="outline" size="sm" onClick={() => setEnergyCompareOpen(true)}>
               <Zap className="h-4 w-4" />
               <span className="hidden sm:inline">Compare</span> Energy
             </Button>
           )}
           {hasBroadbandExpenses && (
-            <Button variant="outline" size="sm" onClick={() => setBroadbandCompareOpen(true)}>
+            <Button data-search="broadband-comparison" variant="outline" size="sm" onClick={() => setBroadbandCompareOpen(true)}>
               <Wifi className="h-4 w-4" />
               <span className="hidden sm:inline">Compare</span> Broadband
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => setManageOpen(true)}>
+          <Button data-search="category-manager" variant="outline" size="sm" onClick={() => setManageOpen(true)}>
             <Settings2 className="h-4 w-4" />
             Categories
           </Button>

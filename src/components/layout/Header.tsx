@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PoundSterling, Sun, Moon, AlertCircle, HelpCircle, Heart, MessageSquarePlus } from 'lucide-react'
+import { PoundSterling, Sun, Moon, AlertCircle, HelpCircle, Heart, MessageSquarePlus, Search } from 'lucide-react'
 import { ProfileSwitcher } from './ProfileSwitcher'
 import { useBudget } from '@/hooks/useBudget'
 import { useTour } from '@/components/tour/TourContext'
@@ -24,7 +24,11 @@ function useDarkMode() {
   return [dark, setDark] as const
 }
 
-export function Header() {
+interface HeaderProps {
+  onSearchOpen: () => void
+}
+
+export function Header({ onSearchOpen }: HeaderProps) {
   const [dark, setDark] = useDarkMode()
   const { settings, dispatch, savedAt, saveError } = useBudget()
   const { startTour } = useTour()
@@ -69,6 +73,16 @@ export function Header() {
               <AlertCircle className="h-3 w-3" /> Storage full
             </span>
           )}
+          <button
+            onClick={onSearchOpen}
+            className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center gap-1"
+            aria-label="Search features (Cmd+K)"
+          >
+            <Search className="h-4 w-4" />
+            <kbd className="hidden sm:inline-flex h-5 items-center rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
+              ⌘K
+            </kbd>
+          </button>
           <ProfileSwitcher />
           <a
             href="https://ko-fi.com/cobbo14"

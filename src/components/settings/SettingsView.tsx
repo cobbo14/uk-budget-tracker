@@ -89,7 +89,7 @@ export function SettingsView() {
       <h2 className="text-xl font-semibold">Settings</h2>
 
       {/* Tax year */}
-      <Card>
+      <Card data-search="settings-tax-year">
         <CardHeader>
           <CardTitle className="text-base">Tax Year</CardTitle>
           <CardDescription>
@@ -118,7 +118,7 @@ export function SettingsView() {
       </Card>
 
       {/* Scottish taxpayer */}
-      <Card>
+      <Card data-search="settings-scottish">
         <CardHeader>
           <CardTitle className="text-base">Scottish Taxpayer</CardTitle>
           <CardDescription>
@@ -140,7 +140,7 @@ export function SettingsView() {
       </Card>
 
       {/* Pension */}
-      <Card>
+      <Card data-search="settings-pension">
         <CardHeader>
           <CardTitle className="text-base">Pension Contributions</CardTitle>
           <CardDescription>
@@ -251,7 +251,7 @@ export function SettingsView() {
       </Card>
 
       {/* Student loan */}
-      <Card>
+      <Card data-search="settings-student-loan">
         <CardHeader>
           <CardTitle className="text-base">Student Loan</CardTitle>
           <CardDescription>
@@ -288,7 +288,7 @@ export function SettingsView() {
       </Card>
 
       {/* Gift Aid */}
-      <Card>
+      <Card data-search="settings-gift-aid">
         <CardHeader>
           <CardTitle className="text-base">Gift Aid Donations</CardTitle>
           <CardDescription>
@@ -317,7 +317,7 @@ export function SettingsView() {
       </Card>
 
       {/* Marriage Allowance */}
-      <Card>
+      <Card data-search="settings-marriage">
         <CardHeader>
           <CardTitle className="text-base">Marriage Allowance</CardTitle>
           <CardDescription>
@@ -394,7 +394,7 @@ export function SettingsView() {
       )}
 
       {/* Child Benefit / HICBC */}
-      <Card>
+      <Card data-search="settings-child-benefit">
         <CardHeader>
           <CardTitle className="text-base">Child Benefit / HICBC</CardTitle>
           <CardDescription>
@@ -441,7 +441,7 @@ export function SettingsView() {
       </Card>
 
       {/* EIS / SEIS / VCT */}
-      <Card>
+      <Card data-search="settings-eis">
         <CardHeader>
           <CardTitle className="text-base">EIS / SEIS / VCT Investment Relief</CardTitle>
           <CardDescription>
@@ -498,7 +498,7 @@ export function SettingsView() {
       </Card>
 
       {/* Blind Person's Allowance */}
-      <Card>
+      <Card data-search="settings-blind">
         <CardHeader>
           <CardTitle className="text-base">Blind Person's Allowance</CardTitle>
           <CardDescription>
@@ -520,7 +520,7 @@ export function SettingsView() {
       </Card>
 
       {/* Tax Code */}
-      <Card>
+      <Card data-search="settings-tax-code">
         <CardHeader>
           <CardTitle className="text-base">Tax Code</CardTitle>
           <CardDescription>
@@ -545,7 +545,7 @@ export function SettingsView() {
       </Card>
 
       {/* Business Asset Disposal Relief */}
-      <Card>
+      <Card data-search="settings-badr">
         <CardHeader>
           <CardTitle className="text-base">Business Asset Disposal Relief (BADR)</CardTitle>
           <CardDescription>
@@ -577,7 +577,7 @@ export function SettingsView() {
 
       {/* Basis Period Reform — only shown when self-employment income present */}
       {incomeSources.some(s => s.type === 'self-employment') && (
-        <Card>
+        <Card data-search="settings-basis-period">
           <CardHeader>
             <CardTitle className="text-base">Basis Period Reform</CardTitle>
             <CardDescription>
@@ -605,7 +605,7 @@ export function SettingsView() {
       )}
 
       {/* Household */}
-      <Card>
+      <Card data-search="settings-household">
         <CardHeader>
           <CardTitle className="text-base">Household</CardTitle>
           <CardDescription>
@@ -629,7 +629,7 @@ export function SettingsView() {
       </Card>
 
       {/* Data management */}
-      <Card>
+      <Card data-search="settings-data">
         <CardHeader>
           <CardTitle className="text-base">Data Management</CardTitle>
           <CardDescription>

@@ -60,29 +60,6 @@ function Row({ label, value, indent, bold, highlight }: {
   )
 }
 
-function TwoColRow({ label, annual, monthly, bold, highlight }: {
-  label: string
-  annual: number
-  monthly: number
-  bold?: boolean
-  highlight?: 'green' | 'red'
-}) {
-  return (
-    <div className="flex justify-between items-center py-1.5">
-      <span className={cn('text-sm text-muted-foreground', bold && 'text-foreground font-medium')}>
-        {label}
-      </span>
-      <div className={cn(
-        'flex gap-3 sm:gap-8 text-sm font-medium tabular-nums',
-        highlight === 'green' && 'text-emerald-600 dark:text-emerald-400',
-        highlight === 'red' && 'text-red-600 dark:text-red-400',
-      )}>
-        <span>{formatCurrency(annual)}</span>
-        <span>{formatCurrency(monthly)}</span>
-      </div>
-    </div>
-  )
-}
 
 interface SummaryViewProps {
   showMonthly: boolean
@@ -259,20 +236,12 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                 <CardTitle className="text-base">Budget Summary</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="grid grid-cols-2 gap-x-4 text-xs text-muted-foreground font-medium mb-1 px-0">
-                  <span></span>
-                  <div className="flex justify-end gap-3 sm:gap-8 pr-0">
-                    <span>Annual</span>
-                    <span>Monthly</span>
-                  </div>
-                </div>
-                <TwoColRow label="Net income (after tax)" annual={t.netIncome} monthly={t.netIncome / 12} highlight="green" />
-                <TwoColRow label="Total expenses" annual={-totalAnnualExpenses} monthly={-totalAnnualExpenses / 12} highlight="red" />
+                <Row label="Net income (after tax)" value={formatCurrency(v(t.netIncome))} highlight="green" />
+                <Row label="Total expenses" value={`−${formatCurrency(v(totalAnnualExpenses))}`} highlight="red" />
                 <Separator className="my-2" />
-                <TwoColRow
+                <Row
                   label="Leftover income"
-                  annual={leftoverIncome}
-                  monthly={leftoverIncome / 12}
+                  value={formatCurrency(v(leftoverIncome))}
                   bold
                   highlight={leftoverIncome >= 0 ? 'green' : 'red'}
                 />

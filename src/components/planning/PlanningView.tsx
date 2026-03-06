@@ -39,12 +39,12 @@ export function PlanningView() {
       {hasData && (
         <>
           <ThresholdWarnings />
-          <AnnualAllowancePanel />
+          <div data-search="annual-allowance"><AnnualAllowancePanel /></div>
           <PensionOptimiser />
-          <TaxYearComparison />
-          <PayslipReconciliation />
-          <PartnerPanel />
-<WhatIfCalculator />
+          <div data-search="tax-year-comparison"><TaxYearComparison /></div>
+          <div data-search="payslip-reconciliation"><PayslipReconciliation /></div>
+          <div data-search="partner-panel"><PartnerPanel /></div>
+          <div data-search="what-if"><WhatIfCalculator /></div>
         </>
       )}
     </div>

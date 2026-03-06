@@ -6,14 +6,17 @@ import { TourOverlay } from '@/components/tour/TourOverlay'
 interface AppShellProps {
   activeTab: TabId
   onTabChange: (tab: TabId) => void
+  budgetingMode: boolean
+  onBudgetingModeChange: (enabled: boolean) => void
+  onSearchOpen: () => void
   children: ReactNode
 }
 
-export function AppShell({ activeTab, onTabChange, children }: AppShellProps) {
+export function AppShell({ activeTab, onTabChange, budgetingMode, onBudgetingModeChange, onSearchOpen, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header />
-      <TabNav activeTab={activeTab} onTabChange={onTabChange} />
+      <Header onSearchOpen={onSearchOpen} />
+      <TabNav activeTab={activeTab} onTabChange={onTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={onBudgetingModeChange} />
       <main className="mx-auto w-full max-w-4xl px-4 py-6 flex-1">
         {children}
       </main>

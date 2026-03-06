@@ -14,6 +14,7 @@ import { LegalView } from '@/components/legal/LegalView'
 import { CookieConsent } from '@/components/CookieConsent'
 import { useBudget } from '@/hooks/useBudget'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { SearchDialog } from '@/components/search/SearchDialog'
 import type { TabId } from '@/components/layout/TabNav'
 
 // Lazy-load the two heaviest views for better initial bundle size
@@ -42,6 +43,10 @@ function AppContent() {
   const [showMonthly, setShowMonthly] = useState(
     () => localStorage.getItem('showMonthly') !== 'false',
   )
+  const [budgetingMode, setBudgetingMode] = useState(
+    () => localStorage.getItem('budgetingMode') === 'true',
+  )
+  const [searchOpen, setSearchOpen] = useState(false)
   const { canUndo, undo } = useBudget()
 
   useEffect(() => {
@@ -56,6 +61,10 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('showMonthly', showMonthly ? 'true' : 'false')
   }, [showMonthly])
+
+  useEffect(() => {
+    localStorage.setItem('budgetingMode', budgetingMode ? 'true' : 'false')
+  }, [budgetingMode])
 
   // Update document title per tab (guide pages set their own titles)
   useEffect(() => {
@@ -80,6 +89,10 @@ function AppContent() {
         e.preventDefault()
         undo()
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -90,28 +103,63 @@ function AppContent() {
     setActiveTab(tab)
   }
 
+  function handleSearchNavigate(tab: TabId, targetSelector?: string, hash?: string) {
+    if (hash) {
+      window.location.hash = hash
+      setActiveTab(tab)
+    } else {
+      handleTabChange(tab)
+    }
+    if (targetSelector) {
+      const tryScroll = (attempts: number) => {
+        const el = document.querySelector(targetSelector)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        } else if (attempts > 0) {
+          setTimeout(() => tryScroll(attempts - 1), 150)
+        }
+      }
+      setTimeout(() => tryScroll(3), 100)
+    }
+  }
+
+  function handleBudgetingModeChange(enabled: boolean) {
+    setBudgetingMode(enabled)
+    if (enabled && (activeTab === 'planning' || activeTab === 'gains')) {
+      handleTabChange('summary')
+    }
+  }
+
   return (
-    <AppShell activeTab={activeTab} onTabChange={handleTabChange}>
-      <ErrorBoundary>
-        <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
-          {legalPage ? (
-            <LegalView page={legalPage} />
-          ) : (
-            <>
-              {activeTab === 'summary' && <SummaryView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
-              {activeTab === 'income' && <IncomeView />}
-              {activeTab === 'gains' && <GainsView />}
-              {activeTab === 'expenses' && <ExpensesView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
-              {activeTab === 'planning' && <PlanningView />}
-              {activeTab === 'settings' && <SettingsView />}
-              {activeTab === 'help' && <HelpView />}
-              {activeTab === 'guide' && <GuideView />}
-            </>
-          )}
-        </Suspense>
-      </ErrorBoundary>
-      <CookieConsent />
-    </AppShell>
+    <>
+      <AppShell activeTab={activeTab} onTabChange={handleTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={handleBudgetingModeChange} onSearchOpen={() => setSearchOpen(true)}>
+        <ErrorBoundary>
+          <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
+            {legalPage ? (
+              <LegalView page={legalPage} />
+            ) : (
+              <>
+                {activeTab === 'summary' && <SummaryView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
+                {activeTab === 'income' && <IncomeView />}
+                {activeTab === 'gains' && <GainsView />}
+                {activeTab === 'expenses' && <ExpensesView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
+                {activeTab === 'planning' && <PlanningView />}
+                {activeTab === 'settings' && <SettingsView />}
+                {activeTab === 'help' && <HelpView />}
+                {activeTab === 'guide' && <GuideView />}
+              </>
+            )}
+          </Suspense>
+        </ErrorBoundary>
+        <CookieConsent />
+      </AppShell>
+      <SearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onNavigate={handleSearchNavigate}
+        budgetingMode={budgetingMode}
+      />
+    </>
   )
 }
 

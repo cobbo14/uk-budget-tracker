@@ -1,6 +1,7 @@
 import { LayoutDashboard, Wallet, TrendingUp, ShoppingCart, Lightbulb, Settings, HelpCircle, BookOpen } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Switch } from '@/components/ui/switch'
 
 export type TabId = 'summary' | 'income' | 'gains' | 'expenses' | 'planning' | 'settings' | 'help' | 'guide'
 
@@ -15,16 +16,22 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: 'guide', label: 'Guides', icon: BookOpen },
 ]
 
+const BUDGETING_HIDDEN_TABS: TabId[] = ['planning', 'gains']
+
 interface TabNavProps {
   activeTab: TabId
   onTabChange: (tab: TabId) => void
+  budgetingMode: boolean
+  onBudgetingModeChange: (enabled: boolean) => void
 }
 
-export function TabNav({ activeTab, onTabChange }: TabNavProps) {
+export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeChange }: TabNavProps) {
+  const visibleTabs = budgetingMode ? TABS.filter(t => !BUDGETING_HIDDEN_TABS.includes(t.id)) : TABS
+
   return (
     <nav data-tour="tab-nav" className="sticky top-14 z-30 border-b bg-background">
-      <div className="mx-auto max-w-4xl px-4 flex">
-        {TABS.map(tab => {
+      <div className="mx-auto max-w-4xl px-4 flex items-end">
+        {visibleTabs.map(tab => {
           const Icon = tab.icon
           return (
             <button
@@ -43,6 +50,17 @@ export function TabNav({ activeTab, onTabChange }: TabNavProps) {
             </button>
           )
         })}
+        <label className="shrink-0 ml-1 mb-1.5 sm:mb-2 flex items-center gap-1.5 cursor-pointer select-none">
+          <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+            <span className="hidden sm:inline">{budgetingMode ? 'Budgeting' : 'Standard'}</span>
+            <span className="sm:hidden">{budgetingMode ? 'B' : 'S'}</span>
+          </span>
+          <Switch
+            checked={budgetingMode}
+            onCheckedChange={onBudgetingModeChange}
+            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-emerald-500"
+          />
+        </label>
       </div>
     </nav>
   )
