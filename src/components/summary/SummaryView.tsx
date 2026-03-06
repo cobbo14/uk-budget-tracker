@@ -1,16 +1,12 @@
 import { useBudget } from '@/hooks/useBudget'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatPercent } from '@/utils/formatting'
 import { cn } from '@/lib/utils'
 import { PoundSterling, BookOpen, CalendarClock } from 'lucide-react'
 import { IncomeAndTaxCharts } from './IncomeAndTaxCharts'
-import { UPDATE_SETTINGS } from '@/store/actions'
 import { isRenewalSoon, effectiveAnnual } from '@/store/selectors'
-import type { ISAContributions } from '@/types'
 
 function HeadlineCard({ label, monthly, annual, description, color, showMonthly }: {
   label: string
@@ -88,16 +84,13 @@ function TwoColRow({ label, annual, monthly, bold, highlight }: {
   )
 }
 
-const ISA_ANNUAL_LIMIT = 20_000
-const LISA_ANNUAL_MAX = 4_000
-
 interface SummaryViewProps {
   showMonthly: boolean
   onShowMonthlyChange: (v: boolean) => void
 }
 
 export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewProps) {
-  const { taxSummary, totalAnnualExpenses, leftoverIncome, incomeSources, expenses, settings, rules, dispatch } = useBudget()
+  const { taxSummary, totalAnnualExpenses, leftoverIncome, incomeSources, expenses } = useBudget()
   const t = taxSummary
   const hasData = incomeSources.length > 0
   const v = (amount: number) => showMonthly ? amount / 12 : amount
@@ -327,87 +320,13 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 sm:p-12 text-center">
           <PoundSterling className="h-10 w-10 mb-4 text-muted-foreground" />
           <p className="font-medium">Get started with your tax summary</p>
-          <p className="mt-1 text-sm text-muted-foreground">Add your income sources to see your personalised tax breakdown, ISA tracker, and budget overview.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Add your income sources to see your personalised tax breakdown and budget overview.</p>
           <Button className="mt-4" onClick={() => { window.location.hash = 'income' }}>
             Add your first income source →
           </Button>
         </div>
       )}
 
-      {/* ISA Allowance Tracker — always visible so users know where to enter contributions */}
-      {(() => {
-        const isa = settings.isaContributions ?? { cashISA: 0, stocksAndSharesISA: 0, lisaISA: 0, innovativeFinanceISA: 0 }
-        const total = (isa.cashISA ?? 0) + (isa.stocksAndSharesISA ?? 0) + (isa.lisaISA ?? 0) + (isa.innovativeFinanceISA ?? 0)
-        const remaining = ISA_ANNUAL_LIMIT - total
-        const overLimit = total > ISA_ANNUAL_LIMIT
-        const lisaOverLimit = (isa.lisaISA ?? 0) > LISA_ANNUAL_MAX
-        const usedPct = Math.min(100, (total / ISA_ANNUAL_LIMIT) * 100)
-
-        return (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">ISA Allowance {rules.label}</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              {total > 0 && (
-                <div>
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>Used: {formatCurrency(total)}</span>
-                    <span>{overLimit ? <span className="text-destructive">Over by {formatCurrency(total - ISA_ANNUAL_LIMIT)}</span> : `${formatCurrency(remaining)} remaining`}</span>
-                  </div>
-                  <div className="h-3 rounded-full overflow-hidden bg-muted">
-                    <div
-                      className={cn('h-full transition-all', overLimit ? 'bg-red-500' : usedPct >= 90 ? 'bg-amber-400' : 'bg-emerald-500')}
-                      style={{ width: `${usedPct}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>£0</span>
-                    <span>£{ISA_ANNUAL_LIMIT.toLocaleString()}</span>
-                  </div>
-                </div>
-              )}
-              {(['cashISA', 'stocksAndSharesISA', 'lisaISA', 'innovativeFinanceISA'] as (keyof ISAContributions)[]).map(key => {
-                const labels: Record<keyof ISAContributions, string> = {
-                  cashISA: 'Cash ISA (£)',
-                  stocksAndSharesISA: 'Stocks & Shares ISA (£)',
-                  lisaISA: 'Lifetime ISA — LISA (£, max £4,000)',
-                  innovativeFinanceISA: 'Innovative Finance ISA (£)',
-                }
-                return (
-                  <div key={key} className="grid gap-1.5 w-full max-w-xs">
-                    <Label htmlFor={`isa-${key}`}>{labels[key]}</Label>
-                    <Input
-                      id={`isa-${key}`}
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
-                      value={(settings.isaContributions?.[key] ?? 0) || ''}
-                      onChange={e => {
-                        const val = parseFloat(e.target.value) || 0
-                        const capped = key === 'lisaISA' ? Math.min(val, 4000) : val
-                        dispatch({
-                          type: UPDATE_SETTINGS,
-                          payload: {
-                            isaContributions: {
-                              ...(settings.isaContributions ?? { cashISA: 0, stocksAndSharesISA: 0, lisaISA: 0, innovativeFinanceISA: 0 }),
-                              [key]: capped,
-                            },
-                          },
-                        })
-                      }}
-                    />
-                  </div>
-                )
-              })}
-              {lisaOverLimit && (
-                <p className="text-xs text-destructive">LISA exceeds the £{LISA_ANNUAL_MAX.toLocaleString()} annual sub-limit.</p>
-              )}
-            </CardContent>
-          </Card>
-        )
-      })()}
 
       {/* Tax Guides */}
       <Card>
