@@ -8,7 +8,9 @@ import {
   Download,
   Users,
   BookOpen,
+  ToggleRight,
 } from 'lucide-react'
+import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 function Section({
@@ -48,6 +50,8 @@ function Section({
 }
 
 export function HelpView() {
+  const employeeMode = useEmployeeMode()
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -104,6 +108,30 @@ export function HelpView() {
           sessions whether you use the browser or the installed app. The only
           ways to lose your data are clearing your browser&rsquo;s storage,
           uninstalling the app, or switching to a different browser or device.
+        </p>
+      </Section>
+
+      <Section icon={ToggleRight} title="Employee &amp; Sole Trader Modes">
+        <p>
+          Use the <strong>Employee / Sole Trader</strong> switch in the
+          navigation bar to tailor the app to your situation.
+        </p>
+        <p>
+          <strong>Employee mode</strong> (default) streamlines the interface
+          for salaried workers. It hides self-employment income as an income
+          type, the Basis Period Reform setting, and the Self-Employment Tax
+          Guide.
+        </p>
+        <p>
+          <strong>Sole Trader mode</strong> shows everything &mdash;
+          including self-employment income, Class 2 &amp; 4 National Insurance,
+          allowable business expenses, and the self-employment guide. Sole
+          traders who also have employment income will see both sets of features.
+        </p>
+        <p>
+          Your choice is saved automatically and persists between sessions.
+          Switching modes does not delete any data &mdash; it only controls
+          which options are visible.
         </p>
       </Section>
 
@@ -271,12 +299,14 @@ export function HelpView() {
             </a>{' '}
             &mdash; payment rates, the income taper, and whether to claim or opt out.
           </li>
-          <li>
-            <a href="#guide/self-employment-tax-guide" className="text-emerald-600 font-medium hover:underline">
-              Self-Employment Tax Guide
-            </a>{' '}
-            &mdash; expenses, NI, payments on account, and tips to reduce your bill.
-          </li>
+          {!employeeMode && (
+            <li>
+              <a href="#guide/self-employment-tax-guide" className="text-emerald-600 font-medium hover:underline">
+                Self-Employment Tax Guide
+              </a>{' '}
+              &mdash; expenses, NI, payments on account, and tips to reduce your bill.
+            </li>
+          )}
           <li>
             <a href="#guide/eis-seis-vct-guide" className="text-emerald-600 font-medium hover:underline">
               EIS, SEIS &amp; VCT Tax Relief

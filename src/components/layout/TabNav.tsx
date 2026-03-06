@@ -23,9 +23,11 @@ interface TabNavProps {
   onTabChange: (tab: TabId) => void
   budgetingMode: boolean
   onBudgetingModeChange: (enabled: boolean) => void
+  employeeMode: boolean
+  onEmployeeModeChange: (enabled: boolean) => void
 }
 
-export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeChange }: TabNavProps) {
+export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeChange, employeeMode, onEmployeeModeChange }: TabNavProps) {
   const visibleTabs = budgetingMode ? TABS.filter(t => !BUDGETING_HIDDEN_TABS.includes(t.id)) : TABS
 
   return (
@@ -50,17 +52,30 @@ export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeC
             </button>
           )
         })}
-        <label className="shrink-0 ml-1 mb-1.5 sm:mb-2 flex items-center gap-1.5 cursor-pointer select-none">
-          <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-            <span className="hidden sm:inline">{budgetingMode ? 'Budgeting' : 'Standard'}</span>
-            <span className="sm:hidden">{budgetingMode ? 'B' : 'S'}</span>
-          </span>
-          <Switch
-            checked={budgetingMode}
-            onCheckedChange={onBudgetingModeChange}
-            className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-emerald-500"
-          />
-        </label>
+        <div className="shrink-0 ml-1 mb-1.5 sm:mb-2 flex flex-col gap-1">
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+              <span className="hidden sm:inline">{employeeMode ? 'Employee' : 'Sole Trader'}</span>
+              <span className="sm:hidden">{employeeMode ? 'E' : 'ST'}</span>
+            </span>
+            <Switch
+              checked={!employeeMode}
+              onCheckedChange={v => onEmployeeModeChange(!v)}
+              className="data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-emerald-500"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+              <span className="hidden sm:inline">{budgetingMode ? 'Budgeting' : 'Standard'}</span>
+              <span className="sm:hidden">{budgetingMode ? 'B' : 'S'}</span>
+            </span>
+            <Switch
+              checked={budgetingMode}
+              onCheckedChange={onBudgetingModeChange}
+              className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-emerald-500"
+            />
+          </label>
+        </div>
       </div>
     </nav>
   )

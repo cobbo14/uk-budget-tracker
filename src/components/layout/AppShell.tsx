@@ -8,15 +8,17 @@ interface AppShellProps {
   onTabChange: (tab: TabId) => void
   budgetingMode: boolean
   onBudgetingModeChange: (enabled: boolean) => void
+  employeeMode: boolean
+  onEmployeeModeChange: (enabled: boolean) => void
   onSearchOpen: () => void
   children: ReactNode
 }
 
-export function AppShell({ activeTab, onTabChange, budgetingMode, onBudgetingModeChange, onSearchOpen, children }: AppShellProps) {
+export function AppShell({ activeTab, onTabChange, budgetingMode, onBudgetingModeChange, employeeMode, onEmployeeModeChange, onSearchOpen, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header onSearchOpen={onSearchOpen} />
-      <TabNav activeTab={activeTab} onTabChange={onTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={onBudgetingModeChange} />
+      <TabNav activeTab={activeTab} onTabChange={onTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={onBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={onEmployeeModeChange} />
       <main className="mx-auto w-full max-w-4xl px-4 py-6 flex-1">
         {children}
       </main>

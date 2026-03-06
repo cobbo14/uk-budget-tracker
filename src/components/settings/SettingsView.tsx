@@ -15,6 +15,7 @@ import { getAvailableTaxYears, getTaxRules } from '@/taxRules'
 import { exportStateAsJSON, parseImportedState } from '@/services/localStorage'
 import { generateCSV } from '@/utils/exportUtils'
 import type { StudentLoanPlan, AppSettings } from '@/types'
+import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 
 const STUDENT_LOAN_LABELS: Record<StudentLoanPlan, string> = {
   none: 'None',
@@ -26,6 +27,7 @@ const STUDENT_LOAN_LABELS: Record<StudentLoanPlan, string> = {
 
 export function SettingsView() {
   const { state, settings, dispatch, rules, taxSummary, incomeSources } = useBudget()
+  const employeeMode = useEmployeeMode()
   const years = getAvailableTaxYears()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -575,8 +577,8 @@ export function SettingsView() {
         </CardContent>
       </Card>
 
-      {/* Basis Period Reform — only shown when self-employment income present */}
-      {incomeSources.some(s => s.type === 'self-employment') && (
+      {/* Basis Period Reform — only shown when self-employment income present and not in employee mode */}
+      {!employeeMode && incomeSources.some(s => s.type === 'self-employment') && (
         <Card data-search="settings-basis-period">
           <CardHeader>
             <CardTitle className="text-base">Basis Period Reform</CardTitle>

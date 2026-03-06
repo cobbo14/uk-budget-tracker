@@ -46,6 +46,9 @@ function AppContent() {
   const [budgetingMode, setBudgetingMode] = useState(
     () => localStorage.getItem('budgetingMode') === 'true',
   )
+  const [employeeMode, setEmployeeMode] = useState(
+    () => localStorage.getItem('employeeMode') !== 'false',
+  )
   const [searchOpen, setSearchOpen] = useState(false)
   const { canUndo, undo } = useBudget()
 
@@ -65,6 +68,10 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('budgetingMode', budgetingMode ? 'true' : 'false')
   }, [budgetingMode])
+
+  useEffect(() => {
+    localStorage.setItem('employeeMode', employeeMode ? 'true' : 'false')
+  }, [employeeMode])
 
   // Update document title per tab (guide pages set their own titles)
   useEffect(() => {
@@ -132,7 +139,7 @@ function AppContent() {
 
   return (
     <>
-      <AppShell activeTab={activeTab} onTabChange={handleTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={handleBudgetingModeChange} onSearchOpen={() => setSearchOpen(true)}>
+      <AppShell activeTab={activeTab} onTabChange={handleTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={handleBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={setEmployeeMode} onSearchOpen={() => setSearchOpen(true)}>
         <ErrorBoundary>
           <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
             {legalPage ? (

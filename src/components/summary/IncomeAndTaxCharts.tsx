@@ -45,7 +45,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name
 
 export function IncomeAndTaxCharts({ showMonthly }: { showMonthly: boolean }) {
   const { taxSummary: t, totalAnnualExpenses, leftoverIncome } = useBudget()
-  const [activeTab, setActiveTab] = useState<Tab>('income')
+  const [activeTab, setActiveTab] = useState<Tab>('budget')
   const v = (amount: number) => showMonthly ? amount / 12 : amount
 
   const incomeData: ChartEntry[] = [

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useBudget } from '@/hooks/useBudget'
 import { generateId } from '@/utils/ids'
 import type { IncomeSource, IncomeType, SalarySacrificeType, BenefitInKindType } from '@/types'
+import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 import { Plus, X } from 'lucide-react'
 import { HelpTooltip } from '@/components/ui/tooltip'
 import {
@@ -95,6 +96,7 @@ const INCOME_TYPE_LABELS: Record<IncomeType, string> = {
 
 export function IncomeFormDialog() {
   const { state, dispatch, getIncomeById } = useBudget()
+  const employeeMode = useEmployeeMode()
   const { incomeDialogMode, editingIncomeId } = state.ui
   const open = incomeDialogMode !== 'none'
   const isEdit = incomeDialogMode === 'edit'
@@ -247,9 +249,11 @@ export function IncomeFormDialog() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(INCOME_TYPE_LABELS) as IncomeType[]).map(t => (
-                  <SelectItem key={t} value={t}>{INCOME_TYPE_LABELS[t]}</SelectItem>
-                ))}
+                {(Object.keys(INCOME_TYPE_LABELS) as IncomeType[])
+                  .filter(t => !employeeMode || t !== 'self-employment')
+                  .map(t => (
+                    <SelectItem key={t} value={t}>{INCOME_TYPE_LABELS[t]}</SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

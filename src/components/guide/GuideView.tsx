@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { AdUnit } from './AdUnit'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, PoundSterling, Briefcase, AlertTriangle, BarChart3, GraduationCap, PiggyBank, CircleDollarSign, Heart, Baby, Building2, Rocket, CalendarDays, Landmark, Home, Bitcoin, Shield } from 'lucide-react'
@@ -20,6 +20,7 @@ import { RentalIncomeTaxGuide } from './guides/RentalIncomeTaxGuide'
 import { CryptoTaxGuide } from './guides/CryptoTaxGuide'
 import { NationalInsuranceGuide } from './guides/NationalInsuranceGuide'
 import type { LucideIcon } from 'lucide-react'
+import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 
 interface FAQ {
   question: string
@@ -460,6 +461,12 @@ function getSlugFromHash(): string | null {
 }
 
 function GuideIndex() {
+  const employeeMode = useEmployeeMode()
+  const visibleGuides = useMemo(
+    () => employeeMode ? GUIDES.filter(g => g.slug !== 'self-employment-tax-guide') : GUIDES,
+    [employeeMode],
+  )
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -472,7 +479,7 @@ function GuideIndex() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {GUIDES.map(guide => {
+        {visibleGuides.map(guide => {
           const Icon = guide.icon
           return (
             <a key={guide.slug} href={`#guide/${guide.slug}`} className="block group">

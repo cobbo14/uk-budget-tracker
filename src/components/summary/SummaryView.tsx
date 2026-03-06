@@ -128,9 +128,6 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
 
       {hasData && (
         <>
-          {/* Income → Net bar */}
-          <BudgetBar netIncome={t.netIncome} totalExpenses={totalAnnualExpenses} />
-
           {/* Visual breakdown charts */}
           <IncomeAndTaxCharts showMonthly={showMonthly} />
 
@@ -324,36 +321,5 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-function BudgetBar({ netIncome, totalExpenses }: { netIncome: number; totalExpenses: number }) {
-  if (netIncome <= 0) return null
-  const expensePct = Math.min(100, totalExpenses > 0 ? (totalExpenses / netIncome) * 100 : 0)
-  const leftoverPct = 100 - expensePct
-  const isOverspent = totalExpenses > netIncome
-
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex justify-between text-xs text-muted-foreground mb-2">
-          <span>Expenses {formatPercent(expensePct / 100)}</span>
-          <span>Leftover {formatPercent(leftoverPct / 100)}</span>
-        </div>
-        <div className="flex h-4 rounded-full overflow-hidden bg-muted">
-          <div
-            className={cn('transition-all', isOverspent ? 'bg-red-500' : 'bg-amber-400')}
-            style={{ width: `${Math.min(100, expensePct)}%` }}
-          />
-          {!isOverspent && (
-            <div className="flex-1 bg-emerald-500" />
-          )}
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>{formatCurrency(totalExpenses)}</span>
-          <span>{formatCurrency(Math.max(0, netIncome - totalExpenses))}</span>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
