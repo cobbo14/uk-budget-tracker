@@ -248,7 +248,7 @@ export function PensionProjection() {
             <div className="grid gap-1.5">
               <Label htmlFor="pp-growth" className="text-xs">
                 Growth rate (%)
-                <HelpTooltip content="Assumed annual growth rate before fees. A typical diversified equity portfolio returns around 4-6%. Suggested: 4%." />
+                <HelpTooltip content="Assumed annual growth rate before fees. A typical diversified equity portfolio returns around 4-6%. Recommended: inflation + 2%." />
               </Label>
               <Input
                 id="pp-growth"
@@ -256,10 +256,11 @@ export function PensionProjection() {
                 min={0}
                 max={15}
                 step={0.5}
-                placeholder="4"
+                placeholder={String((proj.inflationRate || 3) + 2)}
                 value={proj.assumedGrowthRate ?? ''}
                 onChange={e => updateProjection({ assumedGrowthRate: parseFloat(e.target.value) || 0 })}
               />
+              <p className="text-xs text-muted-foreground">Recommended: inflation + 2% ({(proj.inflationRate || 3) + 2}%)</p>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="pp-income" className="text-xs">
@@ -284,7 +285,7 @@ export function PensionProjection() {
             <div className="grid gap-1.5">
               <Label htmlFor="pp-inflation" className="text-xs">
                 Inflation rate (%)
-                <HelpTooltip content="Assumed annual inflation rate to project your income needs to access age. Default: 3%." />
+                <HelpTooltip content="Assumed annual inflation rate to project your income needs to access age. Recommended: 3%." />
               </Label>
               <Input
                 id="pp-inflation"
@@ -296,6 +297,7 @@ export function PensionProjection() {
                 value={proj.inflationRate ?? ''}
                 onChange={e => updateProjection({ inflationRate: parseFloat(e.target.value) || 0 })}
               />
+              <p className="text-xs text-muted-foreground">Recommended: 3%</p>
             </div>
           </div>
 
@@ -339,7 +341,17 @@ export function PensionProjection() {
       {multiplePotsOpen && (
         <Card>
           <CardContent className="pt-4 space-y-3">
-            <p className="text-xs font-medium">Pension Pots</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium">Pension Pots</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6 px-2 text-muted-foreground"
+                onClick={() => { setShowMultiplePots(false); updateProjection({ pensionPots: undefined, currentPotValue: 0 }) }}
+              >
+                Remove
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
               Total: {formatCurrency(totalPotValue)}
             </p>
@@ -402,7 +414,17 @@ export function PensionProjection() {
       {statePensionOpen && (
         <Card>
           <CardContent className="pt-4 space-y-3">
-            <p className="text-xs font-medium">State Pension & Other Retirement Income</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium">State Pension & Other Retirement Income</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6 px-2 text-muted-foreground"
+                onClick={() => { setShowStatePension(false); updateProjection({ qualifyingNIYears: undefined, statePensionAge: undefined, dbPensionAnnualIncome: 0 }) }}
+              >
+                Remove
+              </Button>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="pp-ni-years" className="text-xs">
@@ -467,7 +489,17 @@ export function PensionProjection() {
       {advancedOpen && (
         <Card>
           <CardContent className="pt-4 space-y-3">
-            <p className="text-xs font-medium">Advanced Settings</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium">Advanced Settings</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6 px-2 text-muted-foreground"
+                onClick={() => { setShowAdvanced(false); updateProjection({ annualFeeRate: undefined, lumpSumAllowanceOverride: undefined }) }}
+              >
+                Remove
+              </Button>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="pp-fee" className="text-xs">
