@@ -239,6 +239,11 @@ export function HelpView() {
             pension contribution levels and see the real-time impact on your
             tax and net income.
           </li>
+          <li>
+            <strong>Pension pot projection</strong> &mdash; forecast your
+            pension pot to retirement based on current contributions, employer
+            match, and expected growth rate.
+          </li>
         </ul>
       </Section>
 
@@ -251,7 +256,8 @@ export function HelpView() {
         </p>
         <p>
           Business Asset Disposal Relief (BADR), formerly Entrepreneurs&rsquo;
-          Relief, is supported for qualifying disposals at the reduced 10% rate.
+          Relief, is supported for qualifying disposals at the reduced rate
+          (10% in 2024/25, 14% in 2025/26, 18% in 2026/27).
         </p>
         <p>
           The Gains tab also includes an <strong>ISA Allowance Tracker</strong>{' '}

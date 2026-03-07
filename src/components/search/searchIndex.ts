@@ -42,6 +42,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { id: 'payslip-reconciliation', label: 'Payslip Reconciliation', description: 'Compare calculated vs actual take-home pay', keywords: ['payslip', 'reconcile', 'actual', 'take home', 'pay'], tab: 'planning', targetSelector: '[data-search="payslip-reconciliation"]', budgetingModeHidden: true },
   { id: 'partner-panel', label: 'Partner / Household Panel', description: 'Combined household income overview', keywords: ['partner', 'spouse', 'household', 'combined'], tab: 'planning', targetSelector: '[data-search="partner-panel"]', budgetingModeHidden: true },
   { id: 'what-if', label: 'What-If Calculator', description: 'Model income adjustments and scenarios', keywords: ['what if', 'scenario', 'model', 'bonus', 'pay rise'], tab: 'planning', targetSelector: '[data-search="what-if"]', budgetingModeHidden: true },
+  { id: 'pension-projection', label: 'Pension Pot Projection', description: 'Project your pension pot to retirement', keywords: ['pension', 'projection', 'pot', 'retirement', 'forecast', 'growth'], tab: 'planning', targetSelector: '[data-search="pension-projection"]' },
 
   // ── Gains ──
   { id: 'capital-gains', label: 'Capital Gains Tracking', description: 'Track disposals and CGT', keywords: ['cgt', 'capital gains', 'disposal', 'shares', 'property'], tab: 'gains', budgetingModeHidden: true },

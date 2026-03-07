@@ -101,9 +101,9 @@ export function StudentLoanGuide() {
           <Table
             headers={['Plan', 'Annual threshold', 'Monthly threshold']}
             rows={[
-              ['Plan 1', '£22,015', '£1,834'],
+              ['Plan 1', '£24,990', '£2,082'],
               ['Plan 2', '£27,295', '£2,274'],
-              ['Plan 4', '£27,660', '£2,305'],
+              ['Plan 4', '£31,395', '£2,616'],
               ['Plan 5', '£25,000', '£2,083'],
               ['Postgraduate', '£21,000', '£1,750'],
             ]}
@@ -113,9 +113,9 @@ export function StudentLoanGuide() {
           <Table
             headers={['Plan', 'Annual threshold', 'Monthly threshold']}
             rows={[
-              ['Plan 1', '£24,990', '£2,082'],
-              ['Plan 2', '£27,295', '£2,274'],
-              ['Plan 4', '£31,395', '£2,616'],
+              ['Plan 1', '£26,065', '£2,172'],
+              ['Plan 2', '£28,470', '£2,372'],
+              ['Plan 4', '£32,745', '£2,728'],
               ['Plan 5', '£25,000', '£2,083'],
               ['Postgraduate', '£21,000', '£1,750'],
             ]}
@@ -125,9 +125,9 @@ export function StudentLoanGuide() {
           <Table
             headers={['Plan', 'Annual threshold', 'Monthly threshold']}
             rows={[
-              ['Plan 1', '£26,065', '£2,172'],
-              ['Plan 2', '£27,295', '£2,274'],
-              ['Plan 4', '£32,745', '£2,728'],
+              ['Plan 1', '£26,900', '£2,241'],
+              ['Plan 2', '£29,385', '£2,448'],
+              ['Plan 4', '£33,795', '£2,816'],
               ['Plan 5', '£25,000', '£2,083'],
               ['Postgraduate', '£21,000', '£1,750'],
             ]}
@@ -148,13 +148,13 @@ export function StudentLoanGuide() {
           <Table
             headers={['Loan', 'Threshold', 'Amount above', 'Rate', 'Annual repayment']}
             rows={[
-              ['Plan 2', '£27,295', '£7,705', '9%', '£693'],
+              ['Plan 2', '£28,470', '£6,530', '9%', '£588'],
               ['Postgraduate', '£21,000', '£14,000', '6%', '£840'],
-              ['Total', '', '', '', '£1,533'],
+              ['Total', '', '', '', '£1,428'],
             ]}
           />
           <p>
-            That&rsquo;s £128/month in student loan repayments on top of your income tax
+            That&rsquo;s £119/month in student loan repayments on top of your income tax
             and National Insurance. Your actual take-home pay is reduced accordingly.
           </p>
         </CardContent>
