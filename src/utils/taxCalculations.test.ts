@@ -64,6 +64,10 @@ function bond(grossAmount: number, yearsHeld = 1, id = '1'): IncomeSource {
   return { id, name: 'Bond', type: 'bond', grossAmount, yearsHeld }
 }
 
+function savings(grossAmount: number, id = '1'): IncomeSource {
+  return { id, name: 'Savings', type: 'savings', grossAmount }
+}
+
 function gain(
   gainAmount: number,
   allowableCosts = 0,
@@ -747,6 +751,62 @@ describe('calculateTax — 2025/26 rules', () => {
       )
       expectGBP(withSpread.incomeTax - without.incomeTax, 1200)
       expectGBP(withSpread.class4NI - without.class4NI, 360)
+    })
+  })
+
+  // ── Personal Savings Allowance ──────────────────────────────────────────────
+
+  describe('personal savings allowance', () => {
+    it('gives £1,000 PSA to a basic rate taxpayer', () => {
+      // Employment £20,000, savings £3,000
+      // taxableNonDividend: £20,000 − £12,570 = £7,430 (basic rate)
+      // taxableSavings: £3,000 (PA fully consumed by employment)
+      // PSA = £1,000 → taxable savings = £2,000
+      // Savings tax: £2,000 × 20% = £400
+      const result = calculateTax(
+        [employment(20000, '1'), savings(3000, '2')],
+        defaultSettings,
+        rules,
+      )
+      expectGBP(result.savingsAllowanceApplied, 1000)
+    })
+
+    it('gives £500 PSA to a higher rate taxpayer', () => {
+      // Employment £60,000, savings £2,000
+      // taxableNonDividend: £47,430 (higher rate)
+      // PSA = £500
+      const result = calculateTax(
+        [employment(60000, '1'), savings(2000, '2')],
+        defaultSettings,
+        rules,
+      )
+      expectGBP(result.savingsAllowanceApplied, 500)
+    })
+
+    it('gives £0 PSA when total taxable income exceeds additional rate threshold', () => {
+      // Employment £130,000 (PA tapered to £0), savings £5,000
+      // taxableNonDividend: £130,000
+      // totalTaxableForPSA: £130,000 + £5,000 > £112,570 → PSA = £0
+      const result = calculateTax(
+        [employment(130000, '1'), savings(5000, '2')],
+        defaultSettings,
+        rules,
+      )
+      expectGBP(result.savingsAllowanceApplied, 0)
+    })
+
+    it('gives £0 PSA when savings + dividends push total above additional rate', () => {
+      // Employment £100,000 (PA = £12,570), savings £10,000, dividends £20,000
+      // taxableNonDividend: £87,430
+      // taxableSavings: £10,000
+      // taxableDividendsForPSA: £20,000 − £500 = £19,500
+      // total: £87,430 + £10,000 + £19,500 = £116,930 > £112,570 → PSA = £0
+      const result = calculateTax(
+        [employment(100000, '1'), savings(10000, '2'), dividend(20000, false, '3')],
+        defaultSettings,
+        rules,
+      )
+      expectGBP(result.savingsAllowanceApplied, 0)
     })
   })
 })

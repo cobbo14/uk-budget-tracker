@@ -379,6 +379,7 @@ export function IncomeFormDialog() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 mt-4 shrink-0 text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove salary sacrifice item ${item.name || `#${idx + 1}`}`}
                       onClick={() => set('salarySacrificeItems', form.salarySacrificeItems.filter((_, i) => i !== idx))}
                     >
                       <X className="h-3.5 w-3.5" />
@@ -496,6 +497,7 @@ export function IncomeFormDialog() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 mt-4 shrink-0 text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove benefit ${item.name || `#${idx + 1}`}`}
                       onClick={() => set('benefitsInKindItems', form.benefitsInKindItems.filter((_, i) => i !== idx))}
                     >
                       <X className="h-3.5 w-3.5" />

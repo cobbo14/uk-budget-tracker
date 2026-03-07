@@ -177,12 +177,15 @@ export function calculateTax(
   const remainingPAForSavings = Math.max(0, effectivePersonalAllowance - adjustedNetIncome)
   const taxableSavings = Math.max(0, savingsGross - remainingPAForSavings)
 
-  // PSA tier determined by England/Wales/NI bands regardless of Scottish status
+  // PSA tier determined by England/Wales/NI bands regardless of Scottish status.
+  // HMRC bases the tier on total taxable income (non-savings + savings + dividends).
   const englandBasicRateTop = rules.incomeTaxBands[0].to  // £37,700
+  const taxableDividendsForPSA = Math.max(0, dividendGross - rules.dividendAllowance)
+  const totalTaxableForPSA = taxableNonDividendIncome + taxableSavings + taxableDividendsForPSA
   let savingsAllowance: number
-  if (taxableNonDividendIncome > rules.incomeTaxBands[1].to) {
+  if (totalTaxableForPSA > rules.incomeTaxBands[1].to) {
     savingsAllowance = rules.savingsAllowanceAdditional // £0
-  } else if (taxableNonDividendIncome + taxableSavings > englandBasicRateTop) {
+  } else if (totalTaxableForPSA > englandBasicRateTop) {
     savingsAllowance = rules.savingsAllowanceHigher     // £500
   } else {
     savingsAllowance = rules.savingsAllowanceBasic      // £1,000

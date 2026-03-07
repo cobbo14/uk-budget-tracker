@@ -80,6 +80,7 @@ export function CategoryManagerDialog({ open, onOpenChange }: CategoryManagerDia
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
                       disabled={inUse}
                       title={inUse ? 'Reassign or delete all expenses in this category first' : 'Delete category'}
+                      aria-label={`Delete category ${cat.label}`}
                       onClick={() => dispatch({ type: DELETE_CUSTOM_CATEGORY, payload: cat.id })}
                     >
                       <Trash2 className="h-3.5 w-3.5" />

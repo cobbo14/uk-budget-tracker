@@ -1,5 +1,5 @@
-import { createContext, useContext, useReducer, useEffect, useRef, useState, useCallback, type ReactNode } from 'react'
-import type { AppState } from '@/types'
+import { createContext, useContext, useReducer, useEffect, useRef, useState, useCallback, useMemo, type ReactNode } from 'react'
+import type { AppState, Expense } from '@/types'
 import type { AppAction } from './actions'
 import { reducer, DEFAULT_STATE } from './reducer'
 import { loadProfileState, saveProfileState, syncSplitToOtherProfiles } from '@/services/localStorage'
@@ -48,6 +48,9 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
     stateRef.current = state
   }, [state])
 
+  // Queue of split syncs to run after the next localStorage save
+  const pendingSplitSyncRef = useRef<Expense | null>(null)
+
   // Wrapped dispatch: push snapshot for data-modifying actions
   const dispatch = useCallback((action: AppAction) => {
     if (DATA_MODIFYING_ACTIONS.has(action.type)) {
@@ -58,18 +61,18 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
       setCanUndo(true)
       baseDispatch(action)
 
-      // Cross-profile split sync
+      // Defer cross-profile split sync until after debounced save
       if (
         (action.type === ADD_EXPENSE || action.type === UPDATE_EXPENSE) &&
         action.payload.splitGroupId &&
         action.payload.splitConfig
       ) {
-        syncSplitToOtherProfiles(action.payload, profileId)
+        pendingSplitSyncRef.current = action.payload
       }
     } else {
       baseDispatch(action)
     }
-  }, [profileId])
+  }, [])
 
   const undo = useCallback(() => {
     const stack = undoStackRef.current
@@ -96,6 +99,12 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
       if (success) {
         setSavedAt(Date.now())
         setSaveError(false)
+        // Run deferred split sync after the save completes
+        const pending = pendingSplitSyncRef.current
+        if (pending) {
+          pendingSplitSyncRef.current = null
+          syncSplitToOtherProfiles(pending, profileId)
+        }
       } else {
         setSaveError(true)
       }

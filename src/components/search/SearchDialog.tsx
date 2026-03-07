@@ -49,6 +49,8 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
     onNavigate(item.tab, item.targetSelector, item.hash)
   }, [onNavigate, onOpenChange])
 
+  const clampedIndex = Math.min(selectedIndex, Math.max(0, filtered.length - 1))
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -56,18 +58,18 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setSelectedIndex(i => Math.max(i - 1, 0))
-    } else if (e.key === 'Enter' && filtered[selectedIndex]) {
+    } else if (e.key === 'Enter' && filtered[clampedIndex]) {
       e.preventDefault()
-      handleSelect(filtered[selectedIndex])
+      handleSelect(filtered[clampedIndex])
     }
   }
 
   useEffect(() => {
     const listEl = listRef.current
     if (!listEl) return
-    const selected = listEl.children[selectedIndex] as HTMLElement | undefined
+    const selected = listEl.children[clampedIndex] as HTMLElement | undefined
     selected?.scrollIntoView({ block: 'nearest' })
-  }, [selectedIndex])
+  }, [clampedIndex])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,7 +102,7 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
               onMouseEnter={() => setSelectedIndex(i)}
               className={cn(
                 'w-full text-left px-3 py-2 text-sm flex items-center justify-between gap-2 transition-colors',
-                i === selectedIndex
+                i === clampedIndex
                   ? 'bg-accent text-accent-foreground'
                   : 'text-foreground hover:bg-accent/50',
               )}

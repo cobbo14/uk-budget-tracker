@@ -377,6 +377,7 @@ export function ExpenseFormDialog() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                          aria-label={`Remove rate ${rate.label || `#${i + 1}`}`}
                           onClick={() => removeRate(i)}
                         >
                           <X className="h-3.5 w-3.5" />
@@ -507,6 +508,7 @@ export function ExpenseFormDialog() {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                              aria-label={`Remove ${profile?.name ?? 'participant'} from split`}
                               onClick={() => {
                                 set('splitParticipants', form.splitParticipants.filter((_, j) => j !== i))
                               }}
