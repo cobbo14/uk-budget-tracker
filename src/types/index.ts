@@ -61,6 +61,9 @@ export interface IncomeSource {
   salarySacrificeItems?: SalarySacrificeItem[]
   // Employment: benefits in kind (P11D)
   benefitsInKind?: BenefitInKindItem[]
+  // Employment: employer pension contribution (per-source, alternative to global setting)
+  employerPensionAmount?: number
+  employerPensionAmountType?: 'flat' | 'percentage'
 }
 
 export interface GainSource {

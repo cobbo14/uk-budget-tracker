@@ -197,6 +197,10 @@ export function SettingsView() {
                   onChange={e => update({ pensionContributionValue: parseFloat(e.target.value) || 0 })}
                   placeholder={settings.pensionContributionType === 'percentage' ? '5' : '2000'}
                 />
+                <p className="text-xs text-muted-foreground">
+                  These are relief at source contributions — your pension provider claims 20% basic rate tax relief automatically.
+                  If you're a higher or additional rate taxpayer, claim the extra relief via self-assessment or by asking HMRC to adjust your tax code.
+                </p>
               </div>
             )}
           </div>
@@ -204,6 +208,12 @@ export function SettingsView() {
           {/* Employer contributions */}
           <div className="space-y-3 pt-2 border-t">
             <p className="text-sm font-medium">Employer contributions</p>
+            {incomeSources.some(s => s.type === 'employment' && (s.employerPensionAmount ?? 0) > 0) && (settings.employerPensionContributionValue ?? 0) > 0 && (
+              <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
+                ⚠ You have employer pension contributions on the Income tab <strong>and</strong> here.
+                Make sure these aren't the same contribution entered twice — both are added together.
+              </p>
+            )}
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
               <Label>Contribution Type</Label>
               <Select
@@ -256,7 +266,9 @@ export function SettingsView() {
                 onChange={e => update({ sippContribution: parseFloat(e.target.value) || 0 })}
               />
               <p className="text-xs text-muted-foreground">
-                Personal SIPP contributions receive basic-rate tax relief at source. Higher/additional-rate relief reduces your taxable income. Counts toward the Annual Allowance.
+                SIPP contributions are relief at source — your provider claims 20% basic rate tax relief automatically (e.g. you pay £800 and £1,000 goes into your pension).
+                If you're a higher or additional rate taxpayer, claim the extra relief via self-assessment or by asking HMRC to adjust your tax code.
+                Counts toward the Annual Allowance.
               </p>
             </div>
           </div>

@@ -46,6 +46,8 @@ interface FormState {
   yearsHeld: string
   salarySacrificeItems: SalarySacrificeFormItem[]
   benefitsInKindItems: BenefitInKindFormItem[]
+  employerPensionAmount: string
+  employerPensionAmountType: 'flat' | 'percentage'
 }
 
 const DEFAULT_FORM: FormState = {
@@ -60,6 +62,8 @@ const DEFAULT_FORM: FormState = {
   yearsHeld: '',
   salarySacrificeItems: [],
   benefitsInKindItems: [],
+  employerPensionAmount: '',
+  employerPensionAmountType: 'flat',
 }
 
 const SACRIFICE_TYPE_LABELS: Record<SalarySacrificeType, string> = {
@@ -142,6 +146,8 @@ export function IncomeFormDialog() {
             annualValue: String(i.annualValue),
             bikRate: i.bikRate != null ? String(i.bikRate) : '',
           })),
+          employerPensionAmount: source.employerPensionAmount != null && source.employerPensionAmount > 0 ? String(source.employerPensionAmount) : '',
+          employerPensionAmountType: source.employerPensionAmountType ?? 'flat',
         })
       }
     } else {
@@ -238,6 +244,10 @@ export function IncomeFormDialog() {
             bikRate: i.type === 'companyCar' && i.bikRate ? parseFloat(i.bikRate) || undefined : undefined,
           }))
         : undefined,
+      employerPensionAmount: form.type === 'employment' && form.employerPensionAmount
+        ? parseFloat(form.employerPensionAmount) || undefined : undefined,
+      employerPensionAmountType: form.type === 'employment' && form.employerPensionAmount
+        ? form.employerPensionAmountType : undefined,
     }
     dispatch({ type: isEdit ? UPDATE_INCOME : ADD_INCOME, payload: source })
     handleClose()
@@ -433,6 +443,44 @@ export function IncomeFormDialog() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Employment: employer pension contribution */}
+          {form.type === 'employment' && (
+            <div className="grid gap-2">
+              <Label>
+                Employer Pension Contribution
+                <HelpTooltip content="Your employer's own pension contribution (not salary sacrifice). This counts toward the Annual Allowance but does not reduce your taxable income or NI. If entered here, don't also enter it in Settings." />
+              </Label>
+              <div className="grid gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">
+                    {form.employerPensionAmountType === 'percentage' ? 'Percentage of gross (%)' : 'Annual amount (£)'}
+                  </Label>
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    onClick={() => setForm(f => ({ ...f, employerPensionAmountType: f.employerPensionAmountType === 'percentage' ? 'flat' : 'percentage', employerPensionAmount: '' }))}
+                  >
+                    Switch to {form.employerPensionAmountType === 'percentage' ? '£' : '%'}
+                  </button>
+                </div>
+                <Input
+                  type="number"
+                  min="0"
+                  max={form.employerPensionAmountType === 'percentage' ? '100' : undefined}
+                  step={form.employerPensionAmountType === 'percentage' ? '0.5' : '100'}
+                  placeholder="0"
+                  value={form.employerPensionAmount}
+                  onChange={e => set('employerPensionAmount', e.target.value)}
+                />
+                {form.employerPensionAmountType === 'percentage' && (parseFloat(form.employerPensionAmount) || 0) > 0 && (parseFloat(form.grossAmount) || 0) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    = £{((parseFloat(form.grossAmount) || 0) * (parseFloat(form.employerPensionAmount) || 0) / 100).toLocaleString('en-GB', { maximumFractionDigits: 0 })}/yr
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

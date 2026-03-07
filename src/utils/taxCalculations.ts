@@ -391,13 +391,22 @@ export function calculateTax(
   const capitalGainsTax = badrTax + regularCgt
 
   // --- Pension Annual Allowance ---
-  // Resolve employer contribution: percentage uses the same eligible income basis as employee
+  // Resolve employer contribution: global setting + per-source employer contributions
   let employerPension = 0
   if (settings.employerPensionContributionType === 'percentage') {
     employerPension = pensionEligibleIncome * ((settings.employerPensionContributionValue ?? 0) / 100)
   } else {
     employerPension = settings.employerPensionContributionValue ?? 0
   }
+  // Per-source employer pension contributions from income tab
+  const perSourceEmployerPension = employmentSources.reduce((sum, s) => {
+    if (!s.employerPensionAmount) return sum
+    if (s.employerPensionAmountType === 'percentage') {
+      return sum + s.grossAmount * (s.employerPensionAmount / 100)
+    }
+    return sum + s.employerPensionAmount
+  }, 0)
+  employerPension += perSourceEmployerPension
   const totalPensionFunding = pensionDeduction + sippContribution + employerPension + salarySacrificePension
   // Threshold income = adjusted net income + dividends (before pension deduction being re-added)
   // Adjusted income for taper = threshold income + employer contributions
