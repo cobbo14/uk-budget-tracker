@@ -128,6 +128,7 @@ export interface PensionProjectionSettings {
   annualIncomeNeeded: number           // pre-tax annual income needed in retirement (today's £)
   inflationRate: number                // e.g. 3 for 3%
   annualFeeRate?: number               // platform/fund fee %, e.g. 0.5 for 0.5%
+  salaryGrowthRate?: number            // real salary growth above inflation %, e.g. 1 for 1%
   // State Pension
   qualifyingNIYears?: number           // 0-35
   statePensionAge?: number             // override for State Pension age (default from rules)

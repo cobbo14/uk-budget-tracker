@@ -9,7 +9,7 @@ describe('projectPensionPot (backward compatibility)', () => {
     expect(result.taxFreeLumpSum).toBeGreaterThan(0)
     expect(result.drawdownPot).toBeGreaterThan(0)
     expect(result.yearByYear).toHaveLength(27)
-    expect(result.drawdownYears).toHaveLength(43) // 100 - 57
+    expect(result.drawdownYears).toHaveLength(68) // 125 - 57
   })
 
   it('handles zero contributions', () => {
@@ -87,7 +87,7 @@ describe('projectPensionPotAdvanced', () => {
       expect(result.statePensionAnnual).toBeCloseTo(11973, 0)
     })
 
-    it('calculates partial State Pension for fewer than 35 years', () => {
+    it('calculates partial State Pension with projected NI years', () => {
       const result = projectPensionPotAdvanced({
         currentAge: 56,
         currentPotValue: 100_000,
@@ -100,7 +100,9 @@ describe('projectPensionPotAdvanced', () => {
         statePensionFullAnnual: 11973,
         statePensionAge: 67,
       })
-      expect(result.statePensionAnnual).toBeCloseTo((20 / 35) * 11973, 0)
+      // 20 current years + 1 working year = 21 projected
+      expect(result.projectedNIYears).toBe(21)
+      expect(result.statePensionAnnual).toBeCloseTo((21 / 35) * 11973, 0)
     })
 
     it('State Pension starts at state pension age, not access age', () => {
@@ -307,6 +309,29 @@ describe('projectPensionPotAdvanced', () => {
       // DC withdrawal of 30k, taxable = 30k - 12570 = 17430, tax = 17430 * 0.20 = 3486
       expect(result.firstYearTax).toBeCloseTo(3486, 0)
       expect(result.firstYearNetIncome).toBeCloseTo(30000 - 3486, 0)
+    })
+
+    it('applies PA taper for high retirement income', () => {
+      const result = projectPensionPotAdvanced({
+        currentAge: 56,
+        currentPotValue: 5_000_000,
+        pensionAccessAge: 57,
+        annualContribution: 0,
+        assumedGrowthRate: 0,
+        annualIncomeNeeded: 150000,
+        inflationRate: 0,
+        personalAllowance: 12570,
+        personalAllowanceTaperThreshold: 100000,
+        incomeTaxBands: [
+          { from: 0, to: 37700, rate: 0.20 },
+          { from: 37700, to: 112570, rate: 0.40 },
+          { from: 112570, to: Infinity, rate: 0.45 },
+        ],
+      })
+      // Income of £150k: PA tapers by (150k - 100k) / 2 = £25k, effective PA = £0 (12570 - 25000 < 0)
+      // Tax: 37700 * 0.20 + (112570 - 37700) * 0.40 + (150000 - 112570) * 0.45
+      //     = 7540 + 29948 + 16843.50 = 54331.50
+      expect(result.firstYearTax).toBeCloseTo(54331.5, 0)
     })
 
     it('State Pension uses part of personal allowance', () => {

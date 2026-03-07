@@ -30,6 +30,7 @@ export function PensionProjection() {
   const [showStatePension, setShowStatePension] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showMultiplePots, setShowMultiplePots] = useState(false)
+  const [showInTodaysMoney, setShowInTodaysMoney] = useState(false)
 
   const { totalPensionFunding } = taxSummary
   if (totalPensionFunding === 0) return null
@@ -38,7 +39,7 @@ export function PensionProjection() {
 
   // Auto-expand sections if values are already set
   const hasStatePension = (proj.qualifyingNIYears ?? 0) > 0 || (proj.dbPensionAnnualIncome ?? 0) > 0
-  const hasAdvanced = (proj.annualFeeRate ?? 0) > 0 || (proj.lumpSumAllowanceOverride ?? 0) > 0
+  const hasAdvanced = (proj.annualFeeRate ?? 0) > 0 || (proj.lumpSumAllowanceOverride ?? 0) > 0 || (proj.salaryGrowthRate ?? 0) > 0
   const hasMultiplePots = (proj.pensionPots?.length ?? 0) > 0
 
   const statePensionOpen = showStatePension || hasStatePension
@@ -69,12 +70,14 @@ export function PensionProjection() {
       annualIncomeNeeded: proj.annualIncomeNeeded,
       inflationRate: proj.inflationRate,
       annualFeeRate: proj.annualFeeRate,
+      salaryGrowthRate: proj.salaryGrowthRate,
       qualifyingNIYears: proj.qualifyingNIYears,
       statePensionAge: proj.statePensionAge ?? rules.statePensionDefaultAge,
       statePensionFullAnnual: rules.statePensionFullAnnual,
       dbPensionAnnualIncome: proj.dbPensionAnnualIncome,
       lumpSumAllowance: proj.lumpSumAllowanceOverride ?? rules.lumpSumAllowance,
       personalAllowance: rules.personalAllowance,
+      personalAllowanceTaperThreshold: rules.personalAllowanceTaperThreshold,
       incomeTaxBands: rules.incomeTaxBands,
       drawdownTaxFreeFirst: proj.drawdownTaxFreeFirst,
     }),
@@ -101,12 +104,14 @@ export function PensionProjection() {
         annualIncomeNeeded: proj.annualIncomeNeeded,
         inflationRate: proj.inflationRate,
         annualFeeRate: proj.annualFeeRate,
+        salaryGrowthRate: proj.salaryGrowthRate,
         qualifyingNIYears: proj.qualifyingNIYears,
         statePensionAge: proj.statePensionAge ?? rules.statePensionDefaultAge,
         statePensionFullAnnual: rules.statePensionFullAnnual,
         dbPensionAnnualIncome: proj.dbPensionAnnualIncome,
         lumpSumAllowance: proj.lumpSumAllowanceOverride ?? rules.lumpSumAllowance,
         personalAllowance: rules.personalAllowance,
+        personalAllowanceTaperThreshold: rules.personalAllowanceTaperThreshold,
         incomeTaxBands: rules.incomeTaxBands,
         drawdownTaxFreeFirst: proj.drawdownTaxFreeFirst,
       })
@@ -123,36 +128,54 @@ export function PensionProjection() {
   const hasInput = proj.currentAge > 0
   const hasIncomeNeeded = proj.annualIncomeNeeded > 0
 
+  // Age at which the DC pot is fully depleted
+  const depletionAge = useMemo(() => {
+    if (!hasIncomeNeeded || projection.drawdownYears.length === 0) return null
+    const depleted = projection.drawdownYears.find(y => y.closingBalance <= 0)
+    return depleted ? depleted.age : null
+  }, [hasIncomeNeeded, projection.drawdownYears])
+
   // Chart data
   const chartData = useMemo(() => {
     if (!hasInput || projection.yearByYear.length === 0) return []
+    const inflRate = proj.inflationRate / 100
+    const discount = (value: number, yearsFromNow: number) =>
+      showInTodaysMoney ? value / Math.pow(1 + inflRate, yearsFromNow) : value
     const points: Array<{
       age: number; pot: number; change: number
       contribution: number; growth: number; withdrawal: number
     }> = []
     let prevPot = 0
     for (const y of projection.yearByYear) {
-      const pot = Math.round(y.closingBalance)
+      const yearsFromNow = y.age - proj.currentAge
+      const pot = Math.round(discount(y.closingBalance, yearsFromNow))
       points.push({
         age: y.age, pot, change: pot - prevPot,
-        contribution: Math.round(y.annualContribution),
-        growth: Math.round(y.growthAmount),
+        contribution: Math.round(discount(y.annualContribution, yearsFromNow)),
+        growth: Math.round(discount(y.growthAmount, yearsFromNow)),
         withdrawal: 0,
       })
       prevPot = pot
     }
+    let depleted = false
     for (const y of projection.drawdownYears) {
-      const pot = Math.round(y.closingBalance)
+      const yearsFromNow = y.age - proj.currentAge
+      const pot = Math.round(discount(y.closingBalance, yearsFromNow))
       points.push({
         age: y.age, pot, change: pot - prevPot,
         contribution: 0,
-        growth: Math.round(y.growthAmount),
-        withdrawal: Math.round(y.withdrawal),
+        growth: Math.round(discount(y.growthAmount, yearsFromNow)),
+        withdrawal: Math.round(discount(y.withdrawal, yearsFromNow)),
       })
       prevPot = pot
+      // Stop charting 3 years after pot is depleted (or at age 100, whichever is later)
+      if (Math.round(y.closingBalance) <= 0) {
+        if (depleted && y.age >= Math.max(proj.pensionAccessAge + 5, 100)) break
+        depleted = true
+      }
     }
     return points
-  }, [hasInput, projection])
+  }, [hasInput, projection, proj.pensionAccessAge, proj.currentAge, proj.inflationRate, showInTodaysMoney])
 
   // Pot management helpers
   const addPot = () => {
@@ -185,10 +208,21 @@ export function PensionProjection() {
     }
   }
 
-  // Estimated State Pension
+  // Estimated State Pension (current, not projected)
   const estimatedStatePension = (proj.qualifyingNIYears != null && proj.qualifyingNIYears > 0)
     ? (Math.min(proj.qualifyingNIYears, 35) / 35) * rules.statePensionFullAnnual
     : 0
+
+  // Discount factor to convert future nominal values to today's money
+  const discountToToday = (futureValue: number, yearsAhead: number) =>
+    futureValue / Math.pow(1 + (proj.inflationRate / 100), yearsAhead)
+  const fmt = (value: number, yearsAhead?: number) =>
+    showInTodaysMoney && yearsAhead != null && yearsAhead > 0
+      ? formatCurrency(discountToToday(value, yearsAhead))
+      : formatCurrency(value)
+
+  // Whether the pot never depletes during the projection
+  const potNeverDepletes = hasIncomeNeeded && depletionAge == null && projection.drawdownYears.length > 0
 
   return (
     <div className="space-y-3">
@@ -473,13 +507,18 @@ export function PensionProjection() {
               </div>
             </div>
             {estimatedStatePension > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Estimated State Pension: {formatCurrency(estimatedStatePension)}/yr
-                ({proj.qualifyingNIYears}/{35} qualifying years of full {formatCurrency(rules.statePensionFullAnnual)})
-                {hasInput && projection.yearsToAccess > 0 && (
-                  <> — {formatCurrency(projection.statePensionAnnual * Math.pow(1 + (proj.inflationRate / 100), (proj.statePensionAge ?? rules.statePensionDefaultAge) - proj.currentAge))}/yr at age {proj.statePensionAge ?? rules.statePensionDefaultAge}</>
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                <p>
+                  Current estimate: {formatCurrency(estimatedStatePension)}/yr
+                  ({proj.qualifyingNIYears}/{35} qualifying years of full {formatCurrency(rules.statePensionFullAnnual)})
+                </p>
+                {hasInput && projection.yearsToAccess > 0 && projection.projectedNIYears != null && projection.projectedNIYears > (proj.qualifyingNIYears ?? 0) && (
+                  <p>
+                    Projected at retirement: {formatCurrency(projection.statePensionAnnual)}/yr
+                    ({projection.projectedNIYears}/35 years, assuming continued NI contributions)
+                  </p>
                 )}
-              </p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -495,12 +534,12 @@ export function PensionProjection() {
                 variant="ghost"
                 size="sm"
                 className="text-xs h-6 px-2 text-muted-foreground"
-                onClick={() => { setShowAdvanced(false); updateProjection({ annualFeeRate: undefined, lumpSumAllowanceOverride: undefined }) }}
+                onClick={() => { setShowAdvanced(false); updateProjection({ annualFeeRate: undefined, salaryGrowthRate: undefined, lumpSumAllowanceOverride: undefined }) }}
               >
                 Remove
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="pp-fee" className="text-xs">
                   Annual platform/fund fee (%)
@@ -515,6 +554,22 @@ export function PensionProjection() {
                   placeholder="0"
                   value={proj.annualFeeRate ?? ''}
                   onChange={e => updateProjection({ annualFeeRate: e.target.value ? parseFloat(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="pp-salary-growth" className="text-xs">
+                  Real salary growth (%)
+                  <HelpTooltip content="Expected annual salary growth above inflation (e.g. career progression). Contributions will grow at inflation + this rate. Set to 0 if you expect salary to only track inflation." />
+                </Label>
+                <Input
+                  id="pp-salary-growth"
+                  type="number"
+                  min={0}
+                  max={5}
+                  step={0.5}
+                  placeholder="0"
+                  value={proj.salaryGrowthRate ?? ''}
+                  onChange={e => updateProjection({ salaryGrowthRate: e.target.value ? parseFloat(e.target.value) : undefined })}
                 />
               </div>
               <div className="grid gap-1.5">
@@ -533,10 +588,15 @@ export function PensionProjection() {
                 />
               </div>
             </div>
-            {(proj.annualFeeRate ?? 0) > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Net growth rate: {(proj.assumedGrowthRate - (proj.annualFeeRate ?? 0)).toFixed(1)}% ({proj.assumedGrowthRate}% growth minus {proj.annualFeeRate}% fees)
-              </p>
+            {((proj.annualFeeRate ?? 0) > 0 || (proj.salaryGrowthRate ?? 0) > 0) && (
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                {(proj.annualFeeRate ?? 0) > 0 && (
+                  <p>Net growth rate: {(proj.assumedGrowthRate - (proj.annualFeeRate ?? 0)).toFixed(1)}% ({proj.assumedGrowthRate}% growth minus {proj.annualFeeRate}% fees)</p>
+                )}
+                {(proj.salaryGrowthRate ?? 0) > 0 && (
+                  <p>Contributions grow at {(proj.inflationRate + (proj.salaryGrowthRate ?? 0)).toFixed(1)}%/yr ({proj.inflationRate}% inflation + {proj.salaryGrowthRate}% real growth)</p>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -547,9 +607,22 @@ export function PensionProjection() {
         <>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">
-                Projected pot at age {proj.pensionAccessAge}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold">
+                  Projected pot at age {proj.pensionAccessAge}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="pp-todays-money"
+                    checked={showInTodaysMoney}
+                    onCheckedChange={setShowInTodaysMoney}
+                  />
+                  <Label htmlFor="pp-todays-money" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+                    Today's £
+                    <HelpTooltip content="Show projected values in today's purchasing power by discounting for inflation. Helps you understand what future amounts are really worth." />
+                  </Label>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-1 text-xs">
@@ -563,7 +636,7 @@ export function PensionProjection() {
                 <span className="text-right font-medium">{formatCurrency(projection.totalContributions)}</span>
 
                 <span className="text-muted-foreground font-medium border-t pt-1">Projected pot</span>
-                <span className="text-right font-medium border-t pt-1">{formatCurrency(projection.projectedPotAtAccess)}</span>
+                <span className="text-right font-medium border-t pt-1">{fmt(projection.projectedPotAtAccess, projection.yearsToAccess)}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-1 text-xs border-t pt-2">
@@ -576,13 +649,13 @@ export function PensionProjection() {
                       )}
                     </span>
                     <span className="text-right font-medium text-emerald-600 dark:text-emerald-400">
-                      {formatCurrency(projection.taxFreeLumpSum)}
+                      {fmt(projection.taxFreeLumpSum, projection.yearsToAccess)}
                     </span>
                   </>
                 )}
 
                 <span className="text-muted-foreground">Drawdown pot</span>
-                <span className="text-right font-medium">{formatCurrency(projection.drawdownPot)}</span>
+                <span className="text-right font-medium">{fmt(projection.drawdownPot, projection.yearsToAccess)}</span>
 
                 <div className="col-span-2 flex items-center gap-2 pt-1">
                   <Switch
@@ -605,23 +678,30 @@ export function PensionProjection() {
                   </span>
                   <span className="text-right font-medium">{formatCurrency(proj.annualIncomeNeeded)}/yr</span>
 
-                  <span className="text-muted-foreground">
-                    Income needed at age {proj.pensionAccessAge}
-                    <HelpTooltip content={`Today's £${proj.annualIncomeNeeded.toLocaleString()} inflated at ${proj.inflationRate}% per year for ${projection.yearsToAccess} years.`} />
-                  </span>
-                  <span className="text-right font-medium">{formatCurrency(projection.inflatedAnnualIncome)}/yr</span>
+                  {!showInTodaysMoney && (
+                    <>
+                      <span className="text-muted-foreground">
+                        Income needed at age {proj.pensionAccessAge}
+                        <HelpTooltip content={`Today's £${proj.annualIncomeNeeded.toLocaleString()} inflated at ${proj.inflationRate}% per year for ${projection.yearsToAccess} years.`} />
+                      </span>
+                      <span className="text-right font-medium">{formatCurrency(projection.inflatedAnnualIncome)}/yr</span>
+                    </>
+                  )}
 
                   {/* State Pension line */}
                   {projection.statePensionAnnual > 0 && (
                     <>
                       <span className="text-muted-foreground">
                         State Pension
+                        {projection.projectedNIYears != null && projection.projectedNIYears > (proj.qualifyingNIYears ?? 0) && (
+                          <span className="text-muted-foreground/70"> ({projection.projectedNIYears}/35 yrs projected)</span>
+                        )}
                         {(proj.statePensionAge ?? rules.statePensionDefaultAge) > proj.pensionAccessAge && (
                           <span className="text-amber-600 dark:text-amber-400"> (from age {proj.statePensionAge ?? rules.statePensionDefaultAge})</span>
                         )}
                       </span>
                       <span className="text-right font-medium text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(projection.statePensionAnnual)}/yr
+                        {showInTodaysMoney ? formatCurrency(projection.statePensionAnnual) : fmt(projection.statePensionAnnual)}/yr
                       </span>
                     </>
                   )}
@@ -629,9 +709,14 @@ export function PensionProjection() {
                   {/* DB Pension line */}
                   {projection.dbPensionAnnualAtAccess > 0 && (
                     <>
-                      <span className="text-muted-foreground">DB pension income</span>
+                      <span className="text-muted-foreground">
+                        DB pension income
+                        {!showInTodaysMoney && projection.yearsToAccess > 0 && (
+                          <span className="text-muted-foreground/70"> (at age {proj.pensionAccessAge})</span>
+                        )}
+                      </span>
                       <span className="text-right font-medium text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(proj.dbPensionAnnualIncome ?? 0)}/yr
+                        {showInTodaysMoney ? formatCurrency(proj.dbPensionAnnualIncome ?? 0) : formatCurrency(projection.dbPensionAnnualAtAccess)}/yr
                       </span>
                     </>
                   )}
@@ -644,7 +729,7 @@ export function PensionProjection() {
                         <HelpTooltip content="Income your private pension drawdown needs to provide, after State Pension and DB pension are subtracted." />
                       </span>
                       <span className="text-right font-medium border-t pt-1">
-                        {formatCurrency(projection.dcIncomeNeeded)}/yr
+                        {fmt(projection.dcIncomeNeeded, showInTodaysMoney ? projection.yearsToAccess : 0)}/yr
                       </span>
                     </>
                   )}
@@ -654,14 +739,14 @@ export function PensionProjection() {
                     <>
                       <span className="text-muted-foreground border-t pt-1">
                         Est. income tax (first year)
-                        <HelpTooltip content="Estimated income tax on your total retirement income (DC drawdown + State Pension + DB pension), based on current tax bands. Pension withdrawals are taxed as income." />
+                        <HelpTooltip content="Estimated income tax on your total retirement income (DC drawdown + State Pension + DB pension), based on current tax bands including Personal Allowance taper above £100k. Pension withdrawals are taxed as income." />
                       </span>
                       <span className="text-right font-medium text-red-600 dark:text-red-400 border-t pt-1">
-                        -{formatCurrency(projection.firstYearTax)}
+                        -{fmt(projection.firstYearTax, projection.yearsToAccess)}
                       </span>
                       <span className="text-muted-foreground">Est. net income (first year)</span>
                       <span className="text-right font-medium">
-                        {formatCurrency(projection.firstYearNetIncome)}/yr
+                        {fmt(projection.firstYearNetIncome, projection.yearsToAccess)}/yr
                       </span>
                     </>
                   )}
@@ -670,15 +755,37 @@ export function PensionProjection() {
                   <span className="text-muted-foreground font-medium border-t pt-1">
                     Drawdown pot lasts
                   </span>
-                  <span className={`text-right font-medium border-t pt-1 ${
-                    projection.yearsOfIncome >= 25
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : projection.yearsOfIncome >= 15
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    ~{Math.floor(projection.yearsOfIncome)} years
-                  </span>
+                  {potNeverDepletes ? (
+                    <span className="text-right font-medium border-t pt-1 text-emerald-600 dark:text-emerald-400">
+                      Indefinitely
+                    </span>
+                  ) : (
+                    <span className={`text-right font-medium border-t pt-1 ${
+                      projection.yearsOfIncome >= 25
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : projection.yearsOfIncome >= 15
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      ~{Math.floor(projection.yearsOfIncome)} years
+                    </span>
+                  )}
+
+                  {/* Depletion age callout */}
+                  {depletionAge != null && (
+                    <>
+                      <span className="text-muted-foreground">Pot runs out at age</span>
+                      <span className={`text-right font-medium ${
+                        depletionAge >= 90
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : depletionAge >= 80
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {depletionAge}
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -689,7 +796,7 @@ export function PensionProjection() {
             <Card>
               <CardContent className="pt-4">
                 <p className="text-xs text-muted-foreground mb-3">
-                  Pension pot — accumulation{hasIncomeNeeded ? ' & drawdown' : ''}
+                  Pension pot — accumulation{hasIncomeNeeded ? ' & drawdown' : ''}{showInTodaysMoney ? ' (today\'s £)' : ''}
                 </p>
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
@@ -753,6 +860,15 @@ export function PensionProjection() {
                         strokeDasharray="4 2"
                         strokeWidth={1}
                         label={{ value: 'State Pension', position: 'top', fill: '#3b82f6', fontSize: 10 }}
+                      />
+                    )}
+                    {depletionAge != null && (
+                      <ReferenceLine
+                        x={depletionAge}
+                        stroke="#ef4444"
+                        strokeDasharray="4 2"
+                        strokeWidth={1}
+                        label={{ value: 'Pot depleted', position: 'top', fill: '#ef4444', fontSize: 10 }}
                       />
                     )}
                     <Area
@@ -828,10 +944,11 @@ export function PensionProjection() {
           <p className="text-xs text-muted-foreground">
             Projection assumes {proj.assumedGrowthRate}% annual growth
             {(proj.annualFeeRate ?? 0) > 0 ? ` minus ${proj.annualFeeRate}% fees (net ${(proj.assumedGrowthRate - (proj.annualFeeRate ?? 0)).toFixed(1)}%)` : ''}
-            . Contributions rise with inflation ({proj.inflationRate}%) to reflect expected salary increases.
+            . Contributions rise with {(proj.salaryGrowthRate ?? 0) > 0 ? `inflation + real salary growth (${(proj.inflationRate + (proj.salaryGrowthRate ?? 0)).toFixed(1)}%)` : `inflation (${proj.inflationRate}%)`} to reflect expected salary increases.
             {hasIncomeNeeded && ` Income needs also inflated at ${proj.inflationRate}% per year. Drawdown assumes the pot continues to grow at the same rate while income is withdrawn annually. `}
             Tax-free lump sum is capped at the Lump Sum Allowance (£{(proj.lumpSumAllowanceOverride ?? rules.lumpSumAllowance).toLocaleString()}).
-            {projection.firstYearTax > 0 && ' Income tax estimates use current tax bands and may differ in retirement.'}
+            {projection.firstYearTax > 0 && ' Income tax estimates use current tax bands (including Personal Allowance taper) and may differ in retirement.'}
+            {projection.projectedNIYears != null && projection.projectedNIYears > (proj.qualifyingNIYears ?? 0) && ` State Pension assumes continued NI contributions until retirement (${projection.projectedNIYears}/35 years).`}
           </p>
         </>
       )}

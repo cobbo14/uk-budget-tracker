@@ -34,6 +34,7 @@ export interface PensionProjectionResult {
   yearByYear: PensionProjectionYear[]
   drawdownYears: DrawdownYear[]
   statePensionAnnual: number
+  projectedNIYears: number | undefined
   dbPensionAnnualAtAccess: number
   dcIncomeNeeded: number
   firstYearTax: number
@@ -50,23 +51,33 @@ export interface PensionProjectionOptions {
   annualIncomeNeeded: number      // today's £, pre-tax
   inflationRate: number           // e.g. 3 for 3%
   annualFeeRate?: number          // platform/fund fee in % (e.g. 0.5)
+  salaryGrowthRate?: number       // real salary growth above inflation in % (e.g. 1 for 1%)
   qualifyingNIYears?: number      // 0-35
   statePensionAge?: number        // default 67
   statePensionFullAnnual?: number // from tax rules
   dbPensionAnnualIncome?: number  // today's £
   lumpSumAllowance?: number      // default £268,275
   personalAllowance?: number     // from tax rules, for drawdown tax calc
+  personalAllowanceTaperThreshold?: number // e.g. 100000
   incomeTaxBands?: TaxBand[]     // for drawdown tax calc
   drawdownTaxFreeFirst?: boolean // use tax-free allowance gradually instead of upfront lump sum
 }
 
-/** Estimate income tax on retirement income using bands */
+/** Estimate income tax on retirement income using bands, with PA taper */
 function estimateRetirementIncomeTax(
   grossIncome: number,
   personalAllowance: number,
   bands: TaxBand[],
+  paTaperThreshold?: number,
 ): number {
-  const taxable = Math.max(0, grossIncome - personalAllowance)
+  // PA tapers by £1 for every £2 above the threshold (£100k in current rules)
+  let effectivePA = personalAllowance
+  if (paTaperThreshold != null && grossIncome > paTaperThreshold) {
+    const reduction = Math.floor((grossIncome - paTaperThreshold) / 2)
+    effectivePA = Math.max(0, personalAllowance - reduction)
+  }
+
+  const taxable = Math.max(0, grossIncome - effectivePA)
   if (taxable === 0) return 0
 
   let remaining = taxable
@@ -96,12 +107,14 @@ export function projectPensionPotAdvanced(
     annualIncomeNeeded,
     inflationRate,
     annualFeeRate = 0,
+    salaryGrowthRate = 0,
     qualifyingNIYears,
     statePensionAge = 67,
     statePensionFullAnnual = 0,
     dbPensionAnnualIncome = 0,
     lumpSumAllowance = 268275,
     personalAllowance = 12570,
+    personalAllowanceTaperThreshold,
     incomeTaxBands,
     drawdownTaxFreeFirst = false,
   } = options
@@ -110,6 +123,9 @@ export function projectPensionPotAdvanced(
   const netGrowthRate = Math.max(0, assumedGrowthRate - annualFeeRate)
   const growthDecimal = netGrowthRate / 100
   const inflationDecimal = inflationRate / 100
+  const salaryGrowthDecimal = salaryGrowthRate / 100
+  // Contributions grow at inflation + real salary growth
+  const contributionGrowthDecimal = inflationDecimal + salaryGrowthDecimal
   const yearByYear: PensionProjectionYear[] = []
 
   // --- Multiple pots or single pot ---
@@ -153,7 +169,7 @@ export function projectPensionPotAdvanced(
     })
 
     totalContributions += contribution
-    contribution *= (1 + inflationDecimal)
+    contribution *= (1 + contributionGrowthDecimal)
   }
 
   const projectedPot = potBalances.reduce((s, p) => s + p.balance, 0)
@@ -167,8 +183,12 @@ export function projectPensionPotAdvanced(
   let taxFreeRemaining = drawdownTaxFreeFirst ? Math.min(uncappedLumpSum, lumpSumAllowance) : 0
 
   // --- State Pension ---
-  const statePensionAnnual = qualifyingNIYears != null && statePensionFullAnnual > 0
-    ? (Math.min(qualifyingNIYears, 35) / 35) * statePensionFullAnnual
+  // Project qualifying NI years forward: assume each working year adds a qualifying year
+  const projectedNIYears = qualifyingNIYears != null
+    ? Math.min(qualifyingNIYears + yearsToAccess, 35)
+    : undefined
+  const statePensionAnnual = projectedNIYears != null && statePensionFullAnnual > 0
+    ? (projectedNIYears / 35) * statePensionFullAnnual
     : 0
 
   // --- DB Pension inflated to access-age prices ---
@@ -187,14 +207,16 @@ export function projectPensionPotAdvanced(
   // --- Drawdown phase (access age to 100) ---
   const drawdownYears: DrawdownYear[] = []
   let drawdownBalance = drawdownPot
-  let currentDcWithdrawal = dcIncomeNeeded
   let currentStatePension = statePensionAtAccess
   let currentDbPension = dbPensionAtAccess
   let currentTotalIncome = inflatedAnnualIncome
   const drawdownLength = Math.max(0, 125 - pensionAccessAge)
 
-  // Inflated PA for drawdown tax (assume PA rises with inflation)
+  // Inflated PA and taper threshold for drawdown tax (assume both rise with inflation)
   let drawdownPA = personalAllowance * Math.pow(1 + inflationDecimal, yearsToAccess)
+  let drawdownPATaper = personalAllowanceTaperThreshold != null
+    ? personalAllowanceTaperThreshold * Math.pow(1 + inflationDecimal, yearsToAccess)
+    : undefined
 
   let firstYearTax = 0
   let firstYearNetIncome = 0
@@ -224,7 +246,7 @@ export function projectPensionPotAdvanced(
     const totalGrossIncome = taxableWithdrawal + spThisYear + dbThisYear
     let incomeTax = 0
     if (incomeTaxBands && totalGrossIncome > 0) {
-      incomeTax = estimateRetirementIncomeTax(totalGrossIncome, drawdownPA, incomeTaxBands)
+      incomeTax = estimateRetirementIncomeTax(totalGrossIncome, drawdownPA, incomeTaxBands, drawdownPATaper)
     }
     const netIncome = taxFreeThisYear + totalGrossIncome - incomeTax
 
@@ -250,12 +272,12 @@ export function projectPensionPotAdvanced(
 
     // Inflate for next year
     if (annualIncomeNeeded > 0) {
-      currentDcWithdrawal *= (1 + inflationDecimal)
       currentTotalIncome *= (1 + inflationDecimal)
     }
     currentStatePension *= (1 + inflationDecimal)
     currentDbPension *= (1 + inflationDecimal)
     drawdownPA *= (1 + inflationDecimal)
+    if (drawdownPATaper != null) drawdownPATaper *= (1 + inflationDecimal)
   }
 
   return {
@@ -272,6 +294,7 @@ export function projectPensionPotAdvanced(
     yearByYear,
     drawdownYears,
     statePensionAnnual,
+    projectedNIYears,
     dbPensionAnnualAtAccess: dbPensionAtAccess,
     dcIncomeNeeded,
     firstYearTax,
