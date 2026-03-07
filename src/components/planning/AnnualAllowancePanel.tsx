@@ -53,8 +53,18 @@ export function AnnualAllowancePanel() {
         <CardContent className="pt-0 space-y-3">
           {/* Funding breakdown */}
           <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-1 text-xs">
-            <span className="text-muted-foreground">Employee contributions</span>
-            <span className="text-right font-medium">{formatCurrency(taxSummary.totalDeductions)}</span>
+            {taxSummary.salarySacrificePension > 0 && (
+              <>
+                <span className="text-muted-foreground">Salary sacrifice pension</span>
+                <span className="text-right font-medium">{formatCurrency(taxSummary.salarySacrificePension)}</span>
+              </>
+            )}
+            {taxSummary.totalDeductions > 0 && (
+              <>
+                <span className="text-muted-foreground">Personal pension contributions</span>
+                <span className="text-right font-medium">{formatCurrency(taxSummary.totalDeductions)}</span>
+              </>
+            )}
             {employerPensionFunding > 0 && (
               <>
                 <span className="text-muted-foreground">Employer contributions</span>

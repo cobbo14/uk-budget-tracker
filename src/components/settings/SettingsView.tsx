@@ -147,10 +147,21 @@ export function SettingsView() {
         <CardHeader>
           <CardTitle className="text-base">Pension Contributions</CardTitle>
           <CardDescription>
-            Employee and employer pension contributions. Employee contributions reduce your taxable income; both count toward the £{rules.pensionAnnualAllowance.toLocaleString()} Annual Allowance.
+            Personal pension contributions (e.g. net pay workplace scheme or SIPP) and employer contributions.
+            Employee contributions here reduce your taxable income but <strong>not</strong> National Insurance.
+            If your pension is via salary sacrifice, enter it on the Income tab instead — salary sacrifice reduces both Income Tax and NI.
+            Both count toward the £{rules.pensionAnnualAllowance.toLocaleString()} Annual Allowance.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Duplicate warning: salary sacrifice pension on Income tab + pension here */}
+          {incomeSources.some(s => s.type === 'employment' && (s.salarySacrificeItems ?? []).some(i => i.type === 'pension')) && settings.pensionContributionType !== 'none' && (
+            <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
+              ⚠ You have a pension salary sacrifice on the Income tab <strong>and</strong> a pension contribution here.
+              Make sure these are separate contributions — don't enter the same pension twice.
+              Salary sacrifice (Income tab) saves NI; contributions here only save Income Tax.
+            </p>
+          )}
           {/* Employee contributions */}
           <div className="space-y-3">
             <p className="text-sm font-medium">Employee (your) contributions</p>

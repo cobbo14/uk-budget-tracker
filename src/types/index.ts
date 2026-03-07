@@ -261,6 +261,7 @@ export interface TaxSummary {
   class4NI: number
   class1NI: number
   salarySacrificeTotal: number
+  salarySacrificePension: number
   bikTotal: number
   // Child Benefit / HICBC
   childBenefitAnnual: number

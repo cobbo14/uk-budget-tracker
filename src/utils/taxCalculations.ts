@@ -74,6 +74,10 @@ export function calculateTax(
   const totalSalarySacrifice = employmentSources.reduce((sum, s) =>
     sum + (s.salarySacrificeItems ?? []).reduce((a, i) =>
       a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0), 0)
+  // Pension portion of salary sacrifice (counts toward Annual Allowance)
+  const salarySacrificePension = employmentSources.reduce((sum, s) =>
+    sum + (s.salarySacrificeItems ?? []).filter(i => i.type === 'pension').reduce((a, i) =>
+      a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0), 0)
   // effectiveEmploymentGross: used for Class 1 NI (BIK does not attract employee NI)
   const effectiveEmploymentGross = Math.max(0, employmentGross - totalSalarySacrifice)
   // --- Benefits in Kind (P11D) ---
@@ -394,7 +398,7 @@ export function calculateTax(
   } else {
     employerPension = settings.employerPensionContributionValue ?? 0
   }
-  const totalPensionFunding = pensionDeduction + sippContribution + employerPension
+  const totalPensionFunding = pensionDeduction + sippContribution + employerPension + salarySacrificePension
   // Threshold income = adjusted net income + dividends (before pension deduction being re-added)
   // Adjusted income for taper = threshold income + employer contributions
   const thresholdIncomeForAA = adjustedNetIncome + dividendGross + totalDeductions
@@ -480,6 +484,7 @@ export function calculateTax(
     class2NI,
     class4NI,
     salarySacrificeTotal: totalSalarySacrifice,
+    salarySacrificePension,
     bikTotal: totalBIK,
     childBenefitAnnual,
     hicbc,

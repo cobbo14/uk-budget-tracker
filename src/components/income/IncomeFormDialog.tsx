@@ -324,7 +324,7 @@ export function IncomeFormDialog() {
               <div className="flex items-center justify-between">
                 <Label>
                   Salary Sacrifice Benefits
-                  <HelpTooltip content="Reduces your NI-able earnings, saving employee NI in addition to income tax. Pension salary sacrifice also reduces employer NI." />
+                  <HelpTooltip content="Salary sacrifice reduces your gross salary before tax and NI, saving both Income Tax and National Insurance. This is different from a personal pension contribution (entered in Settings), which only saves Income Tax. Don't enter the same pension in both places." />
                 </Label>
                 <Button
                   type="button"

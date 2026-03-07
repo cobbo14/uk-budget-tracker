@@ -192,6 +192,9 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                   )}
                 </>
               )}
+              {t.salarySacrificeTotal > 0 && (
+                <Row label="Salary sacrifice" value={`−${formatCurrency(v(t.salarySacrificeTotal))}`} indent showBonusCol={showBonusCol} />
+              )}
               {t.bikTotal > 0 && (
                 <Row label="Benefits in Kind (P11D)" value={`+${formatCurrency(v(t.bikTotal))}`} indent showBonusCol={showBonusCol} />
               )}
