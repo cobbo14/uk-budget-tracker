@@ -359,4 +359,169 @@ describe('projectPensionPotAdvanced', () => {
       expect(result.firstYearTax).toBeCloseTo(3486, 0)
     })
   })
+
+  describe('ISA projection', () => {
+    it('projects ISA growth during accumulation', () => {
+      const result = projectPensionPotAdvanced({
+        currentAge: 30,
+        currentPotValue: 50_000,
+        pensionAccessAge: 57,
+        annualContribution: 10_000,
+        assumedGrowthRate: 4,
+        annualIncomeNeeded: 0,
+        inflationRate: 0,
+        isaPots: [
+          { id: '1', name: 'S&S ISA', type: 'stocksAndShares', currentValue: 20_000, annualContribution: 10_000 },
+        ],
+      })
+      expect(result.projectedIsaAtAccess).toBeGreaterThan(20_000)
+      expect(result.totalIsaContributions).toBe(10_000 * 27)
+      expect(result.totalRetirementWealth).toBe(result.projectedPotAtAccess + result.projectedIsaAtAccess)
+    })
+
+    it('applies LISA 25% government bonus during accumulation', () => {
+      const result = projectPensionPotAdvanced({
+        currentAge: 25,
+        currentPotValue: 0,
+        pensionAccessAge: 57,
+        annualContribution: 0,
+        assumedGrowthRate: 0,
+        annualIncomeNeeded: 0,
+        inflationRate: 0,
+        annualFeeRate: 0,
+        isaPots: [
+          { id: '1', name: 'LISA', type: 'lifetime', currentValue: 0, annualContribution: 4000, growthRateOverride: 0 },
+        ],
+      })
+      // LISA contributions stop at age 50: £4k/yr for 25 years (age 25-49)
+      // Bonus: 25 years × £1k = £25k total
+      expect(result.totalLisaBonus).toBe(25_000)
+      // Total ISA value: (4000 * 25) + 25000 bonus = 125,000
+      expect(result.projectedIsaAtAccess).toBe(125_000)
+    })
+
+    it('caps LISA contributions at £4,000', () => {
+      const result = projectPensionPotAdvanced({
+        currentAge: 40,
+        currentPotValue: 0,
+        pensionAccessAge: 41,
+        annualContribution: 0,
+        assumedGrowthRate: 0,
+        annualIncomeNeeded: 0,
+        inflationRate: 0,
+        isaPots: [
+          { id: '1', name: 'LISA', type: 'lifetime', currentValue: 0, annualContribution: 10_000, growthRateOverride: 0 },
+        ],
+      })
+      // Only £4k contributed (LISA cap) even though £10k was set, bonus = £1k
+      expect(result.projectedIsaAtAccess).toBe(5_000) // 4k contribution + 1k bonus
+      expect(result.totalLisaBonus).toBe(1_000)
+    })
+
+    it('uses ISA in tax-optimised drawdown to reduce tax', () => {
+      const bands = [
+        { from: 0, to: 37700, rate: 0.20 },
+        { from: 37700, to: 112570, rate: 0.40 },
+        { from: 112570, to: Infinity, rate: 0.45 },
+      ]
+
+      // Pension-only: £40k income needed, all from pension
+      const pensionOnly = projectPensionPotAdvanced({
+        currentAge: 56,
+        currentPotValue: 1_000_000,
+        pensionAccessAge: 57,
+        annualContribution: 0,
+        assumedGrowthRate: 0,
+        annualIncomeNeeded: 40_000,
+        inflationRate: 0,
+        personalAllowance: 12570,
+        incomeTaxBands: bands,
+      })
+
+      // With ISA (tax-optimised): pension draws up to PA, ISA covers the rest
+      const withIsa = projectPensionPotAdvanced({
+        currentAge: 56,
+        currentPotValue: 500_000,
+        pensionAccessAge: 57,
+        annualContribution: 0,
+        assumedGrowthRate: 0,
+        annualIncomeNeeded: 40_000,
+        inflationRate: 0,
+        personalAllowance: 12570,
+        incomeTaxBands: bands,
+        isaPots: [
+          { id: '1', name: 'S&S ISA', type: 'stocksAndShares', currentValue: 500_000, annualContribution: 0 },
+        ],
+        isaDrawdownStrategy: 'tax-optimised',
+      })
+
+      // Pension-only tax: (40000 - 12570) * 0.20 = 5486
+      expect(pensionOnly.firstYearTax).toBeCloseTo(5486, 0)
+
+      // Tax-optimised: pension draws only up to PA (£12,570), ISA covers rest (£27,430)
+      // Tax = 0 (pension within PA)
+      expect(withIsa.firstYearTaxWithIsa).toBe(0)
+      expect(withIsa.firstYearNetIncomeWithIsa).toBeCloseTo(40_000, 0)
+    })
+
+    it('combined years of income includes ISA extending retirement', () => {
+      const result = projectPensionPotAdvanced({
+        currentAge: 56,
+        currentPotValue: 100_000,
+        pensionAccessAge: 57,
+        annualContribution: 0,
+        assumedGrowthRate: 0,
+        annualIncomeNeeded: 20_000,
+        inflationRate: 0,
+        isaPots: [
+          { id: '1', name: 'S&S ISA', type: 'stocksAndShares', currentValue: 100_000, annualContribution: 0 },
+        ],
+        isaDrawdownStrategy: 'pension-first',
+      })
+      // Pension lasts ~5 years (100k / 20k), ISA extends it further
+      expect(result.combinedYearsOfIncome).toBeGreaterThan(result.yearsOfIncome)
+    })
+
+    it('pension-first strategy exhausts pension before ISA', () => {
+      const result = projectPensionPotAdvanced({
+        currentAge: 56,
+        currentPotValue: 60_000,
+        pensionAccessAge: 57,
+        annualContribution: 0,
+        assumedGrowthRate: 0,
+        annualIncomeNeeded: 20_000,
+        inflationRate: 0,
+        isaPots: [
+          { id: '1', name: 'S&S ISA', type: 'stocksAndShares', currentValue: 100_000, annualContribution: 0, growthRateOverride: 0 },
+        ],
+        isaDrawdownStrategy: 'pension-first',
+      })
+      // Pot = 60k, 25% tax-free lump sum = 15k, drawdown pot = 45k
+      // Year 1: pension 20k, ISA 0
+      expect(result.drawdownYears[0].withdrawal).toBeCloseTo(20_000, 0)
+      expect(result.drawdownYears[0].isaWithdrawal).toBe(0)
+      // Year 2: pension 20k (25k left), ISA 0
+      expect(result.drawdownYears[1].withdrawal).toBeCloseTo(20_000, 0)
+      expect(result.drawdownYears[1].isaWithdrawal).toBe(0)
+      // Year 3: pension has 5k left, draws 5k, ISA covers remaining 15k
+      expect(result.drawdownYears[2].withdrawal).toBeCloseTo(5_000, 0)
+      expect(result.drawdownYears[2].isaWithdrawal).toBeCloseTo(15_000, 0)
+    })
+
+    it('returns zero ISA fields when no ISA pots configured', () => {
+      const result = projectPensionPotAdvanced({
+        currentAge: 30,
+        currentPotValue: 50_000,
+        pensionAccessAge: 57,
+        annualContribution: 10_000,
+        assumedGrowthRate: 4,
+        annualIncomeNeeded: 30_000,
+        inflationRate: 3,
+      })
+      expect(result.projectedIsaAtAccess).toBe(0)
+      expect(result.totalIsaContributions).toBe(0)
+      expect(result.totalLisaBonus).toBe(0)
+      expect(result.totalRetirementWealth).toBe(result.projectedPotAtAccess)
+    })
+  })
 })

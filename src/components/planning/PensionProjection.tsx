@@ -14,7 +14,7 @@ import { generateId } from '@/utils/ids'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine,
 } from 'recharts'
-import type { PensionProjectionSettings, PensionPot } from '@/types'
+import type { PensionProjectionSettings, PensionPot, ISAPot, ISAPotType, ISADrawdownStrategy } from '@/types'
 
 const DEFAULTS: PensionProjectionSettings = {
   currentAge: 30,
@@ -30,6 +30,7 @@ export function PensionProjection() {
   const [showStatePension, setShowStatePension] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showMultiplePots, setShowMultiplePots] = useState(false)
+  const [showIsaSavings, setShowIsaSavings] = useState(false)
   const [showInTodaysMoney, setShowInTodaysMoney] = useState(false)
 
   const { totalPensionFunding } = taxSummary
@@ -41,10 +42,12 @@ export function PensionProjection() {
   const hasStatePension = (proj.qualifyingNIYears ?? 0) > 0 || (proj.dbPensionAnnualIncome ?? 0) > 0
   const hasAdvanced = (proj.annualFeeRate ?? 0) > 0 || (proj.lumpSumAllowanceOverride ?? 0) > 0 || (proj.salaryGrowthRate ?? 0) > 0
   const hasMultiplePots = (proj.pensionPots?.length ?? 0) > 0
+  const hasIsaSavings = (proj.isaPots?.length ?? 0) > 0
 
   const statePensionOpen = showStatePension || hasStatePension
   const advancedOpen = showAdvanced || hasAdvanced
   const multiplePotsOpen = showMultiplePots || hasMultiplePots
+  const isaSavingsOpen = showIsaSavings || hasIsaSavings
 
   const updateProjection = (partial: Partial<PensionProjectionSettings>) => {
     dispatch({
@@ -80,6 +83,8 @@ export function PensionProjection() {
       personalAllowanceTaperThreshold: rules.personalAllowanceTaperThreshold,
       incomeTaxBands: rules.incomeTaxBands,
       drawdownTaxFreeFirst: proj.drawdownTaxFreeFirst,
+      isaPots: proj.isaPots,
+      isaDrawdownStrategy: proj.isaDrawdownStrategy,
     }),
     [proj, totalPensionFunding, totalPotValue, rules],
   )
@@ -114,6 +119,8 @@ export function PensionProjection() {
         personalAllowanceTaperThreshold: rules.personalAllowanceTaperThreshold,
         incomeTaxBands: rules.incomeTaxBands,
         drawdownTaxFreeFirst: proj.drawdownTaxFreeFirst,
+        isaPots: proj.isaPots,
+        isaDrawdownStrategy: proj.isaDrawdownStrategy,
       })
       return {
         label: s.label,
@@ -128,10 +135,10 @@ export function PensionProjection() {
   const hasInput = proj.currentAge > 0
   const hasIncomeNeeded = proj.annualIncomeNeeded > 0
 
-  // Age at which the DC pot is fully depleted
+  // Age at which all retirement funds are fully depleted (pension + ISA)
   const depletionAge = useMemo(() => {
     if (!hasIncomeNeeded || projection.drawdownYears.length === 0) return null
-    const depleted = projection.drawdownYears.find(y => y.closingBalance <= 0)
+    const depleted = projection.drawdownYears.find(y => y.closingBalance <= 0 && y.isaClosingBalance <= 0)
     return depleted ? depleted.age : null
   }, [hasIncomeNeeded, projection.drawdownYears])
 
@@ -142,34 +149,38 @@ export function PensionProjection() {
     const discount = (value: number, yearsFromNow: number) =>
       showInTodaysMoney ? value / Math.pow(1 + inflRate, yearsFromNow) : value
     const points: Array<{
-      age: number; pot: number; change: number
+      age: number; pot: number; isa: number; change: number
       contribution: number; growth: number; withdrawal: number
     }> = []
-    let prevPot = 0
+    let prevTotal = 0
     for (const y of projection.yearByYear) {
       const yearsFromNow = y.age - proj.currentAge
       const pot = Math.round(discount(y.closingBalance, yearsFromNow))
+      const isa = Math.round(discount(y.isaClosingBalance, yearsFromNow))
+      const total = pot + isa
       points.push({
-        age: y.age, pot, change: pot - prevPot,
-        contribution: Math.round(discount(y.annualContribution, yearsFromNow)),
-        growth: Math.round(discount(y.growthAmount, yearsFromNow)),
+        age: y.age, pot, isa, change: total - prevTotal,
+        contribution: Math.round(discount(y.annualContribution + y.isaContribution, yearsFromNow)),
+        growth: Math.round(discount(y.growthAmount + y.isaGrowthAmount, yearsFromNow)),
         withdrawal: 0,
       })
-      prevPot = pot
+      prevTotal = total
     }
     let depleted = false
     for (const y of projection.drawdownYears) {
       const yearsFromNow = y.age - proj.currentAge
       const pot = Math.round(discount(y.closingBalance, yearsFromNow))
+      const isa = Math.round(discount(y.isaClosingBalance, yearsFromNow))
+      const total = pot + isa
       points.push({
-        age: y.age, pot, change: pot - prevPot,
+        age: y.age, pot, isa, change: total - prevTotal,
         contribution: 0,
-        growth: Math.round(discount(y.growthAmount, yearsFromNow)),
-        withdrawal: Math.round(discount(y.withdrawal, yearsFromNow)),
+        growth: Math.round(discount(y.growthAmount + y.isaGrowthAmount, yearsFromNow)),
+        withdrawal: Math.round(discount(y.withdrawal + y.isaWithdrawal, yearsFromNow)),
       })
-      prevPot = pot
-      // Stop charting 3 years after pot is depleted (or at age 100, whichever is later)
-      if (Math.round(y.closingBalance) <= 0) {
+      prevTotal = total
+      // Stop charting 3 years after both pots are depleted (or at age 100)
+      if (Math.round(y.closingBalance) <= 0 && Math.round(y.isaClosingBalance) <= 0) {
         if (depleted && y.age >= Math.max(proj.pensionAccessAge + 5, 100)) break
         depleted = true
       }
@@ -208,6 +219,37 @@ export function PensionProjection() {
     }
   }
 
+  // ISA pot management helpers
+  const addIsaPot = (type: ISAPotType = 'stocksAndShares') => {
+    const names: Record<ISAPotType, string> = {
+      cash: 'Cash ISA',
+      stocksAndShares: 'Stocks & Shares ISA',
+      lifetime: 'Lifetime ISA',
+    }
+    const currentPots = proj.isaPots ?? []
+    const newPot: ISAPot = {
+      id: generateId(),
+      name: names[type],
+      type,
+      currentValue: 0,
+      annualContribution: 0,
+    }
+    updateProjection({ isaPots: [...currentPots, newPot] })
+  }
+
+  const updateIsaPot = (id: string, partial: Partial<ISAPot>) => {
+    const pots = (proj.isaPots ?? []).map(p => p.id === id ? { ...p, ...partial } : p)
+    updateProjection({ isaPots: pots })
+  }
+
+  const removeIsaPot = (id: string) => {
+    const pots = (proj.isaPots ?? []).filter(p => p.id !== id)
+    updateProjection({ isaPots: pots.length > 0 ? pots : undefined })
+  }
+
+  const totalIsaContribution = (proj.isaPots ?? []).reduce((s, p) => s + p.annualContribution, 0)
+  const hasIsaPots = projection.projectedIsaAtAccess > 0
+
   // Estimated State Pension (current, not projected)
   const estimatedStatePension = (proj.qualifyingNIYears != null && proj.qualifyingNIYears > 0)
     ? (Math.min(proj.qualifyingNIYears, 35) / 35) * rules.statePensionFullAnnual
@@ -221,15 +263,12 @@ export function PensionProjection() {
       ? formatCurrency(discountToToday(value, yearsAhead))
       : formatCurrency(value)
 
-  // Whether the pot never depletes during the projection
-  const potNeverDepletes = hasIncomeNeeded && depletionAge == null && projection.drawdownYears.length > 0
-
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-base font-semibold">Pension Pot Projection</h3>
+        <h3 className="text-base font-semibold">Retirement Projection</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Project your pension pot growth to retirement and see how long it could fund your income.
+          Project your pension and ISA savings to retirement and see how long they could fund your income.
         </p>
       </div>
 
@@ -347,6 +386,16 @@ export function PensionProjection() {
                 + Multiple pots
               </Button>
             )}
+            {!isaSavingsOpen && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => { setShowIsaSavings(true); if (!hasIsaSavings) addIsaPot('stocksAndShares') }}
+              >
+                + ISA savings
+              </Button>
+            )}
             {!statePensionOpen && (
               <Button
                 variant="outline"
@@ -440,6 +489,134 @@ export function PensionProjection() {
             <Button variant="outline" size="sm" className="text-xs h-7" onClick={addPot}>
               + Add pot
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ISA savings */}
+      {isaSavingsOpen && (
+        <Card>
+          <CardContent className="pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium">ISA Savings</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6 px-2 text-muted-foreground"
+                onClick={() => { setShowIsaSavings(false); updateProjection({ isaPots: undefined, isaDrawdownStrategy: undefined }) }}
+              >
+                Remove
+              </Button>
+            </div>
+            {totalIsaContribution > 0 && (
+              <div className="text-xs text-muted-foreground">
+                <p>
+                  Total ISA contributions: {formatCurrency(totalIsaContribution)}/yr of {formatCurrency(20_000)} allowance
+                  {totalIsaContribution > 20_000 && (
+                    <span className="text-red-600 dark:text-red-400 font-medium"> — exceeds £20k allowance</span>
+                  )}
+                </p>
+              </div>
+            )}
+            {(proj.isaPots ?? []).map(pot => (
+              <div key={pot.id} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-end">
+                <div className="grid gap-1">
+                  <Label className="text-xs">
+                    Type
+                  </Label>
+                  <select
+                    value={pot.type}
+                    onChange={e => updateIsaPot(pot.id, { type: e.target.value as ISAPotType, name: { cash: 'Cash ISA', stocksAndShares: 'Stocks & Shares ISA', lifetime: 'Lifetime ISA' }[e.target.value as ISAPotType] })}
+                    className="h-8 text-sm rounded-md border border-input bg-background px-2"
+                  >
+                    <option value="stocksAndShares">Stocks & Shares</option>
+                    <option value="cash">Cash</option>
+                    <option value="lifetime">Lifetime (LISA)</option>
+                  </select>
+                </div>
+                <div className="grid gap-1">
+                  <Label className="text-xs">Value (£)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={1000}
+                    value={pot.currentValue || ''}
+                    onChange={e => updateIsaPot(pot.id, { currentValue: parseFloat(e.target.value) || 0 })}
+                    className="h-8 text-sm w-24"
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label className="text-xs">Contrib/yr (£)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={500}
+                    max={pot.type === 'lifetime' ? 4000 : 20000}
+                    value={pot.annualContribution || ''}
+                    onChange={e => updateIsaPot(pot.id, { annualContribution: parseFloat(e.target.value) || 0 })}
+                    className="h-8 text-sm w-24"
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label className="text-xs">
+                    Growth %
+                    <HelpTooltip content={`Override the growth rate for this ISA. Cash ISAs default to 2%. Stocks & Shares and LISA recommended: inflation + 5% (${(proj.inflationRate + 5).toFixed(1)}%).`} />
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={15}
+                    step={0.5}
+                    placeholder={pot.type === 'cash' ? '2' : String(proj.inflationRate + 5)}
+                    value={pot.growthRateOverride ?? ''}
+                    onChange={e => updateIsaPot(pot.id, { growthRateOverride: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    className="h-8 text-sm w-20"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs text-muted-foreground"
+                  onClick={() => removeIsaPot(pot.id)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+            {(proj.isaPots ?? []).some(p => p.type === 'lifetime') && (
+              <p className="text-xs text-muted-foreground">
+                LISA: £4k/yr max contribution, 25% government bonus until age 50. Penalty-free withdrawal from age 60.
+                {proj.currentAge >= 40 && ' Cannot open a new LISA after age 39.'}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => addIsaPot('stocksAndShares')}>
+                + Add ISA
+              </Button>
+              {!(proj.isaPots ?? []).some(p => p.type === 'lifetime') && proj.currentAge < 40 && (
+                <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => addIsaPot('lifetime')}>
+                  + Add LISA
+                </Button>
+              )}
+            </div>
+            {/* Drawdown strategy selector */}
+            {(proj.isaPots ?? []).length > 0 && hasIncomeNeeded && (
+              <div className="grid gap-1.5 pt-1 border-t">
+                <Label className="text-xs">
+                  Drawdown strategy
+                  <HelpTooltip content="Tax-optimised: draw pension up to Personal Allowance (tax-free), then ISA (always tax-free), then more pension if needed. This minimises income tax in retirement. Pension-first: exhaust pension before ISA. ISA-first: exhaust ISA before pension." />
+                </Label>
+                <select
+                  value={proj.isaDrawdownStrategy ?? 'tax-optimised'}
+                  onChange={e => updateProjection({ isaDrawdownStrategy: e.target.value as ISADrawdownStrategy })}
+                  className="h-8 text-sm rounded-md border border-input bg-background px-2 w-fit"
+                >
+                  <option value="tax-optimised">Tax-optimised (recommended)</option>
+                  <option value="pension-first">Pension first</option>
+                  <option value="isa-first">ISA first</option>
+                </select>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -609,7 +786,7 @@ export function PensionProjection() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold">
-                  Projected pot at age {proj.pensionAccessAge}
+                  Projected wealth at age {proj.pensionAccessAge}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Switch
@@ -635,8 +812,31 @@ export function PensionProjection() {
                 <span className="text-muted-foreground">Total contributions over period</span>
                 <span className="text-right font-medium">{formatCurrency(projection.totalContributions)}</span>
 
-                <span className="text-muted-foreground font-medium border-t pt-1">Projected pot</span>
+                <span className="text-muted-foreground font-medium border-t pt-1">Projected pension pot</span>
                 <span className="text-right font-medium border-t pt-1">{fmt(projection.projectedPotAtAccess, projection.yearsToAccess)}</span>
+
+                {hasIsaPots && (
+                  <>
+                    <span className="text-muted-foreground">Projected ISA value</span>
+                    <span className="text-right font-medium text-blue-600 dark:text-blue-400">
+                      {fmt(projection.projectedIsaAtAccess, projection.yearsToAccess)}
+                    </span>
+
+                    {projection.totalLisaBonus > 0 && (
+                      <>
+                        <span className="text-muted-foreground pl-3">incl. LISA govt bonus</span>
+                        <span className="text-right font-medium text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(projection.totalLisaBonus)}
+                        </span>
+                      </>
+                    )}
+
+                    <span className="text-muted-foreground font-medium border-t pt-1">Total retirement wealth</span>
+                    <span className="text-right font-semibold border-t pt-1">
+                      {fmt(projection.totalRetirementWealth, projection.yearsToAccess)}
+                    </span>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-1 text-xs border-t pt-2">
@@ -734,47 +934,68 @@ export function PensionProjection() {
                     </>
                   )}
 
+                  {/* ISA income line */}
+                  {hasIsaPots && projection.drawdownYears.length > 0 && projection.drawdownYears[0].isaWithdrawal > 0 && (
+                    <>
+                      <span className="text-muted-foreground">
+                        ISA income (tax-free)
+                        <HelpTooltip content="ISA withdrawals are completely tax-free and don't count towards your taxable income or affect the Personal Allowance taper." />
+                      </span>
+                      <span className="text-right font-medium text-blue-600 dark:text-blue-400">
+                        {fmt(projection.drawdownYears[0].isaWithdrawal, projection.yearsToAccess)}/yr
+                      </span>
+                    </>
+                  )}
+
                   {/* Drawdown tax estimate */}
-                  {projection.firstYearTax > 0 && (
+                  {projection.firstYearTaxWithIsa > 0 && (
                     <>
                       <span className="text-muted-foreground border-t pt-1">
                         Est. income tax (first year)
-                        <HelpTooltip content="Estimated income tax on your total retirement income (DC drawdown + State Pension + DB pension), based on current tax bands including Personal Allowance taper above £100k. Pension withdrawals are taxed as income." />
+                        <HelpTooltip content="Estimated income tax on your taxable retirement income (DC drawdown + State Pension + DB pension). ISA withdrawals are tax-free and not included." />
                       </span>
                       <span className="text-right font-medium text-red-600 dark:text-red-400 border-t pt-1">
-                        -{fmt(projection.firstYearTax, projection.yearsToAccess)}
+                        -{fmt(projection.firstYearTaxWithIsa, projection.yearsToAccess)}
                       </span>
+                    </>
+                  )}
+                  {(projection.firstYearNetIncomeWithIsa > 0 || projection.firstYearTaxWithIsa > 0) && (
+                    <>
                       <span className="text-muted-foreground">Est. net income (first year)</span>
                       <span className="text-right font-medium">
-                        {fmt(projection.firstYearNetIncome, projection.yearsToAccess)}/yr
+                        {fmt(hasIsaPots ? projection.firstYearNetIncomeWithIsa : projection.firstYearNetIncome, projection.yearsToAccess)}/yr
                       </span>
                     </>
                   )}
 
                   {/* Years the pot lasts */}
                   <span className="text-muted-foreground font-medium border-t pt-1">
-                    Drawdown pot lasts
+                    {hasIsaPots ? 'Retirement funds last' : 'Drawdown pot lasts'}
                   </span>
-                  {potNeverDepletes ? (
-                    <span className="text-right font-medium border-t pt-1 text-emerald-600 dark:text-emerald-400">
-                      Indefinitely
-                    </span>
-                  ) : (
-                    <span className={`text-right font-medium border-t pt-1 ${
-                      projection.yearsOfIncome >= 25
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : projection.yearsOfIncome >= 15
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      ~{Math.floor(projection.yearsOfIncome)} years
-                    </span>
-                  )}
+                  {(() => {
+                    const years = hasIsaPots ? projection.combinedYearsOfIncome : projection.yearsOfIncome
+                    const neverDepletes = hasIncomeNeeded && depletionAge == null && projection.drawdownYears.length > 0
+                    return neverDepletes ? (
+                      <span className="text-right font-medium border-t pt-1 text-emerald-600 dark:text-emerald-400">
+                        Indefinitely
+                      </span>
+                    ) : (
+                      <span className={`text-right font-medium border-t pt-1 ${
+                        years >= 25
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : years >= 15
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        ~{Math.floor(years)} years
+                      </span>
+                    )
+                  })()}
 
                   {/* Depletion age callout */}
                   {depletionAge != null && (
                     <>
-                      <span className="text-muted-foreground">Pot runs out at age</span>
+                      <span className="text-muted-foreground">{hasIsaPots ? 'Funds run out at age' : 'Pot runs out at age'}</span>
                       <span className={`text-right font-medium ${
                         depletionAge >= 90
                           ? 'text-emerald-600 dark:text-emerald-400'
@@ -796,7 +1017,7 @@ export function PensionProjection() {
             <Card>
               <CardContent className="pt-4">
                 <p className="text-xs text-muted-foreground mb-3">
-                  Pension pot — accumulation{hasIncomeNeeded ? ' & drawdown' : ''}{showInTodaysMoney ? ' (today\'s £)' : ''}
+                  {hasIsaPots ? 'Retirement wealth' : 'Pension pot'} — accumulation{hasIncomeNeeded ? ' & drawdown' : ''}{showInTodaysMoney ? ' (today\'s £)' : ''}
                 </p>
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
@@ -804,6 +1025,10 @@ export function PensionProjection() {
                       <linearGradient id="potGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#059669" stopOpacity={0.2} />
                         <stop offset="100%" stopColor="#059669" stopOpacity={0.02} />
+                      </linearGradient>
+                      <linearGradient id="isaGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2563eb" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="#2563eb" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <XAxis
@@ -823,13 +1048,15 @@ export function PensionProjection() {
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null
                         const d = payload[0].payload as {
-                          pot: number; change: number
+                          pot: number; isa: number; change: number
                           contribution: number; growth: number; withdrawal: number
                         }
                         return (
                           <div className="rounded-md border bg-popover px-3 py-2 text-xs shadow-md">
                             <p className="font-medium mb-1">Age {label}</p>
-                            <p>Pot: {formatCurrency(d.pot)}</p>
+                            <p>Pension: {formatCurrency(d.pot)}</p>
+                            {d.isa > 0 && <p>ISA: <span className="text-blue-600 dark:text-blue-400">{formatCurrency(d.isa)}</span></p>}
+                            {d.isa > 0 && <p className="font-medium">Total: {formatCurrency(d.pot + d.isa)}</p>}
                             <div className="border-t mt-1.5 pt-1.5 space-y-0.5 text-muted-foreground">
                               {d.contribution > 0 && (
                                 <p>Contributions: <span className="text-foreground">+{formatCurrency(d.contribution)}</span></p>
@@ -868,7 +1095,7 @@ export function PensionProjection() {
                         stroke="#ef4444"
                         strokeDasharray="4 2"
                         strokeWidth={1}
-                        label={{ value: 'Pot depleted', position: 'top', fill: '#ef4444', fontSize: 10 }}
+                        label={{ value: hasIsaPots ? 'Funds depleted' : 'Pot depleted', position: 'top', fill: '#ef4444', fontSize: 10 }}
                       />
                     )}
                     <Area
@@ -878,8 +1105,40 @@ export function PensionProjection() {
                       strokeWidth={2}
                       fill="url(#potGradient)"
                     />
+                    {hasIsaPots && (
+                      <Area
+                        type="monotone"
+                        dataKey="isa"
+                        stroke="#2563eb"
+                        strokeWidth={2}
+                        fill="url(#isaGradient)"
+                      />
+                    )}
                   </AreaChart>
                 </ResponsiveContainer>
+                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block w-3 h-0.5 rounded-full bg-emerald-600" />Pension
+                  </span>
+                  {hasIsaPots && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-0.5 rounded-full bg-blue-600" />ISA
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block w-3 h-0 border-t border-dashed border-gray-500" />Retirement
+                  </span>
+                  {projection.statePensionAnnual > 0 && (proj.statePensionAge ?? rules.statePensionDefaultAge) > proj.pensionAccessAge && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-0 border-t border-dashed border-blue-500" />State Pension
+                    </span>
+                  )}
+                  {depletionAge != null && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-0 border-t border-dashed border-red-500" />{hasIsaPots ? 'Funds depleted' : 'Pot depleted'}
+                    </span>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -945,10 +1204,11 @@ export function PensionProjection() {
             Projection assumes {proj.assumedGrowthRate}% annual growth
             {(proj.annualFeeRate ?? 0) > 0 ? ` minus ${proj.annualFeeRate}% fees (net ${(proj.assumedGrowthRate - (proj.annualFeeRate ?? 0)).toFixed(1)}%)` : ''}
             . Contributions rise with {(proj.salaryGrowthRate ?? 0) > 0 ? `inflation + real salary growth (${(proj.inflationRate + (proj.salaryGrowthRate ?? 0)).toFixed(1)}%)` : `inflation (${proj.inflationRate}%)`} to reflect expected salary increases.
-            {hasIncomeNeeded && ` Income needs also inflated at ${proj.inflationRate}% per year. Drawdown assumes the pot continues to grow at the same rate while income is withdrawn annually. `}
+            {hasIncomeNeeded && ` Income needs also inflated at ${proj.inflationRate}% per year. Drawdown assumes pots continue to grow at the same rate while income is withdrawn annually. `}
             Tax-free lump sum is capped at the Lump Sum Allowance (£{(proj.lumpSumAllowanceOverride ?? rules.lumpSumAllowance).toLocaleString()}).
-            {projection.firstYearTax > 0 && ' Income tax estimates use current tax bands (including Personal Allowance taper) and may differ in retirement.'}
+            {projection.firstYearTaxWithIsa > 0 && ' Income tax estimates use current tax bands (including Personal Allowance taper) and may differ in retirement.'}
             {projection.projectedNIYears != null && projection.projectedNIYears > (proj.qualifyingNIYears ?? 0) && ` State Pension assumes continued NI contributions until retirement (${projection.projectedNIYears}/35 years).`}
+            {hasIsaPots && ' ISA withdrawals are completely tax-free. LISA withdrawals before age 60 incur a 25% penalty on the gross amount.'}
           </p>
         </>
       )}

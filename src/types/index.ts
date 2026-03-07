@@ -119,6 +119,19 @@ export interface PensionPot {
   growthRateOverride?: number  // if undefined, uses the global assumedGrowthRate
 }
 
+export type ISAPotType = 'cash' | 'stocksAndShares' | 'lifetime'
+
+export interface ISAPot {
+  id: string
+  name: string
+  type: ISAPotType
+  currentValue: number
+  annualContribution: number
+  growthRateOverride?: number  // if undefined, uses global rate (or type default for cash)
+}
+
+export type ISADrawdownStrategy = 'pension-first' | 'isa-first' | 'tax-optimised'
+
 export interface PensionProjectionSettings {
   currentAge: number
   currentPotValue: number              // kept for backward compat (single-pot mode)
@@ -138,6 +151,9 @@ export interface PensionProjectionSettings {
   lumpSumAllowanceOverride?: number    // for people with protections giving higher LSA
   // Drawdown strategy
   drawdownTaxFreeFirst?: boolean       // use tax-free allowance gradually instead of upfront lump sum
+  // ISA savings
+  isaPots?: ISAPot[]
+  isaDrawdownStrategy?: ISADrawdownStrategy  // default: 'tax-optimised'
 }
 
 export interface AppSettings {
