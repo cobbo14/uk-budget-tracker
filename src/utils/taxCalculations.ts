@@ -1,6 +1,10 @@
 import type { IncomeSource, GainSource, AppSettings, TaxSummary } from '@/types'
 import type { TaxRules, TaxBand } from '@/taxRules/types'
 
+// Result cache — avoids repeated calculations in planning loops (pension chart, what-if, etc.)
+const _taxCache = new Map<string, TaxSummary>()
+const _TAX_CACHE_MAX = 512
+
 // EIS / SEIS / VCT relief rates and investment limits
 const SEIS_RELIEF_RATE = 0.50
 const SEIS_INVESTMENT_LIMIT = 200_000
@@ -49,6 +53,11 @@ export function calculateTax(
   rules: TaxRules,
   gainSources: GainSource[] = [],
 ): TaxSummary {
+  // --- Cache check ---
+  const _cacheKey = JSON.stringify([incomeSources, settings, gainSources])
+  const _cached = _taxCache.get(_cacheKey)
+  if (_cached) return _cached
+
   // --- Categorise income ---
   const employmentSources = incomeSources.filter(s => s.type === 'employment')
   const selfEmploymentSources = incomeSources.filter(s => s.type === 'self-employment')
@@ -438,7 +447,7 @@ export function calculateTax(
   const netIncome = grossIncome - selfEmploymentAllowableExpenses - rentalAllowableExpenses - totalDeductions - totalSalarySacrifice - totalTax
   const effectiveTaxRate = grossIncome > 0 ? totalTax / grossIncome : 0
 
-  return {
+  const _result: TaxSummary = {
     grossIncome,
     totalDeductions,
     adjustedNetIncome,
@@ -496,4 +505,9 @@ export function calculateTax(
     savingsTax,
     savingsAllowanceApplied,
   }
+
+  // Store in cache (clear if full)
+  if (_taxCache.size >= _TAX_CACHE_MAX) _taxCache.clear()
+  _taxCache.set(_cacheKey, _result)
+  return _result
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Search } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
@@ -18,20 +18,24 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const items = budgetingMode
-    ? SEARCH_INDEX.filter(item => !item.budgetingModeHidden)
-    : SEARCH_INDEX
+  const items = useMemo(
+    () => budgetingMode ? SEARCH_INDEX.filter(item => !item.budgetingModeHidden) : SEARCH_INDEX,
+    [budgetingMode],
+  )
 
-  const filtered = query.trim().length === 0
-    ? items
-    : items.filter(item => {
-        const q = query.toLowerCase()
-        return (
-          item.label.toLowerCase().includes(q) ||
-          item.description?.toLowerCase().includes(q) ||
-          item.keywords.some(kw => kw.includes(q))
-        )
-      })
+  const filtered = useMemo(
+    () => query.trim().length === 0
+      ? items
+      : items.filter(item => {
+          const q = query.toLowerCase()
+          return (
+            item.label.toLowerCase().includes(q) ||
+            item.description?.toLowerCase().includes(q) ||
+            item.keywords.some(kw => kw.includes(q))
+          )
+        }),
+    [items, query],
+  )
 
   useEffect(() => {
     setSelectedIndex(0)

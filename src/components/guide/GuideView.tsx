@@ -1,26 +1,27 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { AdUnit } from './AdUnit'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, PoundSterling, Briefcase, AlertTriangle, BarChart3, GraduationCap, PiggyBank, CircleDollarSign, Heart, Baby, Building2, Rocket, CalendarDays, Landmark, Home, Bitcoin, Shield } from 'lucide-react'
-import { UkIncomeTaxRates } from './guides/UkIncomeTaxRates'
-import { SalarySacrificeGuide } from './guides/SalarySacrificeGuide'
-import { ReduceTaxAbove100k } from './guides/ReduceTaxAbove100k'
-import { CapitalGainsTaxGuide } from './guides/CapitalGainsTaxGuide'
-import { StudentLoanGuide } from './guides/StudentLoanGuide'
-import { IsaGuide } from './guides/IsaGuide'
-import { DividendTaxGuide } from './guides/DividendTaxGuide'
-import { MarriageAllowanceGuide } from './guides/MarriageAllowanceGuide'
-import { ChildBenefitGuide } from './guides/ChildBenefitGuide'
-import { SelfEmploymentTaxGuide } from './guides/SelfEmploymentTaxGuide'
-import { EisSeisTaxReliefGuide } from './guides/EisSeisTaxReliefGuide'
-import { TaxDatesGuide } from './guides/TaxDatesGuide'
-import { PensionAnnualAllowanceGuide } from './guides/PensionAnnualAllowanceGuide'
-import { InheritanceTaxGuide } from './guides/InheritanceTaxGuide'
-import { RentalIncomeTaxGuide } from './guides/RentalIncomeTaxGuide'
-import { CryptoTaxGuide } from './guides/CryptoTaxGuide'
-import { NationalInsuranceGuide } from './guides/NationalInsuranceGuide'
 import type { LucideIcon } from 'lucide-react'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
+
+const UkIncomeTaxRates = lazy(() => import('./guides/UkIncomeTaxRates').then(m => ({ default: m.UkIncomeTaxRates })))
+const SalarySacrificeGuide = lazy(() => import('./guides/SalarySacrificeGuide').then(m => ({ default: m.SalarySacrificeGuide })))
+const ReduceTaxAbove100k = lazy(() => import('./guides/ReduceTaxAbove100k').then(m => ({ default: m.ReduceTaxAbove100k })))
+const CapitalGainsTaxGuide = lazy(() => import('./guides/CapitalGainsTaxGuide').then(m => ({ default: m.CapitalGainsTaxGuide })))
+const StudentLoanGuide = lazy(() => import('./guides/StudentLoanGuide').then(m => ({ default: m.StudentLoanGuide })))
+const IsaGuide = lazy(() => import('./guides/IsaGuide').then(m => ({ default: m.IsaGuide })))
+const DividendTaxGuide = lazy(() => import('./guides/DividendTaxGuide').then(m => ({ default: m.DividendTaxGuide })))
+const MarriageAllowanceGuide = lazy(() => import('./guides/MarriageAllowanceGuide').then(m => ({ default: m.MarriageAllowanceGuide })))
+const ChildBenefitGuide = lazy(() => import('./guides/ChildBenefitGuide').then(m => ({ default: m.ChildBenefitGuide })))
+const SelfEmploymentTaxGuide = lazy(() => import('./guides/SelfEmploymentTaxGuide').then(m => ({ default: m.SelfEmploymentTaxGuide })))
+const EisSeisTaxReliefGuide = lazy(() => import('./guides/EisSeisTaxReliefGuide').then(m => ({ default: m.EisSeisTaxReliefGuide })))
+const TaxDatesGuide = lazy(() => import('./guides/TaxDatesGuide').then(m => ({ default: m.TaxDatesGuide })))
+const PensionAnnualAllowanceGuide = lazy(() => import('./guides/PensionAnnualAllowanceGuide').then(m => ({ default: m.PensionAnnualAllowanceGuide })))
+const InheritanceTaxGuide = lazy(() => import('./guides/InheritanceTaxGuide').then(m => ({ default: m.InheritanceTaxGuide })))
+const RentalIncomeTaxGuide = lazy(() => import('./guides/RentalIncomeTaxGuide').then(m => ({ default: m.RentalIncomeTaxGuide })))
+const CryptoTaxGuide = lazy(() => import('./guides/CryptoTaxGuide').then(m => ({ default: m.CryptoTaxGuide })))
+const NationalInsuranceGuide = lazy(() => import('./guides/NationalInsuranceGuide').then(m => ({ default: m.NationalInsuranceGuide })))
 
 interface FAQ {
   question: string
@@ -627,7 +628,9 @@ export function GuideView() {
         All Guides
       </a>
       <article>
-        <GuideComponent />
+        <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">Loading guide…</div>}>
+          <GuideComponent />
+        </Suspense>
       </article>
       <AdUnit slot="4824136868" />
       {relatedGuides.length > 0 && (

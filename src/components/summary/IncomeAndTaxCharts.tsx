@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useBudget } from '@/hooks/useBudget'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,32 +43,32 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name
   )
 }
 
-export function IncomeAndTaxCharts({ showMonthly }: { showMonthly: boolean }) {
+export const IncomeAndTaxCharts = memo(function IncomeAndTaxCharts({ showMonthly }: { showMonthly: boolean }) {
   const { taxSummary: t, totalAnnualExpenses, leftoverIncome } = useBudget()
   const [activeTab, setActiveTab] = useState<Tab>('budget')
   const v = (amount: number) => showMonthly ? amount / 12 : amount
 
-  const incomeData: ChartEntry[] = [
+  const incomeData = useMemo<ChartEntry[]>(() => [
     { name: 'Employment', value: v(t.employmentGross) },
     { name: 'Self-Employment', value: v(t.selfEmploymentGross) },
     { name: 'Rental', value: v(t.rentalGross) },
     { name: 'Dividends', value: v(t.dividendGross) },
-  ].filter(d => d.value > 0)
+  ].filter(d => d.value > 0), [showMonthly, t.employmentGross, t.selfEmploymentGross, t.rentalGross, t.dividendGross])
 
-  const taxData: ChartEntry[] = [
+  const taxData = useMemo<ChartEntry[]>(() => [
     { name: 'Income Tax', value: v(t.incomeTax) },
     { name: 'National Insurance', value: v(t.class1NI + t.class2NI + t.class4NI) },
     { name: 'Dividend Tax', value: v(t.dividendTax) },
     { name: 'Capital Gains Tax', value: v(t.capitalGainsTax) },
     { name: 'Student Loan', value: v(t.studentLoan + t.postgradLoanRepayment) },
     { name: 'Pension AA Charge', value: v(t.annualAllowanceCharge) },
-  ].filter(d => d.value > 0)
+  ].filter(d => d.value > 0), [showMonthly, t.incomeTax, t.class1NI, t.class2NI, t.class4NI, t.dividendTax, t.capitalGainsTax, t.studentLoan, t.postgradLoanRepayment, t.annualAllowanceCharge])
 
-  const budgetData: ChartEntry[] = [
+  const budgetData = useMemo<ChartEntry[]>(() => [
     { name: 'Tax & Deductions', value: v(t.totalTax) },
     { name: 'Expenses', value: v(totalAnnualExpenses) },
     { name: 'Leftover', value: Math.max(0, v(leftoverIncome)) },
-  ].filter(d => d.value > 0)
+  ].filter(d => d.value > 0), [showMonthly, t.totalTax, totalAnnualExpenses, leftoverIncome])
 
   const tabData: Record<Tab, { data: ChartEntry[]; colors: string[]; emptyMsg: string }> = {
     income: { data: incomeData, colors: INCOME_COLORS, emptyMsg: 'Add income sources to see a breakdown.' },
@@ -135,4 +135,4 @@ export function IncomeAndTaxCharts({ showMonthly }: { showMonthly: boolean }) {
       </CardContent>
     </Card>
   )
-}
+})
