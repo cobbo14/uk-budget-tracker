@@ -8,6 +8,7 @@ import { WhatIfCalculator } from './WhatIfCalculator'
 import { TaxYearComparison } from './TaxYearComparison'
 import { PayslipReconciliation } from './PayslipReconciliation'
 import { PartnerPanel } from './PartnerPanel'
+import { PensionProjection } from './PensionProjection'
 
 export function PlanningView() {
   const { incomeSources } = useBudget()
@@ -25,6 +26,7 @@ export function PlanningView() {
             <li>• Threshold warnings (Personal Allowance, Higher Rate, HICBC)</li>
             <li>• Pension Annual Allowance check with carry-forward</li>
             <li>• Pension Optimiser — see tax saved at different contribution levels</li>
+            <li>• Pension pot projection — compound growth to retirement with withdrawal tax</li>
             <li>• Tax year comparison — see how next year's rules affect your bill</li>
             <li>• Payslip reconciliation — compare calculated vs actual take-home</li>
             <li>• Household overview — combined income with partner</li>
@@ -41,6 +43,7 @@ export function PlanningView() {
           <ThresholdWarnings />
           <div data-search="annual-allowance"><AnnualAllowancePanel /></div>
           <PensionOptimiser />
+          <div data-search="pension-projection"><PensionProjection /></div>
           <div data-search="tax-year-comparison"><TaxYearComparison /></div>
           <div data-search="payslip-reconciliation"><PayslipReconciliation /></div>
           <div data-search="partner-panel"><PartnerPanel /></div>

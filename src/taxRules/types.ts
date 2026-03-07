@@ -70,4 +70,11 @@ export interface TaxRules {
   // Marriage Allowance
   marriageAllowanceTransfer: number       // amount transferred (10% of PA, rounded up)
   marriageAllowanceCredit: number         // tax credit for recipient (transfer × basic rate)
+  // State Pension
+  statePensionFullAnnual: number          // full new State Pension annual amount (e.g. £11,502.40)
+  statePensionDefaultAge: number          // current State Pension age (67, rising to 68)
+  // Lump Sum Allowance (replaced Lifetime Allowance from April 2024)
+  lumpSumAllowance: number               // tax-free lump sum cap (£268,275)
+  // Money Purchase Annual Allowance
+  mpaa: number                           // £10,000 — applies if DC pension has been flexibly accessed
 }

@@ -69,6 +69,13 @@ const rules: TaxRules = {
   // Marriage Allowance (10% of PA = £1,257, rounded up to £1,260; credit = £1,260 × 20%)
   marriageAllowanceTransfer: 1260,
   marriageAllowanceCredit: 252,
+  // State Pension (2026/27 not yet confirmed — using 2025/26 as placeholder)
+  statePensionFullAnnual: 11973,
+  statePensionDefaultAge: 67,
+  // Lump Sum Allowance
+  lumpSumAllowance: 268275,
+  // Money Purchase Annual Allowance
+  mpaa: 10000,
 }
 
 export default rules

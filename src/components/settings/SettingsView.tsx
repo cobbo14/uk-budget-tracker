@@ -250,6 +250,24 @@ export function SettingsView() {
             </div>
           </div>
 
+          {/* MPAA toggle */}
+          <div className="space-y-3 pt-2 border-t">
+            <p className="text-sm font-medium">Money Purchase Annual Allowance (MPAA)</p>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="mpaa"
+                checked={settings.hasMPAA ?? false}
+                onCheckedChange={v => update({ hasMPAA: v })}
+              />
+              <Label htmlFor="mpaa">
+                {(settings.hasMPAA ?? false)
+                  ? `MPAA active — DC limit reduced to £${rules.mpaa.toLocaleString()}`
+                  : 'Standard Annual Allowance applies'}
+                <HelpTooltip content="If you have flexibly accessed any defined contribution pension (e.g. taken income via drawdown or an uncrystallised funds pension lump sum), your annual allowance for DC contributions drops to £10,000." />
+              </Label>
+            </div>
+          </div>
+
         </CardContent>
       </Card>
 

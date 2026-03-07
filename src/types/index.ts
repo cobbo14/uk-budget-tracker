@@ -112,6 +112,33 @@ export interface PensionCarryForward {
   oneYearAgo: number
 }
 
+export interface PensionPot {
+  id: string
+  name: string
+  value: number
+  growthRateOverride?: number  // if undefined, uses the global assumedGrowthRate
+}
+
+export interface PensionProjectionSettings {
+  currentAge: number
+  currentPotValue: number              // kept for backward compat (single-pot mode)
+  pensionPots?: PensionPot[]           // multiple pots (if present, overrides currentPotValue)
+  pensionAccessAge: number             // default 57
+  assumedGrowthRate: number            // annual growth rate, e.g. 4 for 4%
+  annualIncomeNeeded: number           // pre-tax annual income needed in retirement (today's £)
+  inflationRate: number                // e.g. 3 for 3%
+  annualFeeRate?: number               // platform/fund fee %, e.g. 0.5 for 0.5%
+  // State Pension
+  qualifyingNIYears?: number           // 0-35
+  statePensionAge?: number             // override for State Pension age (default from rules)
+  // DB Pension
+  dbPensionAnnualIncome?: number       // guaranteed DB income in retirement (today's £)
+  // Lump Sum Allowance
+  lumpSumAllowanceOverride?: number    // for people with protections giving higher LSA
+  // Drawdown strategy
+  drawdownTaxFreeFirst?: boolean       // use tax-free allowance gradually instead of upfront lump sum
+}
+
 export interface AppSettings {
   taxYear: string
   scottishTaxpayer: boolean
@@ -151,8 +178,12 @@ export interface AppSettings {
   transitionalProfitSpread?: number
   // Include pension Annual Allowance charge in tax total (default true)
   includeAnnualAllowanceCharge?: boolean
+  // Money Purchase Annual Allowance — if true, DC annual allowance drops to £10,000
+  hasMPAA?: boolean
   // Household / partner income (for household panel)
   partnerIncome: number
+  // Pension pot projection settings
+  pensionProjection?: PensionProjectionSettings
 }
 
 export interface UIState {

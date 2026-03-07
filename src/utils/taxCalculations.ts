@@ -387,13 +387,18 @@ export function calculateTax(
   // Adjusted income for taper = threshold income + employer contributions
   const thresholdIncomeForAA = adjustedNetIncome + dividendGross + totalDeductions
   const adjustedIncomeForAA = thresholdIncomeForAA + employerPension
-  let effectiveAnnualAllowance = rules.pensionAnnualAllowance
+  // MPAA: if flexibly accessed DC pension, AA drops to MPAA (£10,000)
+  const baseAnnualAllowance = (settings.hasMPAA ?? false)
+    ? rules.mpaa
+    : rules.pensionAnnualAllowance
+  let effectiveAnnualAllowance = baseAnnualAllowance
   if (
+    !(settings.hasMPAA ?? false) &&   // no taper if MPAA applies (already at minimum)
     thresholdIncomeForAA > rules.pensionTaperThresholdIncome &&
     adjustedIncomeForAA > rules.pensionTaperAdjustedIncome
   ) {
     const taper = Math.floor((adjustedIncomeForAA - rules.pensionTaperAdjustedIncome) / 2)
-    effectiveAnnualAllowance = Math.max(rules.pensionAnnualAllowanceMinimum, rules.pensionAnnualAllowance - taper)
+    effectiveAnnualAllowance = Math.max(rules.pensionAnnualAllowanceMinimum, baseAnnualAllowance - taper)
   }
   const carryForward = settings.pensionCarryForward ?? { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 }
   const totalCarryForward = (carryForward.threeYearsAgo ?? 0) + (carryForward.twoYearsAgo ?? 0) + (carryForward.oneYearAgo ?? 0)

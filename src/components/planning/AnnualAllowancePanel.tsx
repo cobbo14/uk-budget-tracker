@@ -95,10 +95,17 @@ export function AnnualAllowancePanel() {
             </div>
           </div>
 
-          {/* Taper note */}
-          {isTapered && (
+          {/* MPAA note */}
+          {(settings.hasMPAA ?? false) && (
             <p className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
-              ⚠ Your Annual Allowance is tapered to {formatCurrency(effectiveAnnualAllowance)} because your adjusted income exceeds £{rules.pensionTaperAdjustedIncome.toLocaleString()}.
+              Money Purchase Annual Allowance (MPAA) applies — your DC contribution limit is {formatCurrency(rules.mpaa)} because you have flexibly accessed a defined contribution pension.
+            </p>
+          )}
+
+          {/* Taper note */}
+          {isTapered && !(settings.hasMPAA ?? false) && (
+            <p className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
+              Your Annual Allowance is tapered to {formatCurrency(effectiveAnnualAllowance)} because your adjusted income exceeds £{rules.pensionTaperAdjustedIncome.toLocaleString()}.
               The minimum allowance is {formatCurrency(rules.pensionAnnualAllowanceMinimum)}.
             </p>
           )}

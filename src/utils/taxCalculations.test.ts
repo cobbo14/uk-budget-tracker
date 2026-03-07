@@ -675,6 +675,53 @@ describe('calculateTax — 2025/26 rules', () => {
     })
   })
 
+  // ── Money Purchase Annual Allowance (MPAA) ───────────────────────────────
+
+  describe('MPAA — Money Purchase Annual Allowance', () => {
+    it('limits AA to £10,000 when MPAA is active', () => {
+      const result = calculateTax(
+        [employment(80000)],
+        settings({
+          hasMPAA: true,
+          pensionContributionType: 'flat',
+          pensionContributionValue: 15000,
+        }),
+        rules,
+      )
+      expect(result.effectiveAnnualAllowance).toBe(10000)
+      expect(result.annualAllowanceExcess).toBe(5000) // 15k - 10k
+      expect(result.annualAllowanceCharge).toBeGreaterThan(0)
+    })
+
+    it('does not apply taper when MPAA is active', () => {
+      const result = calculateTax(
+        [employment(300000)],
+        settings({
+          hasMPAA: true,
+          pensionContributionType: 'flat',
+          pensionContributionValue: 5000,
+        }),
+        rules,
+      )
+      // MPAA always £10k regardless of income level
+      expect(result.effectiveAnnualAllowance).toBe(10000)
+    })
+
+    it('uses standard AA when MPAA is not active', () => {
+      const result = calculateTax(
+        [employment(80000)],
+        settings({
+          hasMPAA: false,
+          pensionContributionType: 'flat',
+          pensionContributionValue: 15000,
+        }),
+        rules,
+      )
+      expect(result.effectiveAnnualAllowance).toBe(60000)
+      expect(result.annualAllowanceExcess).toBe(0)
+    })
+  })
+
   // ── Basis period reform — transitional profit spread ──────────────────────
 
   describe('basis period reform — transitional profit spread', () => {
