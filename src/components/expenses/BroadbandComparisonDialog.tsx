@@ -151,7 +151,7 @@ export function BroadbandComparisonDialog({ open, onOpenChange }: BroadbandCompa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Broadband Comparison</DialogTitle>
           <DialogDescription>

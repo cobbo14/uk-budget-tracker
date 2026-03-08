@@ -42,7 +42,7 @@ export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeC
               data-tour={`tab-${tab.id}`}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                'flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium border-b-2 transition-colors sm:gap-1 sm:py-3 sm:text-xs',
+                'flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium border-b-2 transition-colors sm:gap-1 sm:py-3 sm:text-xs',
                 activeTab === tab.id
                   ? 'border-emerald-600 text-emerald-600'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',
@@ -57,7 +57,7 @@ export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeC
           <Tooltip>
             <TooltipTrigger asChild>
               <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">
-                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
+                <span className="text-[11px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
                   <span className="hidden sm:inline">{employeeMode ? 'Employee' : 'Sole Trader'}</span>
                   <span className="sm:hidden">{employeeMode ? 'Emp' : 'Sole'}</span>
                 </span>
@@ -73,7 +73,7 @@ export function TabNav({ activeTab, onTabChange, budgetingMode, onBudgetingModeC
           <Tooltip>
             <TooltipTrigger asChild>
               <label className="flex items-center justify-between gap-1.5 cursor-pointer select-none">
-                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
+                <span className="text-[11px] sm:text-[10px] font-medium text-muted-foreground whitespace-nowrap text-right flex-1">
                   <span className="hidden sm:inline">{budgetingMode ? 'Budgeting' : 'Full Features'}</span>
                   <span className="sm:hidden">{budgetingMode ? 'Budget' : 'Full'}</span>
                 </span>

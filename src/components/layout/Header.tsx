@@ -54,7 +54,7 @@ export function Header({ onSearchOpen }: HeaderProps) {
             value={settings.taxYear}
             onValueChange={v => dispatch({ type: UPDATE_SETTINGS, payload: { taxYear: v } })}
           >
-            <SelectTrigger className="h-8 text-xs w-20 sm:w-28">
+            <SelectTrigger className="h-10 sm:h-8 text-xs w-20 sm:w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -473,7 +473,7 @@ export function PensionProjection() {
                     placeholder={String(proj.assumedGrowthRate)}
                     value={pot.growthRateOverride ?? ''}
                     onChange={e => updatePot(pot.id, { growthRateOverride: e.target.value ? parseFloat(e.target.value) : undefined })}
-                    className="h-8 text-sm w-20"
+                    className="h-10 sm:h-8 text-sm w-20"
                   />
                 </div>
                 <Button
@@ -570,7 +570,7 @@ export function PensionProjection() {
                     placeholder={pot.type === 'cash' ? '2' : String(proj.inflationRate + 5)}
                     value={pot.growthRateOverride ?? ''}
                     onChange={e => updateIsaPot(pot.id, { growthRateOverride: e.target.value ? parseFloat(e.target.value) : undefined })}
-                    className="h-8 text-sm w-20"
+                    className="h-10 sm:h-8 text-sm w-20"
                   />
                 </div>
                 <Button

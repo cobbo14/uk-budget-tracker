@@ -77,11 +77,11 @@ function Row({ label, value, bonusValue, showBonusCol, indent, bold, highlight, 
       <span className={cn('text-sm text-muted-foreground flex-1 min-w-0', bold && 'text-foreground font-medium')}>
         {label}
       </span>
-      <span className={cn(valClass, showBonusCol && 'w-24 sm:w-28 text-right shrink-0')}>
+      <span className={cn(valClass, showBonusCol && 'w-20 sm:w-28 text-right shrink-0')}>
         {value}
       </span>
       {showBonusCol && (
-        <span className={cn(valClass, 'w-24 sm:w-28 text-right shrink-0', !bonusValue && 'text-muted-foreground/30')}>
+        <span className={cn(valClass, 'w-20 sm:w-28 text-right shrink-0', !bonusValue && 'text-muted-foreground/30')}>
           {bonusValue || '—'}
         </span>
       )}
@@ -268,11 +268,11 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               {showBonusCol && (
                 <div className="flex py-1.5 pt-3">
                   <span className="flex-1" />
-                  <span className="w-24 sm:w-28 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Monthly</span>
-                  <span className="w-24 sm:w-28 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">One-off</span>
+                  <span className="w-20 sm:w-28 text-right text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Monthly</span>
+                  <span className="w-20 sm:w-28 text-right text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">One-off</span>
                 </div>
               )}
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Income</p>
+              <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Income</p>
               {t.employmentGross > 0 && (
                 <>
                   <Row
@@ -342,7 +342,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               {t.totalDeductions > 0 && (
                 <>
                   <Separator className="my-2" />
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Deductions</p>
+                  <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Deductions</p>
                   <Row label="Pension contributions" value={`−${formatCurrency(v(t.totalDeductions))}`} showBonusCol={showBonusCol}
                     tooltip={(td.employeePension > 0 && td.sipp > 0) ? <TooltipBreakdown items={[
                       { label: 'Employee pension', value: formatCurrency(v(td.employeePension)) },
@@ -353,7 +353,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               )}
 
               <Separator className="my-2" />
-              {!t.totalDeductions && <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Deductions</p>}
+              {!t.totalDeductions && <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Deductions</p>}
               <Row label="Personal allowance (effective)" value={`−${formatCurrency(v(t.effectivePersonalAllowance))}`} showBonusCol={showBonusCol}
                 tooltip={(td.taperReduction > 0 || t.blindPersonsAllowanceApplied > 0 || settings.marriageAllowance === 'transferring') ? <TooltipBreakdown items={[
                   { label: 'Standard PA', value: formatCurrency(v(rules.personalAllowance)) },
@@ -375,7 +375,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               />
 
               <Separator className="my-2" />
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Tax & National Insurance</p>
+              <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Tax & National Insurance</p>
               <Row label="Income Tax" value={showBonusCol ? formatCurrency(v(t.incomeTax - (bonusMarginal?.incomeTax ?? 0))) : formatCurrency(v(t.incomeTax))} highlight="red" showBonusCol={showBonusCol} bonusValue={bonusMarginal?.incomeTax ? formatCurrency(bonusMarginal.incomeTax) : undefined}
                 tooltip={(t.savingsTax > 0 || t.bondTopSlicingRelief > 0 || t.seisRelief + t.eisRelief + t.vctRelief > 0) ? <TooltipBreakdown items={[
                   { label: 'Non-savings income tax', value: formatCurrency(v(td.nonSavingsIT)) },
@@ -505,8 +505,8 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                 {showBonusCol && (
                   <div className="flex py-1.5 pt-3">
                     <span className="flex-1" />
-                    <span className="w-24 sm:w-28 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Monthly</span>
-                    <span className="w-24 sm:w-28 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">One-off</span>
+                    <span className="w-20 sm:w-28 text-right text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Monthly</span>
+                    <span className="w-20 sm:w-28 text-right text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">One-off</span>
                   </div>
                 )}
                 <Row label="Net income (after tax)" value={showBonusCol ? formatCurrency(v(t.netIncome - netBonus)) : formatCurrency(v(t.netIncome))} highlight="green" showBonusCol={showBonusCol} bonusValue={formatCurrency(netBonus)}

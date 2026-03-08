@@ -493,7 +493,7 @@ export function ExpenseFormDialog() {
                             type="number"
                             min="0"
                             max="100"
-                            className="w-20 h-8 text-sm"
+                            className="w-20 h-10 sm:h-8 text-sm"
                             value={p.percentage}
                             onChange={(e) => {
                               const updated = [...form.splitParticipants]

@@ -77,7 +77,7 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 gap-0 top-[20%] translate-y-0 data-[state=closed]:slide-out-to-top-[20%] data-[state=open]:slide-in-from-top-[18%]">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full max-w-md p-0 gap-0 top-[20%] translate-y-0 data-[state=closed]:slide-out-to-top-[20%] data-[state=open]:slide-in-from-top-[18%]">
         <DialogTitle className="sr-only">Search features</DialogTitle>
         <div className="flex items-center border-b px-3">
           <Search className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -117,7 +117,7 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
                   <span className="text-xs text-muted-foreground block truncate">{item.description}</span>
                 )}
               </div>
-              <span className="text-[10px] text-muted-foreground/60 capitalize shrink-0">{item.tab}</span>
+              <span className="text-[11px] sm:text-[10px] text-muted-foreground/60 capitalize shrink-0">{item.tab}</span>
             </button>
           ))}
         </div>

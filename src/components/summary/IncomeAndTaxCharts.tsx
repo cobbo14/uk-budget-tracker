@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from 'react'
+import { useState, useEffect, useMemo, memo } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useBudget } from '@/hooks/useBudget'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,6 +46,13 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name
 export const IncomeAndTaxCharts = memo(function IncomeAndTaxCharts({ showMonthly }: { showMonthly: boolean }) {
   const { taxSummary: t, totalAnnualExpenses, leftoverIncome } = useBudget()
   const [activeTab, setActiveTab] = useState<Tab>('budget')
+  const [isSmall, setIsSmall] = useState(() => window.matchMedia('(max-width: 639px)').matches)
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 639px)')
+    const handler = (e: MediaQueryListEvent) => setIsSmall(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
   const v = (amount: number) => showMonthly ? amount / 12 : amount
 
   const incomeData = useMemo<ChartEntry[]>(() => [
@@ -107,15 +114,15 @@ export const IncomeAndTaxCharts = memo(function IncomeAndTaxCharts({ showMonthly
           <p className="py-6 text-center text-sm text-muted-foreground">{emptyMsg}</p>
         ) : (
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="h-[160px] w-[160px] shrink-0 mx-auto sm:mx-0">
+            <div className="h-[130px] w-[130px] sm:h-[160px] sm:w-[160px] shrink-0 mx-auto sm:mx-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={data}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
+                    innerRadius={isSmall ? 38 : 50}
+                    outerRadius={isSmall ? 60 : 75}
                     dataKey="value"
                     strokeWidth={2}
                   >
