@@ -31,7 +31,7 @@ export function PensionProjection() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showMultiplePots, setShowMultiplePots] = useState(false)
   const [showIsaSavings, setShowIsaSavings] = useState(false)
-  const [showInTodaysMoney, setShowInTodaysMoney] = useState(false)
+  const [showInTodaysMoney, setShowInTodaysMoney] = useState(true)
 
   const { totalPensionFunding } = taxSummary
   if (totalPensionFunding === 0) return null
@@ -78,6 +78,8 @@ export function PensionProjection() {
       statePensionAge: proj.statePensionAge ?? rules.statePensionDefaultAge,
       statePensionFullAnnual: rules.statePensionFullAnnual,
       dbPensionAnnualIncome: proj.dbPensionAnnualIncome,
+      dbPensionStartAge: proj.dbPensionStartAge,
+      dbInflationRate: proj.dbInflationRate,
       lumpSumAllowance: proj.lumpSumAllowanceOverride ?? rules.lumpSumAllowance,
       personalAllowance: rules.personalAllowance,
       personalAllowanceTaperThreshold: rules.personalAllowanceTaperThreshold,
@@ -114,6 +116,8 @@ export function PensionProjection() {
         statePensionAge: proj.statePensionAge ?? rules.statePensionDefaultAge,
         statePensionFullAnnual: rules.statePensionFullAnnual,
         dbPensionAnnualIncome: proj.dbPensionAnnualIncome,
+        dbPensionStartAge: proj.dbPensionStartAge,
+        dbInflationRate: proj.dbInflationRate,
         lumpSumAllowance: proj.lumpSumAllowanceOverride ?? rules.lumpSumAllowance,
         personalAllowance: rules.personalAllowance,
         personalAllowanceTaperThreshold: rules.personalAllowanceTaperThreshold,
@@ -631,7 +635,7 @@ export function PensionProjection() {
                 variant="ghost"
                 size="sm"
                 className="text-xs h-6 px-2 text-muted-foreground"
-                onClick={() => { setShowStatePension(false); updateProjection({ qualifyingNIYears: undefined, statePensionAge: undefined, dbPensionAnnualIncome: 0 }) }}
+                onClick={() => { setShowStatePension(false); updateProjection({ qualifyingNIYears: undefined, statePensionAge: undefined, dbPensionAnnualIncome: 0, dbPensionStartAge: undefined, dbInflationRate: undefined }) }}
               >
                 Remove
               </Button>
@@ -682,6 +686,41 @@ export function PensionProjection() {
                   onChange={e => updateProjection({ dbPensionAnnualIncome: parseFloat(e.target.value) || 0 })}
                 />
               </div>
+              {(proj.dbPensionAnnualIncome ?? 0) > 0 && (
+                <>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="pp-db-age" className="text-xs">
+                      DB pension start age
+                      <HelpTooltip content="Age your DB pension starts paying. Many schemes have a normal retirement age of 60 or 65." />
+                    </Label>
+                    <Input
+                      id="pp-db-age"
+                      type="number"
+                      min={55}
+                      max={75}
+                      placeholder={String(proj.pensionAccessAge)}
+                      value={proj.dbPensionStartAge ?? ''}
+                      onChange={e => updateProjection({ dbPensionStartAge: e.target.value ? parseInt(e.target.value) : undefined })}
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="pp-db-inflation" className="text-xs">
+                      DB inflation rate (%)
+                      <HelpTooltip content="Annual inflation rate for your DB pension. Many schemes cap at CPI or 2.5%. Check your scheme rules." />
+                    </Label>
+                    <Input
+                      id="pp-db-inflation"
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      placeholder={String(proj.inflationRate)}
+                      value={proj.dbInflationRate ?? ''}
+                      onChange={e => updateProjection({ dbInflationRate: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    />
+                  </div>
+                </>
+              )}
             </div>
             {estimatedStatePension > 0 && (
               <div className="text-xs text-muted-foreground space-y-0.5">
@@ -789,15 +828,15 @@ export function PensionProjection() {
                   Projected wealth at age {proj.pensionAccessAge}
                 </CardTitle>
                 <div className="flex items-center gap-2">
+                  <Label htmlFor="pp-todays-money" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+                    {showInTodaysMoney ? "Today's £" : 'Inflation adjusted'}
+                    <HelpTooltip content="Show projected values in today's purchasing power by discounting for inflation. Helps you understand what future amounts are really worth." />
+                  </Label>
                   <Switch
                     id="pp-todays-money"
                     checked={showInTodaysMoney}
                     onCheckedChange={setShowInTodaysMoney}
                   />
-                  <Label htmlFor="pp-todays-money" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
-                    Today's £
-                    <HelpTooltip content="Show projected values in today's purchasing power by discounting for inflation. Helps you understand what future amounts are really worth." />
-                  </Label>
                 </div>
               </div>
             </CardHeader>

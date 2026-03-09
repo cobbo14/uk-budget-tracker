@@ -150,6 +150,8 @@ export interface PensionProjectionSettings {
   statePensionAge?: number             // override for State Pension age (default from rules)
   // DB Pension
   dbPensionAnnualIncome?: number       // guaranteed DB income in retirement (today's £)
+  dbPensionStartAge?: number           // age DB pension starts paying (default = access age)
+  dbInflationRate?: number             // annual inflation rate for DB pension (default = global inflation)
   // Lump Sum Allowance
   lumpSumAllowanceOverride?: number    // for people with protections giving higher LSA
   // Drawdown strategy

@@ -76,6 +76,8 @@ export interface PensionProjectionOptions {
   statePensionAge?: number        // default 67
   statePensionFullAnnual?: number // from tax rules
   dbPensionAnnualIncome?: number  // today's £
+  dbPensionStartAge?: number     // age DB pension starts paying (default = pensionAccessAge)
+  dbInflationRate?: number       // annual inflation rate for DB pension (default = inflationRate)
   lumpSumAllowance?: number      // default £268,275
   personalAllowance?: number     // from tax rules, for drawdown tax calc
   personalAllowanceTaperThreshold?: number // e.g. 100000
@@ -150,6 +152,8 @@ export function projectPensionPotAdvanced(
     statePensionAge = 67,
     statePensionFullAnnual = 0,
     dbPensionAnnualIncome = 0,
+    dbPensionStartAge,
+    dbInflationRate,
     lumpSumAllowance = 268275,
     personalAllowance = 12570,
     personalAllowanceTaperThreshold,
@@ -177,10 +181,11 @@ export function projectPensionPotAdvanced(
   let isaBalances = isaPots.map(p => ({
     ...p,
     balance: p.currentValue,
-    rate: ((p.growthRateOverride ?? (p.type === 'cash' ? ISA_CASH_DEFAULT_GROWTH : inflationRate + ISA_EQUITY_PREMIUM)) - annualFeeRate) / 100,
+    rate: Math.max(0, (p.growthRateOverride ?? (p.type === 'cash' ? ISA_CASH_DEFAULT_GROWTH : inflationRate + ISA_EQUITY_PREMIUM)) - annualFeeRate) / 100,
   }))
   let totalIsaContributions = 0
   let totalLisaBonus = 0
+  let isaContribAmounts = isaBalances.map(p => p.annualContribution)
 
   // --- Accumulation phase ---
   let potBalances = pots.map(p => ({
@@ -202,9 +207,9 @@ export function projectPensionPotAdvanced(
       const share = totalOpening > 0
         ? (pot.balance / totalForDistrib) * contribution
         : contribution / totalForDistrib
-      const withContrib = pot.balance + share
-      const growth = withContrib * pot.rate
-      pot.balance = withContrib + growth
+      // Mid-year contribution timing: existing balance gets full-year growth, new contributions get half-year
+      const growth = pot.balance * pot.rate + share * pot.rate * 0.5
+      pot.balance = pot.balance + share + growth
       totalGrowth += growth
     }
 
@@ -214,24 +219,28 @@ export function projectPensionPotAdvanced(
     const isaOpening = isaBalances.reduce((s, p) => s + p.balance, 0)
     let isaGrowthTotal = 0
     let lisaBonusThisYear = 0
-    for (const isa of isaBalances) {
-      let contrib = isa.annualContribution
+    let isaContribTotal = 0
+    for (let j = 0; j < isaBalances.length; j++) {
+      const isa = isaBalances[j]
+      let contrib = isaContribAmounts[j]
+      let bonus = 0
       // LISA: contributions and bonus stop at age 50, cap at £4k
       if (isa.type === 'lifetime') {
         if (age >= LISA_MAX_CONTRIBUTION_AGE) {
           contrib = 0
         } else {
           contrib = Math.min(contrib, LISA_ANNUAL_LIMIT)
-          const bonus = contrib * LISA_BONUS_RATE
+          bonus = contrib * LISA_BONUS_RATE
           lisaBonusThisYear += bonus
-          isa.balance += bonus
         }
       }
-      isa.balance += contrib
-      const growth = isa.balance * isa.rate
-      isa.balance += growth
+      // Mid-year contribution timing: existing balance gets full-year growth, new additions get half-year
+      const newMoney = contrib + bonus
+      const growth = isa.balance * isa.rate + newMoney * isa.rate * 0.5
+      isa.balance += newMoney + growth
       isaGrowthTotal += growth
       totalIsaContributions += contrib
+      isaContribTotal += contrib
     }
     totalLisaBonus += lisaBonusThisYear
     const isaClosing = isaBalances.reduce((s, p) => s + p.balance, 0)
@@ -243,7 +252,7 @@ export function projectPensionPotAdvanced(
       growthAmount: totalGrowth,
       closingBalance: totalClosing,
       isaOpeningBalance: isaOpening,
-      isaContribution: isaBalances.reduce((s, p) => s + p.annualContribution, 0) + lisaBonusThisYear,
+      isaContribution: isaContribTotal + lisaBonusThisYear,
       isaGrowthAmount: isaGrowthTotal,
       isaClosingBalance: isaClosing,
       lisaBonusReceived: lisaBonusThisYear,
@@ -251,6 +260,7 @@ export function projectPensionPotAdvanced(
 
     totalContributions += contribution
     contribution *= (1 + contributionGrowthDecimal)
+    isaContribAmounts = isaContribAmounts.map(c => c * (1 + contributionGrowthDecimal))
   }
 
   const projectedPot = potBalances.reduce((s, p) => s + p.balance, 0)
@@ -273,7 +283,8 @@ export function projectPensionPotAdvanced(
     : 0
 
   // --- DB Pension inflated to access-age prices ---
-  const dbPensionAtAccess = dbPensionAnnualIncome * Math.pow(1 + inflationDecimal, yearsToAccess)
+  const dbInflationDecimal = (dbInflationRate ?? inflationRate) / 100
+  const dbPensionAtAccess = dbPensionAnnualIncome * Math.pow(1 + dbInflationDecimal, yearsToAccess)
 
   // --- Inflate income needed to access-age prices ---
   const inflatedAnnualIncome = annualIncomeNeeded * Math.pow(1 + inflationDecimal, yearsToAccess)
@@ -304,6 +315,11 @@ export function projectPensionPotAdvanced(
   let drawdownPATaper = personalAllowanceTaperThreshold != null
     ? personalAllowanceTaperThreshold * Math.pow(1 + inflationDecimal, yearsToAccess)
     : undefined
+  let drawdownBands = incomeTaxBands?.map(b => ({
+    ...b,
+    from: b.from * Math.pow(1 + inflationDecimal, yearsToAccess),
+    to: b.to === Infinity ? Infinity : b.to * Math.pow(1 + inflationDecimal, yearsToAccess),
+  }))
 
   let firstYearTax = 0
   let firstYearNetIncome = 0
@@ -319,15 +335,17 @@ export function projectPensionPotAdvanced(
 
     // State Pension starts at statePensionAge, not access age
     const spThisYear = age >= statePensionAge ? currentStatePension : 0
-    const dbThisYear = currentDbPension
+    // DB Pension starts at dbPensionStartAge (default = pensionAccessAge)
+    const dbThisYear = age >= (dbPensionStartAge ?? pensionAccessAge) ? currentDbPension : 0
 
     // Pension pot growth
     const pensionGrowth = opening > 0 ? opening * growthDecimal : 0
     const pensionAfterGrowth = opening + pensionGrowth
 
-    // ISA pot growth (use weighted average rate across ISA pots, or global net rate)
-    const isaGrowthRate = isaBalances.length > 0
-      ? isaBalances.reduce((s, p) => s + p.rate, 0) / isaBalances.length
+    // ISA pot growth (balance-weighted average rate across ISA pots, or global net rate)
+    const totalIsaBal = isaBalances.reduce((s, p) => s + p.balance, 0)
+    const isaGrowthRate = totalIsaBal > 0
+      ? isaBalances.reduce((s, p) => s + p.balance * p.rate, 0) / totalIsaBal
       : growthDecimal
     const isaGrowth = isaOpening > 0 ? isaOpening * isaGrowthRate : 0
     const isaAfterGrowth = isaOpening + isaGrowth
@@ -357,8 +375,11 @@ export function projectPensionPotAdvanced(
         // Tax-optimised: draw pension up to PA tax-free band, then ISA, then more pension
         const taxableFromOther = spThisYear + dbThisYear
         const pensionTaxFreeRoom = Math.max(0, drawdownPA - taxableFromOther)
-        // Draw pension up to the PA tax-free room
-        pensionWithdrawal = Math.min(remainingNeed, pensionTaxFreeRoom, pensionAfterGrowth)
+        // When tax-free allowance remains, pension withdrawals are tax-free anyway — prefer pension
+        const taxFreeFromAllowance = Math.min(remainingNeed, taxFreeRemaining)
+        const effectiveTaxFreeRoom = pensionTaxFreeRoom + taxFreeFromAllowance
+        // Draw pension up to the effective tax-free room
+        pensionWithdrawal = Math.min(remainingNeed, effectiveTaxFreeRoom, pensionAfterGrowth)
         let stillNeeded = remainingNeed - pensionWithdrawal
         // Then draw from ISA (tax-free)
         if (stillNeeded > 0 && isaAfterGrowth > 0) {
@@ -373,8 +394,6 @@ export function projectPensionPotAdvanced(
       }
     }
 
-    const pensionClosing = Math.max(0, pensionAfterGrowth - pensionWithdrawal)
-
     // ISA: apply LISA early withdrawal penalty if withdrawing before age 60
     let effectiveIsaWithdrawal = isaWithdrawal
     if (isaWithdrawal > 0 && lisaBalance > 0 && age < LISA_PENALTY_FREE_AGE) {
@@ -388,15 +407,25 @@ export function projectPensionPotAdvanced(
       }
     }
 
+    // Recover LISA penalty shortfall from pension if possible
+    const isaShortfall = isaWithdrawal - effectiveIsaWithdrawal
+    if (isaShortfall > 0) {
+      const additionalPension = Math.min(isaShortfall, pensionAfterGrowth - pensionWithdrawal)
+      pensionWithdrawal += additionalPension
+    }
+
+    const pensionClosing = Math.max(0, pensionAfterGrowth - pensionWithdrawal)
+
     const isaClosing = Math.max(0, isaAfterGrowth - isaWithdrawal)
 
-    // Update LISA vs non-LISA tracking proportionally
+    // Update LISA vs non-LISA tracking (order-aware: non-LISA drawn first, then LISA)
     if (isaOpening > 0 && isaWithdrawal > 0) {
-      const lisaRatio = lisaBalance / (isaOpening || 1)
-      const lisaWithdrawn = isaWithdrawal * lisaRatio
-      const nonLisaWithdrawn = isaWithdrawal - lisaWithdrawn
-      lisaBalance = Math.max(0, (lisaBalance + isaGrowth * lisaRatio) - lisaWithdrawn)
-      nonLisaIsaBalance = Math.max(0, (nonLisaIsaBalance + isaGrowth * (1 - lisaRatio)) - nonLisaWithdrawn)
+      const fromNonLisa = Math.min(isaWithdrawal, nonLisaIsaBalance)
+      const fromLisa = isaWithdrawal - fromNonLisa
+      const lisaGrowthShare = (lisaBalance / isaOpening) * isaGrowth
+      const nonLisaGrowthShare = isaGrowth - lisaGrowthShare
+      lisaBalance = Math.max(0, lisaBalance + lisaGrowthShare - fromLisa)
+      nonLisaIsaBalance = Math.max(0, nonLisaIsaBalance + nonLisaGrowthShare - fromNonLisa)
     } else if (isaOpening > 0) {
       const lisaRatio = lisaBalance / (isaOpening || 1)
       lisaBalance += isaGrowth * lisaRatio
@@ -411,8 +440,8 @@ export function projectPensionPotAdvanced(
     // Income tax: ISA withdrawals are NOT taxable and do NOT affect PA taper
     const totalGrossIncome = taxablePensionWithdrawal + spThisYear + dbThisYear
     let incomeTax = 0
-    if (incomeTaxBands && totalGrossIncome > 0) {
-      incomeTax = estimateRetirementIncomeTax(totalGrossIncome, drawdownPA, incomeTaxBands, drawdownPATaper)
+    if (drawdownBands && totalGrossIncome > 0) {
+      incomeTax = estimateRetirementIncomeTax(totalGrossIncome, drawdownPA, drawdownBands, drawdownPATaper)
     }
     const netPensionIncome = taxFreeThisYear + totalGrossIncome - incomeTax
     const combinedNet = netPensionIncome + effectiveIsaWithdrawal
@@ -451,9 +480,16 @@ export function projectPensionPotAdvanced(
       currentTotalIncome *= (1 + inflationDecimal)
     }
     currentStatePension *= (1 + inflationDecimal)
-    currentDbPension *= (1 + inflationDecimal)
+    currentDbPension *= (1 + dbInflationDecimal)
     drawdownPA *= (1 + inflationDecimal)
     if (drawdownPATaper != null) drawdownPATaper *= (1 + inflationDecimal)
+    if (drawdownBands) {
+      drawdownBands = drawdownBands.map(b => ({
+        ...b,
+        from: b.from * (1 + inflationDecimal),
+        to: b.to === Infinity ? Infinity : b.to * (1 + inflationDecimal),
+      }))
+    }
   }
 
   // Years of income: pension-only
