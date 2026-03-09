@@ -35,6 +35,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { id: 'category-manager', label: 'Category Manager', description: 'Manage expense categories', keywords: ['categories', 'custom category', 'manage'], tab: 'expenses', targetSelector: '[data-search="category-manager"]' },
 
   // ── Planning ──
+  { id: 'payments-on-account', label: 'Payments on Account', description: 'Estimated advance tax payments for Self Assessment', keywords: ['payments on account', 'poa', 'self assessment', 'advance payment', 'january', 'july'], tab: 'planning', targetSelector: '[data-search="payments-on-account"]', budgetingModeHidden: true },
   { id: 'threshold-warnings', label: 'Threshold Warnings', description: 'Alerts for PA taper, Higher Rate, HICBC', keywords: ['personal allowance', 'higher rate', 'hicbc', 'threshold', 'warning'], tab: 'planning', targetSelector: '[data-tour="threshold-warnings"]', budgetingModeHidden: true },
   { id: 'annual-allowance', label: 'Annual Allowance Panel', description: 'Pension Annual Allowance check with carry-forward', keywords: ['pension', 'annual allowance', 'carry forward', 'aa'], tab: 'planning', targetSelector: '[data-search="annual-allowance"]', budgetingModeHidden: true },
   { id: 'pension-optimiser', label: 'Pension Optimiser', description: 'See tax saved at different contribution levels', keywords: ['pension', 'optimiser', 'optimise', 'contribution', 'chart'], tab: 'planning', targetSelector: '[data-tour="pension-optimiser"]', budgetingModeHidden: true },

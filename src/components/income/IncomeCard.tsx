@@ -25,8 +25,11 @@ export function IncomeCard({ source }: IncomeCardProps) {
   const { dispatch } = useBudget()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
+  const seDeduction = source.usesTradingAllowance
+    ? Math.min(1000, source.grossAmount)
+    : (source.allowableExpenses ?? 0)
   const netGross = source.type === 'self-employment'
-    ? source.grossAmount - (source.allowableExpenses ?? 0)
+    ? source.grossAmount - seDeduction
     : source.type === 'rental'
       ? source.grossAmount - (source.rentalExpenses ?? 0)
       : source.grossAmount
@@ -45,13 +48,21 @@ export function IncomeCard({ source }: IncomeCardProps) {
           <span className="font-medium truncate">{source.name}</span>
           <Badge variant="secondary" className="shrink-0">{TYPE_LABELS[source.type]}</Badge>
           {source.fromISA && <Badge variant="outline" className="shrink-0 text-emerald-600 border-emerald-300">ISA</Badge>}
+          {source.isProjection && <Badge variant="outline" className="shrink-0 text-blue-600 border-blue-300">Projected</Badge>}
         </div>
         <div className="mt-1 text-sm text-muted-foreground flex flex-wrap gap-x-1.5">
-          <span>Gross: {formatCurrency(source.grossAmount)}</span>
+          {source.isProjection && source.ytdAmount != null && source.ytdMonths != null ? (
+            <span>YTD: {formatCurrency(source.ytdAmount)} over {source.ytdMonths}mo → Annual: {formatCurrency(source.grossAmount)}</span>
+          ) : (
+            <span>Gross: {formatCurrency(source.grossAmount)}</span>
+          )}
           {source.bonus != null && source.bonus > 0 && (
             <span>· Bonus: {formatCurrency(source.bonus)}</span>
           )}
-          {source.type === 'self-employment' && source.allowableExpenses != null && source.allowableExpenses > 0 && (
+          {source.type === 'self-employment' && source.usesTradingAllowance && (
+            <><span>· Trading Allowance: {formatCurrency(Math.min(1000, source.grossAmount))}</span><span>· Net: {formatCurrency(netGross)}</span></>
+          )}
+          {source.type === 'self-employment' && !source.usesTradingAllowance && source.allowableExpenses != null && source.allowableExpenses > 0 && (
             <><span>· Expenses: {formatCurrency(source.allowableExpenses)}</span><span>· Net: {formatCurrency(netGross)}</span></>
           )}
           {source.type === 'rental' && (

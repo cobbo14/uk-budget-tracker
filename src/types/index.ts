@@ -48,6 +48,10 @@ export interface IncomeSource {
   // Self-employment
   allowableExpenses?: number
   usesTradingAllowance?: boolean
+  // Self-employment: YTD income projection
+  isProjection?: boolean   // true = grossAmount was projected from partial-year data
+  ytdAmount?: number       // income earned so far this tax year
+  ytdMonths?: number       // number of complete months of data (1–12)
   // Rental
   mortgageInterestAnnual?: number
   rentalExpenses?: number

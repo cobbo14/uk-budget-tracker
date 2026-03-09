@@ -396,6 +396,12 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               {t.class2NI > 0 && <Row label="National Insurance (Class 2)" value={formatCurrency(v(t.class2NI))} highlight="red" indent showBonusCol={showBonusCol}
                 tooltip={<TooltipBreakdown items={[{ label: `Flat rate ${formatCurrency(rules.selfEmployedClass2WeeklyRate)}/wk × 52`, value: formatCurrency(v(t.class2NI)) }]} />}
               />}
+              {t.class2NI === 0 && t.selfEmploymentGross > 0 && <Row label="National Insurance (Class 2)" value="£0" highlight="green" indent showBonusCol={showBonusCol}
+                tooltip={<TooltipBreakdown items={[
+                  { label: `Profit below Small Profits Threshold (${formatCurrency(rules.selfEmployedSmallProfitsThreshold)})`, value: 'Exempt' },
+                  { label: 'You can still pay voluntarily to protect State Pension', value: '' },
+                ]} />}
+              />}
               {t.class4NI > 0 && <Row label="National Insurance (Class 4)" value={formatCurrency(v(t.class4NI))} highlight="red" indent showBonusCol={showBonusCol}
                 tooltip={td.ni4Upper > 0 ? <TooltipBreakdown items={[
                   { label: `Main rate (${(rules.selfEmployedClass4Lower * 100).toFixed(0)}%)`, value: formatCurrency(v(td.ni4Lower * rules.selfEmployedClass4Lower)) },

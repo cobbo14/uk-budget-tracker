@@ -3,6 +3,7 @@ import { useBudget } from '@/hooks/useBudget'
 import { generateId } from '@/utils/ids'
 import type { IncomeSource, IncomeType, SalarySacrificeType, BenefitInKindType } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
+import { formatCurrency } from '@/utils/formatting'
 import { Plus, X } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { HelpTooltip } from '@/components/ui/tooltip'
@@ -43,6 +44,10 @@ interface FormState {
   allowableExpenses: string
   mortgageInterestAnnual: string
   rentalExpenses: string
+  usesTradingAllowance: boolean
+  isProjection: boolean
+  ytdAmount: string
+  ytdMonths: string
   fromISA: boolean
   yearsHeld: string
   salarySacrificeItems: SalarySacrificeFormItem[]
@@ -57,6 +62,10 @@ const DEFAULT_FORM: FormState = {
   grossAmount: '',
   bonus: '',
   allowableExpenses: '',
+  usesTradingAllowance: false,
+  isProjection: false,
+  ytdAmount: '',
+  ytdMonths: '',
   mortgageInterestAnnual: '',
   rentalExpenses: '',
   fromISA: false,
@@ -102,6 +111,15 @@ const INCOME_TYPE_LABELS: Record<IncomeType, string> = {
   savings: 'Savings / Interest',
 }
 
+function getElapsedTaxMonths(taxYear: string): number {
+  const startYear = parseInt(taxYear.split('-')[0])
+  const taxYearStart = new Date(startYear, 3, 6) // April 6
+  const now = new Date()
+  const diffMs = now.getTime() - taxYearStart.getTime()
+  const months = Math.floor(diffMs / (30.44 * 86400000))
+  return Math.max(1, Math.min(12, months))
+}
+
 export function IncomeFormDialog() {
   const { state, dispatch, getIncomeById } = useBudget()
   const employeeMode = useEmployeeMode()
@@ -129,6 +147,10 @@ export function IncomeFormDialog() {
           grossAmount: String(source.grossAmount),
           bonus: source.bonus != null && source.bonus > 0 ? String(source.bonus) : '',
           allowableExpenses: source.allowableExpenses != null ? String(source.allowableExpenses) : '',
+          usesTradingAllowance: source.usesTradingAllowance ?? false,
+          isProjection: source.isProjection ?? false,
+          ytdAmount: source.ytdAmount != null ? String(source.ytdAmount) : '',
+          ytdMonths: source.ytdMonths != null ? String(source.ytdMonths) : '',
           mortgageInterestAnnual: source.mortgageInterestAnnual != null ? String(source.mortgageInterestAnnual) : '',
           rentalExpenses: source.rentalExpenses != null ? String(source.rentalExpenses) : '',
           fromISA: source.fromISA ?? false,
@@ -167,9 +189,17 @@ export function IncomeFormDialog() {
   function validate(): boolean {
     const errs: Partial<Record<keyof FormState, string>> = {}
     if (!form.name.trim()) errs.name = 'Name is required'
-    const amount = parseFloat(form.grossAmount)
-    if (isNaN(amount) || amount < 0) errs.grossAmount = 'Enter a valid annual amount'
-    if (form.type === 'self-employment' && form.allowableExpenses) {
+    const isSEProjection = form.type === 'self-employment' && form.isProjection
+    if (isSEProjection) {
+      const ytd = parseFloat(form.ytdAmount)
+      if (isNaN(ytd) || ytd < 0) errs.ytdAmount = 'Enter a valid amount'
+      const months = parseInt(form.ytdMonths)
+      if (isNaN(months) || months < 1 || months > 12) errs.ytdMonths = 'Enter 1–12'
+    } else {
+      const amount = parseFloat(form.grossAmount)
+      if (isNaN(amount) || amount < 0) errs.grossAmount = 'Enter a valid annual amount'
+    }
+    if (form.type === 'self-employment' && !form.usesTradingAllowance && form.allowableExpenses) {
       const exp = parseFloat(form.allowableExpenses)
       if (isNaN(exp) || exp < 0) errs.allowableExpenses = 'Enter a valid amount'
     }
@@ -212,15 +242,23 @@ export function IncomeFormDialog() {
 
   function handleSubmit() {
     if (!validate()) return
+    const isSEProjection = form.type === 'self-employment' && form.isProjection
+    const ytdAmountNum = parseFloat(form.ytdAmount) || 0
+    const ytdMonthsNum = parseInt(form.ytdMonths) || 1
+    const projectedGross = isSEProjection ? Math.round((ytdAmountNum / ytdMonthsNum) * 12) : undefined
     const source: IncomeSource = {
       id: isEdit && editingIncomeId ? editingIncomeId : generateId(),
       name: form.name.trim(),
       type: form.type,
-      grossAmount: parseFloat(form.grossAmount) || 0,
+      grossAmount: projectedGross ?? (parseFloat(form.grossAmount) || 0),
       bonus: form.type === 'employment' && form.bonus
         ? parseFloat(form.bonus) : undefined,
-      allowableExpenses: form.type === 'self-employment' && form.allowableExpenses
+      usesTradingAllowance: form.type === 'self-employment' ? form.usesTradingAllowance : undefined,
+      allowableExpenses: form.type === 'self-employment' && !form.usesTradingAllowance && form.allowableExpenses
         ? parseFloat(form.allowableExpenses) : undefined,
+      isProjection: isSEProjection || undefined,
+      ytdAmount: isSEProjection ? ytdAmountNum : undefined,
+      ytdMonths: isSEProjection ? ytdMonthsNum : undefined,
       mortgageInterestAnnual: form.type === 'rental' && form.mortgageInterestAnnual
         ? parseFloat(form.mortgageInterestAnnual) : undefined,
       rentalExpenses: form.type === 'rental' && form.rentalExpenses
@@ -294,26 +332,85 @@ export function IncomeFormDialog() {
             </Select>
           </div>
 
-          {/* Gross Amount */}
-          <div className="grid gap-1.5">
-            <Label htmlFor="income-amount">
-              {form.type === 'dividend' ? 'Annual Dividend Income (£)' : 'Annual Gross Income (£)'}
-              {form.type === 'bond' && (
-                <HelpTooltip content="Investment bond gains (e.g. from insurance bonds). Top-slicing relief divides the gain by years held to reduce the effective tax rate." />
+          {/* Gross Amount — or YTD projection inputs for self-employment */}
+          {form.type === 'self-employment' && form.isProjection ? (
+            <div className="grid gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="income-ytd-amount">Income earned so far (£)</Label>
+                <Input
+                  id="income-ytd-amount"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={form.ytdAmount}
+                  onChange={e => set('ytdAmount', e.target.value)}
+                  aria-invalid={!!errors.ytdAmount}
+                  aria-describedby={errors.ytdAmount ? "income-ytd-amount-error" : undefined}
+                />
+                {errors.ytdAmount && <p id="income-ytd-amount-error" role="alert" className="text-xs text-destructive">{errors.ytdAmount}</p>}
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="income-ytd-months">Months into tax year</Label>
+                <Input
+                  id="income-ytd-months"
+                  type="number"
+                  min="1"
+                  max="12"
+                  step="1"
+                  value={form.ytdMonths}
+                  onChange={e => set('ytdMonths', e.target.value)}
+                  aria-invalid={!!errors.ytdMonths}
+                  aria-describedby={errors.ytdMonths ? "income-ytd-months-error" : undefined}
+                />
+                {errors.ytdMonths && <p id="income-ytd-months-error" role="alert" className="text-xs text-destructive">{errors.ytdMonths}</p>}
+              </div>
+              {(parseFloat(form.ytdAmount) || 0) > 0 && (parseInt(form.ytdMonths) || 0) >= 1 && (
+                <p className="text-sm font-medium">
+                  Projected annual: {formatCurrency(Math.round((parseFloat(form.ytdAmount) / parseInt(form.ytdMonths)) * 12))}
+                </p>
               )}
-            </Label>
-            <Input
-              id="income-amount"
-              type="number"
-              min="0"
-              placeholder="0"
-              value={form.grossAmount}
-              onChange={e => set('grossAmount', e.target.value)}
-              aria-invalid={!!errors.grossAmount}
-              aria-describedby={errors.grossAmount ? "income-amount-error" : undefined}
-            />
-            {errors.grossAmount && <p id="income-amount-error" role="alert" className="text-xs text-destructive">{errors.grossAmount}</p>}
-          </div>
+            </div>
+          ) : (
+            <div className="grid gap-1.5">
+              <Label htmlFor="income-amount">
+                {form.type === 'dividend' ? 'Annual Dividend Income (£)' : 'Annual Gross Income (£)'}
+                {form.type === 'bond' && (
+                  <HelpTooltip content="Investment bond gains (e.g. from insurance bonds). Top-slicing relief divides the gain by years held to reduce the effective tax rate." />
+                )}
+              </Label>
+              <Input
+                id="income-amount"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={form.grossAmount}
+                onChange={e => set('grossAmount', e.target.value)}
+                aria-invalid={!!errors.grossAmount}
+                aria-describedby={errors.grossAmount ? "income-amount-error" : undefined}
+              />
+              {errors.grossAmount && <p id="income-amount-error" role="alert" className="text-xs text-destructive">{errors.grossAmount}</p>}
+            </div>
+          )}
+
+          {/* Self-employment: projection toggle */}
+          {form.type === 'self-employment' && (
+            <div className="flex items-center gap-3">
+              <Switch
+                id="income-projection"
+                checked={form.isProjection}
+                onCheckedChange={v => {
+                  set('isProjection', v)
+                  if (v && !form.ytdMonths) {
+                    set('ytdMonths', String(getElapsedTaxMonths(state.settings.taxYear)))
+                  }
+                }}
+              />
+              <Label htmlFor="income-projection" className="flex items-center gap-1">
+                Project from year-to-date income
+                <HelpTooltip content="Enter your income earned so far this tax year and the number of months. The annual income will be projected automatically for tax planning." />
+              </Label>
+            </div>
+          )}
 
           {/* Employment: one-off bonus */}
           {form.type === 'employment' && (
@@ -619,22 +716,41 @@ export function IncomeFormDialog() {
             </div>
           )}
 
-          {/* Self-employment: allowable expenses */}
+          {/* Self-employment: trading allowance + allowable expenses */}
           {form.type === 'self-employment' && (
-            <div className="grid gap-1.5">
-              <Label htmlFor="income-expenses">Allowable Business Expenses (£/year, optional)</Label>
-              <Input
-                id="income-expenses"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={form.allowableExpenses}
-                onChange={e => set('allowableExpenses', e.target.value)}
-                aria-invalid={!!errors.allowableExpenses}
-                aria-describedby={errors.allowableExpenses ? "income-expenses-error" : undefined}
-              />
-              <p className="text-xs text-muted-foreground">Deducted from gross income before tax.</p>
-              {errors.allowableExpenses && <p id="income-expenses-error" role="alert" className="text-xs text-destructive">{errors.allowableExpenses}</p>}
+            <div className="grid gap-3">
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="income-trading-allowance"
+                  checked={form.usesTradingAllowance}
+                  onCheckedChange={v => set('usesTradingAllowance', v)}
+                />
+                <Label htmlFor="income-trading-allowance" className="flex items-center gap-1">
+                  Use £1,000 Trading Allowance
+                  <HelpTooltip content="If your gross self-employment income is under £1,000, it's tax-free. If over £1,000, you can deduct £1,000 instead of claiming actual expenses. Use this if your expenses are under £1,000." />
+                </Label>
+              </div>
+              {form.usesTradingAllowance ? (
+                <p className="text-xs text-muted-foreground">
+                  £1,000 trading allowance will be deducted from gross income (or the full gross amount if lower).
+                </p>
+              ) : (
+                <div className="grid gap-1.5">
+                  <Label htmlFor="income-expenses">Allowable Business Expenses (£/year, optional)</Label>
+                  <Input
+                    id="income-expenses"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={form.allowableExpenses}
+                    onChange={e => set('allowableExpenses', e.target.value)}
+                    aria-invalid={!!errors.allowableExpenses}
+                    aria-describedby={errors.allowableExpenses ? "income-expenses-error" : undefined}
+                  />
+                  <p className="text-xs text-muted-foreground">Deducted from gross income before tax.</p>
+                  {errors.allowableExpenses && <p id="income-expenses-error" role="alert" className="text-xs text-destructive">{errors.allowableExpenses}</p>}
+                </div>
+              )}
             </div>
           )}
 

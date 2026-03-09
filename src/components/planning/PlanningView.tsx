@@ -9,6 +9,7 @@ import { TaxYearComparison } from './TaxYearComparison'
 import { PayslipReconciliation } from './PayslipReconciliation'
 import { PartnerPanel } from './PartnerPanel'
 import { PensionProjection } from './PensionProjection'
+import { PaymentsOnAccount } from './PaymentsOnAccount'
 
 export function PlanningView() {
   const { incomeSources } = useBudget()
@@ -29,6 +30,7 @@ export function PlanningView() {
             <li>• Pension pot projection — compound growth to retirement with withdrawal tax</li>
             <li>• Tax year comparison — see how next year's rules affect your bill</li>
             <li>• Payslip reconciliation — compare calculated vs actual take-home</li>
+            <li>• Payments on Account — estimated Self Assessment advance payments</li>
             <li>• Household overview — combined income with partner</li>
             <li>• What-If Calculator — model income adjustments</li>
           </ul>
@@ -41,6 +43,7 @@ export function PlanningView() {
       {hasData && (
         <>
           <ThresholdWarnings />
+          <div data-search="payments-on-account"><PaymentsOnAccount /></div>
           <div data-search="annual-allowance"><AnnualAllowancePanel /></div>
           <PensionOptimiser />
           <div data-search="pension-projection"><PensionProjection /></div>
