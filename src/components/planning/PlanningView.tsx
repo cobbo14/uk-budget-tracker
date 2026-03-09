@@ -10,6 +10,7 @@ import { PayslipReconciliation } from './PayslipReconciliation'
 import { PartnerPanel } from './PartnerPanel'
 import { PensionProjection } from './PensionProjection'
 import { PaymentsOnAccount } from './PaymentsOnAccount'
+import { KeyDates } from './KeyDates'
 
 export function PlanningView() {
   const { incomeSources } = useBudget()
@@ -42,6 +43,7 @@ export function PlanningView() {
 
       {hasData && (
         <>
+          <KeyDates />
           <ThresholdWarnings />
           <div data-search="payments-on-account"><PaymentsOnAccount /></div>
           <div data-search="annual-allowance"><AnnualAllowancePanel /></div>
