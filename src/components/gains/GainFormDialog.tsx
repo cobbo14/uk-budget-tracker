@@ -116,8 +116,10 @@ export function GainFormDialog() {
               placeholder="e.g. Shares sale, Property disposal"
               value={form.name}
               onChange={e => set('name', e.target.value)}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "gain-name-error" : undefined}
             />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            {errors.name && <p id="gain-name-error" role="alert" className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
           {/* Gain Amount */}
@@ -130,9 +132,11 @@ export function GainFormDialog() {
               placeholder="0"
               value={form.gainAmount}
               onChange={e => set('gainAmount', e.target.value)}
+              aria-invalid={!!errors.gainAmount}
+              aria-describedby={errors.gainAmount ? "gain-amount-error" : undefined}
             />
             <p className="text-xs text-muted-foreground">Gross proceeds minus the original purchase cost.</p>
-            {errors.gainAmount && <p className="text-xs text-destructive">{errors.gainAmount}</p>}
+            {errors.gainAmount && <p id="gain-amount-error" role="alert" className="text-xs text-destructive">{errors.gainAmount}</p>}
           </div>
 
           {/* Allowable Costs */}
@@ -148,9 +152,11 @@ export function GainFormDialog() {
               placeholder="0"
               value={form.allowableCosts}
               onChange={e => set('allowableCosts', e.target.value)}
+              aria-invalid={!!errors.allowableCosts}
+              aria-describedby={errors.allowableCosts ? "gain-costs-error" : undefined}
             />
             <p className="text-xs text-muted-foreground">Buying/selling fees, stamp duty, improvement costs.</p>
-            {errors.allowableCosts && <p className="text-xs text-destructive">{errors.allowableCosts}</p>}
+            {errors.allowableCosts && <p id="gain-costs-error" role="alert" className="text-xs text-destructive">{errors.allowableCosts}</p>}
           </div>
 
           {/* Residential Property */}

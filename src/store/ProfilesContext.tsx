@@ -52,20 +52,31 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       deleteProfileState(id)
       const remaining = prev.profiles.filter(p => p.id !== id)
 
-      // Clean up splitConfig references to the deleted profile
+      // Clean up split expense references to the deleted profile:
+      // 1. Remove splitConfig entries pointing to the deleted profile
+      // 2. Remove orphaned synced copies originating from the deleted profile
       for (const profile of remaining) {
         const state = loadProfileState(profile.id)
         let dirty = false
-        const updatedExpenses = state.expenses.map(e => {
-          if (e.splitConfig?.some(p => p.profileId === id)) {
-            dirty = true
-            return {
-              ...e,
-              splitConfig: e.splitConfig.filter(p => p.profileId !== id),
+        const updatedExpenses = state.expenses
+          .filter(e => {
+            // Remove synced copies that originated from the deleted profile
+            if (e.splitOriginProfileId === id && !e.splitConfig) {
+              dirty = true
+              return false
             }
-          }
-          return e
-        })
+            return true
+          })
+          .map(e => {
+            if (e.splitConfig?.some(p => p.profileId === id)) {
+              dirty = true
+              return {
+                ...e,
+                splitConfig: e.splitConfig.filter(p => p.profileId !== id),
+              }
+            }
+            return e
+          })
         if (dirty) {
           saveProfileState(profile.id, { ...state, expenses: updatedExpenses })
         }

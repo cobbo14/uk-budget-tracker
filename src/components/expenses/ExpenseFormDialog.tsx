@@ -265,8 +265,10 @@ export function ExpenseFormDialog() {
               placeholder="e.g. Rent, Netflix, Council Tax"
               value={form.name}
               onChange={e => set('name', e.target.value)}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "expense-name-error" : undefined}
             />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            {errors.name && <p id="expense-name-error" role="alert" className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
           {/* Category */}
@@ -343,14 +345,14 @@ export function ExpenseFormDialog() {
                 </div>
                 {form.utilityRates.length > 0 && (
                   <div className="grid gap-1.5">
-                    <div className="grid grid-cols-[1fr_70px_70px_28px] sm:grid-cols-[1fr_90px_90px_28px] gap-1.5 px-0.5">
+                    <div className="grid grid-cols-[1fr_minmax(60px,80px)_minmax(60px,80px)_28px] sm:grid-cols-[1fr_90px_90px_28px] gap-1.5 px-0.5">
                       <span className="text-xs text-muted-foreground">Label</span>
                       <span className="text-xs text-muted-foreground">Value</span>
                       <span className="text-xs text-muted-foreground">Unit</span>
                       <span />
                     </div>
                     {form.utilityRates.map((rate, i) => (
-                      <div key={rate.id} className="grid grid-cols-[1fr_70px_70px_28px] sm:grid-cols-[1fr_90px_90px_28px] gap-1.5 items-center">
+                      <div key={rate.id} className="grid grid-cols-[1fr_minmax(60px,80px)_minmax(60px,80px)_28px] sm:grid-cols-[1fr_90px_90px_28px] gap-1.5 items-center">
                         <Input
                           placeholder="Unit Rate"
                           value={rate.label}
@@ -402,8 +404,10 @@ export function ExpenseFormDialog() {
                 placeholder="0.00"
                 value={form.amount}
                 onChange={e => set('amount', e.target.value)}
+                aria-invalid={!!errors.amount}
+                aria-describedby={errors.amount ? "expense-amount-error" : undefined}
               />
-              {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
+              {errors.amount && <p id="expense-amount-error" role="alert" className="text-xs text-destructive">{errors.amount}</p>}
             </div>
             <div className="grid gap-1.5">
               <Label>Frequency</Label>

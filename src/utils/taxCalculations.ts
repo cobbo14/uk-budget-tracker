@@ -521,7 +521,16 @@ export function calculateTax(
   }
 
   // Store in cache (clear if full)
-  if (_taxCache.size >= _TAX_CACHE_MAX) _taxCache.clear()
+  if (_taxCache.size >= _TAX_CACHE_MAX) {
+    // Evict oldest 25% of entries (Map preserves insertion order)
+    const evictCount = _TAX_CACHE_MAX >> 2
+    const iter = _taxCache.keys()
+    for (let i = 0; i < evictCount; i++) {
+      const { value, done } = iter.next()
+      if (done) break
+      _taxCache.delete(value as string)
+    }
+  }
   _taxCache.set(_cacheKey, _result)
   return _result
 }

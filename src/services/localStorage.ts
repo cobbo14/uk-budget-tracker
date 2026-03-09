@@ -192,6 +192,16 @@ export function parseImportedState(json: string): Partial<AppState> | null {
     if (!Array.isArray(parsed.expenses)) return null
     if (parsed.customExpenseCategories !== undefined && !Array.isArray(parsed.customExpenseCategories)) return null
     if (typeof parsed.settings !== 'object' || parsed.settings === null) return null
+    // Deep validation — reject if individual items are missing required fields
+    for (const s of parsed.incomeSources) {
+      if (!s || typeof s.id !== 'string' || typeof s.type !== 'string' || typeof s.grossAmount !== 'number') return null
+    }
+    for (const g of parsed.gainSources) {
+      if (!g || typeof g.id !== 'string' || typeof g.gainAmount !== 'number') return null
+    }
+    for (const e of parsed.expenses) {
+      if (!e || typeof e.id !== 'string' || typeof e.name !== 'string' || typeof e.amount !== 'number') return null
+    }
     return parsed as Partial<AppState>
   } catch {
     return null

@@ -4,6 +4,7 @@ import { generateId } from '@/utils/ids'
 import type { IncomeSource, IncomeType, SalarySacrificeType, BenefitInKindType } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 import { Plus, X } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import { HelpTooltip } from '@/components/ui/tooltip'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -270,8 +271,10 @@ export function IncomeFormDialog() {
               placeholder="e.g. Salary, Freelance work"
               value={form.name}
               onChange={e => set('name', e.target.value)}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "income-name-error" : undefined}
             />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            {errors.name && <p id="income-name-error" role="alert" className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
           {/* Type */}
@@ -306,8 +309,10 @@ export function IncomeFormDialog() {
               placeholder="0"
               value={form.grossAmount}
               onChange={e => set('grossAmount', e.target.value)}
+              aria-invalid={!!errors.grossAmount}
+              aria-describedby={errors.grossAmount ? "income-amount-error" : undefined}
             />
-            {errors.grossAmount && <p className="text-xs text-destructive">{errors.grossAmount}</p>}
+            {errors.grossAmount && <p id="income-amount-error" role="alert" className="text-xs text-destructive">{errors.grossAmount}</p>}
           </div>
 
           {/* Employment: one-off bonus */}
@@ -625,9 +630,11 @@ export function IncomeFormDialog() {
                 placeholder="0"
                 value={form.allowableExpenses}
                 onChange={e => set('allowableExpenses', e.target.value)}
+                aria-invalid={!!errors.allowableExpenses}
+                aria-describedby={errors.allowableExpenses ? "income-expenses-error" : undefined}
               />
               <p className="text-xs text-muted-foreground">Deducted from gross income before tax.</p>
-              {errors.allowableExpenses && <p className="text-xs text-destructive">{errors.allowableExpenses}</p>}
+              {errors.allowableExpenses && <p id="income-expenses-error" role="alert" className="text-xs text-destructive">{errors.allowableExpenses}</p>}
             </div>
           )}
 
@@ -643,9 +650,11 @@ export function IncomeFormDialog() {
                   placeholder="0"
                   value={form.mortgageInterestAnnual}
                   onChange={e => set('mortgageInterestAnnual', e.target.value)}
+                  aria-invalid={!!errors.mortgageInterestAnnual}
+                  aria-describedby={errors.mortgageInterestAnnual ? "income-mortgage-error" : undefined}
                 />
                 <p className="text-xs text-muted-foreground">Gives a 20% basic rate tax credit.</p>
-                {errors.mortgageInterestAnnual && <p className="text-xs text-destructive">{errors.mortgageInterestAnnual}</p>}
+                {errors.mortgageInterestAnnual && <p id="income-mortgage-error" role="alert" className="text-xs text-destructive">{errors.mortgageInterestAnnual}</p>}
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="income-rental-expenses">Other Allowable Expenses (£/year, optional)</Label>
@@ -656,8 +665,10 @@ export function IncomeFormDialog() {
                   placeholder="0"
                   value={form.rentalExpenses}
                   onChange={e => set('rentalExpenses', e.target.value)}
+                  aria-invalid={!!errors.rentalExpenses}
+                  aria-describedby={errors.rentalExpenses ? "income-rental-expenses-error" : undefined}
                 />
-                {errors.rentalExpenses && <p className="text-xs text-destructive">{errors.rentalExpenses}</p>}
+                {errors.rentalExpenses && <p id="income-rental-expenses-error" role="alert" className="text-xs text-destructive">{errors.rentalExpenses}</p>}
               </div>
             </>
           )}
@@ -665,12 +676,10 @@ export function IncomeFormDialog() {
           {/* Dividend: ISA toggle */}
           {form.type === 'dividend' && (
             <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
+              <Switch
                 id="income-isa"
                 checked={form.fromISA}
-                onChange={e => set('fromISA', e.target.checked)}
-                className="h-4 w-4 rounded border-input"
+                onCheckedChange={v => set('fromISA', v)}
               />
               <Label htmlFor="income-isa">From ISA (tax-free, excluded from calculations)</Label>
             </div>
