@@ -94,7 +94,6 @@ function PrivacyPolicy() {
             <li>Income sources, expenses, capital gains, and tax settings you enter</li>
             <li>Profile data (if you use multiple profiles)</li>
             <li>Display preferences (dark mode, monthly/annual toggle)</li>
-            <li>Cookie consent preference</li>
           </ul>
           <p>
             This data is stored in your browser&rsquo;s <code>localStorage</code> and
@@ -104,35 +103,13 @@ function PrivacyPolicy() {
 
           <h3 className="text-foreground font-medium pt-2">Third-Party Services</h3>
           <p>
-            If you consent to cookies, we use the following third-party services:
-          </p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>
-              <strong>Google AdSense:</strong> Displays advertisements on guide
-              pages. Google may use cookies to serve ads based on your browsing
-              history. See{' '}
-              <a
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-600 hover:underline"
-              >
-                Google&rsquo;s Privacy Policy
-              </a>
-              .
-            </li>
-          </ul>
-          <p>
-            No third-party services are loaded until you give consent via the
-            cookie banner.
+            UK Budget Tracker does not use any third-party services. All
+            processing happens locally in your browser.
           </p>
 
           <h3 className="text-foreground font-medium pt-2">Cookies</h3>
           <p>
-            UK Budget Tracker itself does not set any cookies. If you consent to
-            advertising cookies, Google AdSense may set cookies for ad
-            personalisation. You can withdraw consent at any time by clearing
-            your browser&rsquo;s cookies and local storage.
+            UK Budget Tracker does not set any cookies.
           </p>
 
           <h3 className="text-foreground font-medium pt-2">Your Rights</h3>

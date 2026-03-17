@@ -104,11 +104,13 @@ export function HelpView() {
         </ul>
         <p>
           <strong>Your data:</strong> All data is stored locally on your
-          device &mdash; nothing is ever sent to a server. Your information
-          stays completely private. Data persists automatically between
-          sessions whether you use the browser or the installed app. The only
-          ways to lose your data are clearing your browser&rsquo;s storage,
-          uninstalling the app, or switching to a different browser or device.
+          device &mdash; nothing is ever sent to a server. There are no
+          cookies, no analytics, and no third-party tracking of any kind.
+          Your information stays completely private. Data persists
+          automatically between sessions whether you use the browser or the
+          installed app. The only ways to lose your data are clearing your
+          browser&rsquo;s storage, uninstalling the app, or switching to a
+          different browser or device.
         </p>
       </Section>
 

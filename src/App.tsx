@@ -11,7 +11,6 @@ import { GainsView } from '@/components/gains/GainsView'
 import { HelpView } from '@/components/help/HelpView'
 import { GuideView } from '@/components/guide/GuideView'
 import { LegalView } from '@/components/legal/LegalView'
-import { CookieConsent } from '@/components/CookieConsent'
 import { useBudget } from '@/hooks/useBudget'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { SearchDialog } from '@/components/search/SearchDialog'
@@ -164,7 +163,6 @@ function AppContent() {
             )}
           </Suspense>
         </ErrorBoundary>
-        <CookieConsent />
         <WelcomeGuide />
       </AppShell>
       <SearchDialog

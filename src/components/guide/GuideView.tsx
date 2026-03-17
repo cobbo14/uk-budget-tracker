@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
-import { AdUnit } from './AdUnit'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, PoundSterling, Briefcase, AlertTriangle, BarChart3, GraduationCap, PiggyBank, CircleDollarSign, Heart, Baby, Building2, Rocket, CalendarDays, Landmark, Home, Bitcoin, Shield } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -632,7 +631,6 @@ export function GuideView() {
           <GuideComponent />
         </Suspense>
       </article>
-      <AdUnit slot="4824136868" />
       {relatedGuides.length > 0 && (
         <nav aria-label="Related guides">
           <h2 className="text-lg font-semibold mb-3">Related Guides</h2>
