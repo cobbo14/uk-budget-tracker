@@ -7,6 +7,8 @@ const TODAY = new Date().toISOString().slice(0, 10)
 
 // FAQ data mirrors src/components/guide/GuideView.tsx GUIDES array — keep in sync
 const PAGES = [
+  { hash: 'about', path: 'about', title: 'About — UK Budget Tracker', description: 'Built by an ACA and CTA qualified accountant. Learn how UK Budget Tracker calculates your tax using official HMRC rates for 2024/25, 2025/26, and 2026/27.' },
+  { hash: 'contact', path: 'contact', title: 'Contact — UK Budget Tracker', description: 'Get in touch with the UK Budget Tracker team. Report bugs, suggest features, or flag incorrect tax calculations.' },
   { hash: 'guide', path: 'guide', title: 'UK Tax Guides — Income Tax, Pension, CGT — UK Budget Tracker', description: 'In-depth UK tax guides covering income tax rates, salary sacrifice, the £100k tax trap, and capital gains tax for 2024/25, 2025/26, and 2026/27.' },
   { hash: 'guide/uk-income-tax-rates', path: 'guide/uk-income-tax-rates', title: 'UK Income Tax Rates & Bands 2024/25, 2025/26, 2026/27 — UK Budget Tracker', description: 'Full rate tables for all 3 tax years, personal allowance, Scottish rates, National Insurance, and worked examples at £30k, £50k, £80k, and £100k.', faqs: [
     { question: 'What is the UK personal allowance for 2024/25, 2025/26, and 2026/27?', answer: 'The personal allowance is £12,570 for all three tax years. It is reduced by £1 for every £2 of income above £100,000, meaning it reaches zero at £125,140.' },
@@ -155,24 +157,28 @@ function prerender() {
       }
     }
 
-    // Inject BreadcrumbList schema
+    // Inject BreadcrumbList and Article schemas only for guide pages
+    const isGuidePage = page.path === 'guide' || page.path.startsWith('guide/')
     const isGuideIndex = page.path === 'guide'
-    const breadcrumbItems = [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL + '/' },
-      { '@type': 'ListItem', position: 2, name: 'Guides', item: BASE_URL + '/guide/' },
-    ]
-    if (!isGuideIndex) {
-      breadcrumbItems.push({ '@type': 'ListItem', position: 3, name: page.title.split(' — ')[0], item: canonicalUrl })
+
+    if (isGuidePage) {
+      const breadcrumbItems = [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL + '/' },
+        { '@type': 'ListItem', position: 2, name: 'Guides', item: BASE_URL + '/guide/' },
+      ]
+      if (!isGuideIndex) {
+        breadcrumbItems.push({ '@type': 'ListItem', position: 3, name: page.title.split(' — ')[0], item: canonicalUrl })
+      }
+      const breadcrumbSchema = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: breadcrumbItems,
+      })
+      html = html.replace('</head>', `<script type="application/ld+json">${breadcrumbSchema}</script>\n</head>`)
     }
-    const breadcrumbSchema = JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: breadcrumbItems,
-    })
-    html = html.replace('</head>', `<script type="application/ld+json">${breadcrumbSchema}</script>\n</head>`)
 
     // Inject Article schema for individual guide pages
-    if (!isGuideIndex) {
+    if (isGuidePage && !isGuideIndex) {
       const articleSchema = JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'Article',

@@ -23,7 +23,7 @@ const SummaryView = lazy(() => import('@/components/summary/SummaryView').then(m
 const PlanningView = lazy(() => import('@/components/planning/PlanningView').then(m => ({ default: m.PlanningView })))
 
 const VALID_TABS: TabId[] = ['summary', 'income', 'gains', 'expenses', 'planning', 'settings', 'help', 'guide']
-const LEGAL_PAGES = ['disclaimer', 'privacy', 'terms'] as const
+const LEGAL_PAGES = ['disclaimer', 'privacy', 'terms', 'about', 'contact'] as const
 
 function getTabFromHash(): TabId {
   const hash = window.location.hash.slice(1)
@@ -87,8 +87,15 @@ function AppContent() {
       settings: `Settings — ${BASE}`,
       help: `Help & Guide — ${BASE}`,
     }
-    document.title = TAB_TITLES[activeTab] ?? BASE
-  }, [activeTab])
+    const LEGAL_TITLES: Record<string, string> = {
+      about: `About — ${BASE}`,
+      contact: `Contact — ${BASE}`,
+      disclaimer: `Disclaimer — ${BASE}`,
+      privacy: `Privacy Policy — ${BASE}`,
+      terms: `Terms of Use — ${BASE}`,
+    }
+    document.title = (legalPage && LEGAL_TITLES[legalPage]) || TAB_TITLES[activeTab] || BASE
+  }, [activeTab, legalPage])
 
   // Global Ctrl+Z / Cmd+Z undo shortcut
   useEffect(() => {
@@ -146,7 +153,7 @@ function AppContent() {
     <>
       <AppShell activeTab={activeTab} onTabChange={handleTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={handleBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={handleEmployeeModeChange} onSearchOpen={() => setSearchOpen(true)}>
         <ErrorBoundary>
-          <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading…</div>}>
+          <Suspense fallback={<div className="p-8 text-sm text-muted-foreground min-h-[60vh]">Loading…</div>}>
             {legalPage ? (
               <LegalView page={legalPage} />
             ) : (

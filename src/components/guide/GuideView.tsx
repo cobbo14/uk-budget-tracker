@@ -630,6 +630,13 @@ export function GuideView() {
         <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">Loading guide…</div>}>
           <GuideComponent />
         </Suspense>
+        <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground border-t pt-4">
+          <span>Written by an <a href="#about" className="text-emerald-600 hover:underline">ACA &amp; CTA qualified accountant</a></span>
+          <span className="hidden sm:inline">·</span>
+          <span>Last updated: March 2026</span>
+          <span className="hidden sm:inline">·</span>
+          <span>Sources: <a href="https://www.gov.uk/income-tax-rates" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">HMRC official rates</a></span>
+        </div>
       </article>
       {relatedGuides.length > 0 && (
         <nav aria-label="Related guides">
