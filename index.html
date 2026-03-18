@@ -30,13 +30,80 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "UK Budget Tracker",
+          "description": "Free UK tax calculator for 2024-27. Track income, expenses, capital gains, pension contributions, and optimise your tax position in real time.",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "Web",
+          "browserRequirements": "Requires JavaScript",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
+          "url": "https://uk-budget-tracker.com/",
+          "featureList": [
+            "UK income tax calculator 2024-27",
+            "Pension optimiser & salary sacrifice calculator",
+            "Capital gains tax calculator",
+            "Student loan repayment calculator",
+            "Budget and expense tracker"
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How does the UK Budget Tracker calculate my tax?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The calculator uses HMRC's official tax rates and bands for 2024/25, 2025/26, and 2026/27. Enter your income sources, pension contributions, and expenses to see a real-time breakdown of income tax, National Insurance, student loan repayments, and your net take-home pay."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is the UK Budget Tracker free to use?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes, completely free. There are no sign-ups, no ads, and no data sent to any server. All calculations run locally in your browser and your data is saved to your device only."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Which tax years does the calculator support?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The calculator supports three UK tax years: 2024/25, 2025/26, and 2026/27. You can switch between tax years to compare how rule changes affect your tax position."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I use this to optimise my pension contributions?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. The pension optimiser shows exactly how much tax you can save by increasing pension contributions, including salary sacrifice. It highlights the £100k tax trap and calculates the optimal contribution to restore your personal allowance."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Does it calculate Capital Gains Tax?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Enter your capital gains and the calculator applies the correct CGT rates based on your income tax band, using the £3,000 annual exempt amount for 2024/25 onwards."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
       "name": "UK Budget Tracker",
-      "description": "Free UK tax calculator for 2024-27. Track income, expenses, capital gains, pension contributions, and optimise your tax position in real time.",
-      "applicationCategory": "FinanceApplication",
-      "operatingSystem": "Web",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
-      "url": "https://uk-budget-tracker.com/"
+      "url": "https://uk-budget-tracker.com/",
+      "logo": "https://uk-budget-tracker.com/logo.svg",
+      "description": "Free UK tax calculator and budget tracker for 2024-27."
     }
     </script>
 

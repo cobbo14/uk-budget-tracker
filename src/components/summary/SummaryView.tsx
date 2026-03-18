@@ -202,7 +202,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Summary</h2>
+        <h1 className="text-2xl font-bold tracking-tight">Free UK Tax Calculator 2024–27</h1>
         <div className="flex items-center gap-1 rounded-lg border p-1 text-sm">
           <button
             onClick={() => onShowMonthlyChange(true)}
@@ -261,7 +261,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
           {/* Tax breakdown */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Tax Breakdown</CardTitle>
+              <h2 className="text-base font-semibold leading-none tracking-tight">Income Tax & National Insurance Breakdown</h2>
             </CardHeader>
             <CardContent className="pt-0">
               {/* Column headers when bonus column is shown */}
@@ -505,7 +505,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
           {expenses.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Budget Summary</CardTitle>
+                <h2 className="text-base font-semibold leading-none tracking-tight">Budget Summary</h2>
               </CardHeader>
               <CardContent className="pt-0">
                 {showBonusCol && (
