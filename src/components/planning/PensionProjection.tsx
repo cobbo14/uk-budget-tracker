@@ -276,9 +276,12 @@ export function PensionProjection() {
         </p>
       </div>
 
-      {/* Core inputs */}
+      {/* Retirement Settings */}
       <Card>
-        <CardContent className="pt-4 space-y-3">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-medium">Retirement Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="pp-age" className="text-xs">Current age</Label>
@@ -291,7 +294,54 @@ export function PensionProjection() {
                 onChange={e => updateProjection({ currentAge: parseInt(e.target.value) || 0 })}
               />
             </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="pp-income" className="text-xs">
+                Annual income needed (£)
+                <HelpTooltip content="How much pre-tax income you'd want per year in retirement, in today's money. State Pension and DB pension will offset how much your DC pot needs to provide." />
+              </Label>
+              <Input
+                id="pp-income"
+                type="number"
+                min={0}
+                step={1000}
+                placeholder="e.g. 30000"
+                value={proj.annualIncomeNeeded || ''}
+                onChange={e => updateProjection({ annualIncomeNeeded: parseFloat(e.target.value) || 0 })}
+              />
+              {hasInput && hasIncomeNeeded && projection.yearsToAccess > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {formatCurrency(projection.inflatedAnnualIncome)}/yr at age {proj.pensionAccessAge}
+                </p>
+              )}
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="pp-inflation" className="text-xs">
+                Inflation rate (%)
+                <HelpTooltip content="Assumed annual inflation rate to project your income needs to access age. Recommended: 3%." />
+              </Label>
+              <Input
+                id="pp-inflation"
+                type="number"
+                min={0}
+                max={10}
+                step={0.5}
+                placeholder="3"
+                value={proj.inflationRate ?? ''}
+                onChange={e => updateProjection({ inflationRate: parseFloat(e.target.value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">Recommended: 3%</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Pension */}
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-medium">Pension</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {/* Single pot value — only when not using multiple pots */}
             {!multiplePotsOpen && (
               <div className="grid gap-1.5">
@@ -338,43 +388,6 @@ export function PensionProjection() {
                 onChange={e => updateProjection({ assumedGrowthRate: parseFloat(e.target.value) || 0 })}
               />
               <p className="text-xs text-muted-foreground">Recommended: inflation + 2% ({(proj.inflationRate || 3) + 2}%)</p>
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="pp-income" className="text-xs">
-                Annual income needed (£)
-                <HelpTooltip content="How much pre-tax income you'd want per year in retirement, in today's money. State Pension and DB pension will offset how much your DC pot needs to provide." />
-              </Label>
-              <Input
-                id="pp-income"
-                type="number"
-                min={0}
-                step={1000}
-                placeholder="e.g. 30000"
-                value={proj.annualIncomeNeeded || ''}
-                onChange={e => updateProjection({ annualIncomeNeeded: parseFloat(e.target.value) || 0 })}
-              />
-              {hasInput && hasIncomeNeeded && projection.yearsToAccess > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {formatCurrency(projection.inflatedAnnualIncome)}/yr at age {proj.pensionAccessAge}
-                </p>
-              )}
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="pp-inflation" className="text-xs">
-                Inflation rate (%)
-                <HelpTooltip content="Assumed annual inflation rate to project your income needs to access age. Recommended: 3%." />
-              </Label>
-              <Input
-                id="pp-inflation"
-                type="number"
-                min={0}
-                max={10}
-                step={0.5}
-                placeholder="3"
-                value={proj.inflationRate ?? ''}
-                onChange={e => updateProjection({ inflationRate: parseFloat(e.target.value) || 0 })}
-              />
-              <p className="text-xs text-muted-foreground">Recommended: 3%</p>
             </div>
           </div>
 
