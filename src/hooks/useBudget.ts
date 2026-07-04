@@ -1,9 +1,8 @@
 import { useMemo, useCallback } from 'react'
 import { useAppContext } from '@/store/AppContext'
 import {
-  selectIncomeSources, selectGainSources, selectGainById,
-  selectExpenses, selectExpensesByCategory,
-  selectTotalAnnualExpenses, selectIncomeById, selectExpenseById,
+  selectIncomeSources, selectGainSources, selectExpenses,
+  groupExpensesByCategory, sumAnnualExpenses,
 } from '@/store/selectors'
 import { calculateTax } from '@/utils/taxCalculations'
 import { getTaxRules } from '@/taxRules'
@@ -25,19 +24,13 @@ export function useBudget() {
     [incomeSources, gainSources, state.settings, rules],
   )
 
-  const expensesByCategory = useMemo(
-    () => selectExpensesByCategory(state),
-    [state.expenses], // eslint-disable-line react-hooks/exhaustive-deps
-  )
-  const totalAnnualExpenses = useMemo(
-    () => selectTotalAnnualExpenses(state),
-    [state.expenses], // eslint-disable-line react-hooks/exhaustive-deps
-  )
+  const expensesByCategory = useMemo(() => groupExpensesByCategory(expenses), [expenses])
+  const totalAnnualExpenses = useMemo(() => sumAnnualExpenses(expenses), [expenses])
   const leftoverIncome = taxSummary.netIncome - totalAnnualExpenses
 
-  const getIncomeById = useCallback((id: string) => selectIncomeById(state, id), [state.incomeSources]) // eslint-disable-line react-hooks/exhaustive-deps
-  const getGainById = useCallback((id: string) => selectGainById(state, id), [state.gainSources]) // eslint-disable-line react-hooks/exhaustive-deps
-  const getExpenseById = useCallback((id: string) => selectExpenseById(state, id), [state.expenses]) // eslint-disable-line react-hooks/exhaustive-deps
+  const getIncomeById = useCallback((id: string) => incomeSources.find(s => s.id === id), [incomeSources])
+  const getGainById = useCallback((id: string) => gainSources.find(g => g.id === id), [gainSources])
+  const getExpenseById = useCallback((id: string) => expenses.find(e => e.id === id), [expenses])
 
   return {
     state,

@@ -62,7 +62,9 @@ export function RentalIncomeTaxGuide() {
           </ul>
           <p>
             The property allowance is useful if your expenses are minimal. You cannot claim
-            both the £1,000 allowance and actual expenses.
+            both the £1,000 allowance and actual expenses &mdash; and claiming the allowance
+            also forfeits the 20% mortgage interest tax credit. The calculator automatically
+            uses the allowance only when you have no expenses or mortgage interest entered.
           </p>
         </CardContent>
       </Card>
@@ -111,7 +113,9 @@ export function RentalIncomeTaxGuide() {
           </p>
           <p>
             This means higher and additional rate taxpayers pay significantly more tax on
-            rental income than before Section 24 was introduced.
+            rental income than before Section 24 was introduced. The credit is capped at 20%
+            of the lowest of: your finance costs, your property profits, or your taxable
+            non-savings income &mdash; so it cannot create a refund or offset other taxes.
           </p>
           <div className="rounded-lg border p-4 bg-muted/50">
             <p className="font-medium mb-2">Worked Example: Section 24 Impact</p>

@@ -213,6 +213,10 @@ export function IncomeFormDialog() {
         if (isNaN(re) || re < 0) errs.rentalExpenses = 'Enter a valid amount'
       }
     }
+    if (form.type === 'employment' && form.bonus) {
+      const b = parseFloat(form.bonus)
+      if (isNaN(b) || b < 0) errs.bonus = 'Enter a valid bonus amount'
+    }
     if (form.type === 'employment' && form.salarySacrificeItems.length > 0) {
       const gross = parseFloat(form.grossAmount) || 0
       const totalSacrifice = form.salarySacrificeItems.reduce((sum, i) => {
@@ -263,7 +267,7 @@ export function IncomeFormDialog() {
         ? parseFloat(form.mortgageInterestAnnual) : undefined,
       rentalExpenses: form.type === 'rental' && form.rentalExpenses
         ? parseFloat(form.rentalExpenses) : undefined,
-      fromISA: form.type === 'dividend' ? form.fromISA : undefined,
+      fromISA: form.type === 'dividend' || form.type === 'savings' ? form.fromISA : undefined,
       yearsHeld: form.type === 'bond' && form.yearsHeld ? parseInt(form.yearsHeld) || undefined : undefined,
       salarySacrificeItems: form.type === 'employment' && form.salarySacrificeItems.length > 0
         ? form.salarySacrificeItems.map(i => ({
@@ -426,7 +430,10 @@ export function IncomeFormDialog() {
                 placeholder="0"
                 value={form.bonus}
                 onChange={e => set('bonus', e.target.value)}
+                aria-invalid={!!errors.bonus}
+                aria-describedby={errors.bonus ? 'income-bonus-error' : undefined}
               />
+              {errors.bonus && <p id="income-bonus-error" role="alert" className="text-xs text-destructive">{errors.bonus}</p>}
             </div>
           )}
 
@@ -789,8 +796,8 @@ export function IncomeFormDialog() {
             </>
           )}
 
-          {/* Dividend: ISA toggle */}
-          {form.type === 'dividend' && (
+          {/* Dividend / savings: ISA toggle */}
+          {(form.type === 'dividend' || form.type === 'savings') && (
             <div className="flex items-center gap-3">
               <Switch
                 id="income-isa"

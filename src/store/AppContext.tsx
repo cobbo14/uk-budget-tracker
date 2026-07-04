@@ -50,15 +50,28 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
 
   // Queue of split syncs to run after the next localStorage save
   const pendingSplitSyncRef = useRef<Expense | null>(null)
+  // Last state object actually written to localStorage (reference equality)
+  const savedStateRef = useRef<AppState | null>(null)
+  // Timestamp of the last undo snapshot taken for UPDATE_SETTINGS
+  const lastSettingsSnapshotRef = useRef(0)
 
   // Wrapped dispatch: push snapshot for data-modifying actions
   const dispatch = useCallback((action: AppAction) => {
     if (DATA_MODIFYING_ACTIONS.has(action.type)) {
-      undoStackRef.current = [
-        ...undoStackRef.current.slice(-(MAX_UNDO_DEPTH - 1)),
-        stateRef.current,
-      ]
-      setCanUndo(true)
+      // Coalesce rapid consecutive settings updates (typing in a number field
+      // fires one action per keystroke) into a single undo step so they don't
+      // flush the 10-deep history.
+      const now = Date.now()
+      const coalesce = action.type === UPDATE_SETTINGS
+        && now - lastSettingsSnapshotRef.current < 1000
+      lastSettingsSnapshotRef.current = action.type === UPDATE_SETTINGS ? now : 0
+      if (!coalesce) {
+        undoStackRef.current = [
+          ...undoStackRef.current.slice(-(MAX_UNDO_DEPTH - 1)),
+          stateRef.current,
+        ]
+        setCanUndo(true)
+      }
       baseDispatch(action)
 
       // Defer cross-profile split sync until after debounced save
@@ -97,6 +110,7 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
     const timer = setTimeout(() => {
       const success = saveProfileState(profileId, state)
       if (success) {
+        savedStateRef.current = state
         setSavedAt(Date.now())
         setSaveError(false)
         // Run deferred split sync after the save completes
@@ -111,6 +125,34 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
     }, 300)
     return () => clearTimeout(timer)
   }, [state, profileId])
+
+  // Flush any pending debounced save when the provider unmounts (profile
+  // switch remounts it via key) and when the page is hidden or closed —
+  // otherwise edits made in the final 300ms would be lost.
+  useEffect(() => {
+    const flush = () => {
+      if (!hydratedRef.current) return
+      if (savedStateRef.current === stateRef.current) return
+      if (saveProfileState(profileId, stateRef.current)) {
+        savedStateRef.current = stateRef.current
+        const pending = pendingSplitSyncRef.current
+        if (pending) {
+          pendingSplitSyncRef.current = null
+          syncSplitToOtherProfiles(pending, profileId)
+        }
+      }
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    window.addEventListener('beforeunload', flush)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('beforeunload', flush)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      flush()
+    }
+  }, [profileId])
 
   return (
     <AppContext.Provider value={{ state, dispatch, savedAt, saveError, canUndo, undo }}>

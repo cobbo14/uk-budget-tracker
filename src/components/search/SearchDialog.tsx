@@ -37,21 +37,25 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
     [items, query],
   )
 
-  useEffect(() => {
-    setSelectedIndex(0)
-  }, [query])
-
-  useEffect(() => {
-    if (open) {
+  // Reset in event handlers rather than effects: clearing on close leaves the
+  // dialog clean for its next open.
+  const handleOpenChange = useCallback((next: boolean) => {
+    if (!next) {
       setQuery('')
       setSelectedIndex(0)
     }
-  }, [open])
+    onOpenChange(next)
+  }, [onOpenChange])
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value)
+    setSelectedIndex(0)
+  }
 
   const handleSelect = useCallback((item: SearchItem) => {
-    onOpenChange(false)
+    handleOpenChange(false)
     onNavigate(item.tab, item.targetSelector, item.hash)
-  }, [onNavigate, onOpenChange])
+  }, [onNavigate, handleOpenChange])
 
   const clampedIndex = Math.min(selectedIndex, Math.max(0, filtered.length - 1))
 
@@ -76,7 +80,7 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
   }, [clampedIndex])
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-[calc(100vw-2rem)] sm:w-full max-w-md p-0 gap-0 top-[20%] translate-y-0 data-[state=closed]:slide-out-to-top-[20%] data-[state=open]:slide-in-from-top-[18%]">
         <DialogTitle className="sr-only">Search features</DialogTitle>
         <div className="flex items-center border-b px-3">
@@ -84,7 +88,7 @@ export function SearchDialog({ open, onOpenChange, onNavigate, budgetingMode }: 
           <input
             ref={inputRef}
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => handleQueryChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search features..."
             className="flex-1 bg-transparent py-3 pl-2 text-sm outline-none placeholder:text-muted-foreground"

@@ -54,7 +54,7 @@ export function calculateTax(
   gainSources: GainSource[] = [],
 ): TaxSummary {
   // --- Cache check ---
-  const _cacheKey = JSON.stringify([incomeSources, settings, gainSources])
+  const _cacheKey = JSON.stringify([incomeSources, settings, gainSources, rules.label])
   const _cached = _taxCache.get(_cacheKey)
   if (_cached) return _cached
 
@@ -64,21 +64,22 @@ export function calculateTax(
   const rentalSources = incomeSources.filter(s => s.type === 'rental')
   const dividendSources = incomeSources.filter(s => s.type === 'dividend' && !s.fromISA)
   const bondSources = incomeSources.filter(s => s.type === 'bond')
-  const savingsSources = incomeSources.filter(s => s.type === 'savings')
+  const savingsSources = incomeSources.filter(s => s.type === 'savings' && !s.fromISA)
   const savingsGross = savingsSources.reduce((sum, s) => sum + s.grossAmount, 0)
 
   const bonusTotal = employmentSources.reduce((sum, s) => sum + (s.bonus ?? 0), 0)
   const employmentGross = employmentSources.reduce((sum, s) => sum + s.grossAmount + (s.bonus ?? 0), 0)
 
   // --- Salary sacrifice ---
-  const totalSalarySacrifice = employmentSources.reduce((sum, s) =>
-    sum + (s.salarySacrificeItems ?? []).reduce((a, i) =>
-      a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0), 0)
+  const sourceSalarySacrifice = (s: IncomeSource): number =>
+    (s.salarySacrificeItems ?? []).reduce((a, i) =>
+      a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
+  const totalSalarySacrifice = employmentSources.reduce((sum, s) => sum + sourceSalarySacrifice(s), 0)
   // Pension portion of salary sacrifice (counts toward Annual Allowance)
   const salarySacrificePension = employmentSources.reduce((sum, s) =>
     sum + (s.salarySacrificeItems ?? []).filter(i => i.type === 'pension').reduce((a, i) =>
       a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0), 0)
-  // effectiveEmploymentGross: used for Class 1 NI (BIK does not attract employee NI)
+  // effectiveEmploymentGross: employment pay after salary sacrifice (pre-BIK)
   const effectiveEmploymentGross = Math.max(0, employmentGross - totalSalarySacrifice)
   // --- Benefits in Kind (P11D) ---
   const totalBIK = employmentSources.reduce((sum, s) =>
@@ -109,10 +110,16 @@ export function calculateTax(
     (sum, s) => sum + (s.mortgageInterestAnnual ?? 0),
     0,
   )
-  // Rental profit: apply property allowance if no other expenses claimed, else use actual expenses
+  // Property allowance is an alternative to claiming actual expenses AND the 20%
+  // finance-cost credit — claiming it forfeits both. Apply it only when it beats
+  // actual expenses and no mortgage interest is claimed.
+  const usesPropertyAllowance = rentalGross > 0 && mortgageInterestTotal === 0
+    && rules.propertyAllowance > rentalAllowableExpenses
   const rentalNetBeforeMortgage = Math.max(
     0,
-    rentalGross - Math.max(rentalAllowableExpenses, rentalGross > 0 ? rules.propertyAllowance : 0),
+    rentalGross - (usesPropertyAllowance
+      ? Math.min(rules.propertyAllowance, rentalGross)
+      : rentalAllowableExpenses),
   )
 
   const dividendGross = dividendSources.reduce((sum, s) => sum + s.grossAmount, 0)
@@ -121,7 +128,8 @@ export function calculateTax(
   const bondIncome = bondSources.reduce((sum, s) => sum + s.grossAmount, 0)
 
   // --- Pension deductions ---
-  // Only employment + self-employment count as "relevant UK earnings" for pension relief
+  // Only employment + self-employment count as "relevant UK earnings" for pension relief.
+  // Workplace contributions are treated as net pay (deducted from income before tax).
   let pensionDeduction = 0
   const pensionEligibleIncome = effectiveEmploymentGross + selfEmploymentProfit
   if (settings.pensionContributionType === 'percentage') {
@@ -129,19 +137,42 @@ export function calculateTax(
   } else if (settings.pensionContributionType === 'flat') {
     pensionDeduction = Math.min(settings.pensionContributionValue, pensionEligibleIncome)
   }
+  // SIPP is relief at source: the user pays the net amount, the provider adds 20%.
+  // It does NOT reduce taxable income — higher-rate relief comes via basic-band extension.
+  // Relief is capped at 100% of relevant UK earnings (employment + self-employment),
+  // with a £3,600 gross floor for low/no earners; contributions above the cap get
+  // no relief (no band extension, no adjusted-net-income reduction).
   const sippContribution = settings.sippContribution ?? 0
+  const sippGross = Math.min(sippContribution / 0.8, Math.max(3600, pensionEligibleIncome))
+  // totalDeductions = cash the user paid into pensions (net-pay + net SIPP)
   const totalDeductions = pensionDeduction + sippContribution
 
   // --- Gift Aid ---
+  // Like SIPP, Gift Aid relief works by basic-band extension (and reduces adjusted
+  // net income for taper/HICBC) — it is not an income deduction.
   const grossedUpGiftAid = (settings.giftAidDonations ?? 0) / 0.8
 
-  // --- Adjusted net income (pension + grossed-up Gift Aid reduce it) ---
-  // Bond income stacks on top of other non-savings income (no NI applies to bonds)
-  const totalNonDividendGross = effectiveEmploymentGrossForIT + selfEmploymentProfit + rentalNetBeforeMortgage + bondIncome
-  const adjustedNetIncome = Math.max(0, totalNonDividendGross - totalDeductions - grossedUpGiftAid)
+  // --- Income layers ---
+  // Layer 1: non-savings income (employment + self-employment + rental) — Scottish or
+  // rUK bands. Layer 2: savings income (interest + onshore bond gains, which are
+  // legally savings income) — always rUK bands. Layer 3: dividends — rUK bands.
+  const nonSavingsGross = effectiveEmploymentGrossForIT + selfEmploymentProfit + rentalNetBeforeMortgage
+  const savingsLayerGross = savingsGross + bondIncome
+
+  // Net-pay pension deduction reduces non-savings income first, spilling into savings
+  const nonSavingsAfterDeductions = Math.max(0, nonSavingsGross - pensionDeduction)
+  const deductionSpill = Math.max(0, pensionDeduction - nonSavingsGross)
+  const savingsAfterDeductions = Math.max(0, savingsLayerGross - deductionSpill)
+
+  // --- Adjusted net income (HMRC definition: all income less gross RAS pension and
+  // grossed-up Gift Aid) — drives PA taper, HICBC and threshold displays ---
+  const adjustedNetIncome = Math.max(
+    0,
+    nonSavingsAfterDeductions + savingsAfterDeductions + dividendGross - sippGross - grossedUpGiftAid,
+  )
 
   // --- Effective personal allowance (tapers above £100k) ---
-  const adjustedTotal = adjustedNetIncome + dividendGross + savingsGross
+  const adjustedTotal = adjustedNetIncome
   const taperExcess = Math.max(0, adjustedTotal - rules.personalAllowanceTaperThreshold)
   let effectivePersonalAllowance = Math.max(0, rules.personalAllowance - Math.floor(taperExcess / 2))
 
@@ -158,7 +189,9 @@ export function calculateTax(
     const taperRange = rules.hicbcTaperEnd - rules.hicbcThreshold
     if (adjustedTotal > rules.hicbcThreshold) {
       const excessOverThreshold = Math.min(adjustedTotal - rules.hicbcThreshold, taperRange)
-      hicbc = Math.round((excessOverThreshold / taperRange) * childBenefitAnnual)
+      // HMRC charges in whole 1% steps: 1% of the benefit per full £200 over the threshold
+      const chargePercent = Math.min(100, Math.floor(excessOverThreshold / (taperRange / 100)))
+      hicbc = Math.round(childBenefitAnnual * (chargePercent / 100))
       // Additional effective marginal rate within the taper zone
       hicbcMarginalRate = childBenefitAnnual / taperRange
     }
@@ -169,80 +202,106 @@ export function calculateTax(
   const blindPersonsAllowanceApplied = (settings.hasBlindPersonsAllowance ?? false) ? rules.blindPersonsAllowance : 0
   effectivePersonalAllowance += blindPersonsAllowanceApplied
 
-  // --- Marriage Allowance ---
-  let marriageAllowanceCredit = 0
+  // --- Marriage Allowance (transfer side; recipient credit is resolved after
+  // the income tax liability is known, since it is capped at tax due) ---
+  // The transferor must not be liable above basic rate (Scotland: not above
+  // intermediate) — HMRC refuses the transfer otherwise, so we skip it too.
+  let marriageAllowanceTransferApplied = false
   if (settings.marriageAllowance === 'transferring') {
-    effectivePersonalAllowance = Math.max(0, effectivePersonalAllowance - rules.marriageAllowanceTransfer)
-  } else if (settings.marriageAllowance === 'receiving') {
-    marriageAllowanceCredit = rules.marriageAllowanceCredit
+    const transferBandLimit = (settings.scottishTaxpayer
+      ? rules.scottishIncomeTaxBands.filter(b => b.rate < 0.40).slice(-1)[0].to
+      : rules.incomeTaxBands[0].to) + grossedUpGiftAid + sippGross
+    const taxableBeforeTransfer = Math.max(
+      0,
+      nonSavingsAfterDeductions + savingsAfterDeductions + dividendGross - effectivePersonalAllowance,
+    )
+    if (taxableBeforeTransfer <= transferBandLimit) {
+      effectivePersonalAllowance = Math.max(0, effectivePersonalAllowance - rules.marriageAllowanceTransfer)
+      marriageAllowanceTransferApplied = true
+    }
   }
 
-  // --- Taxable non-dividend income ---
-  const taxableNonDividendIncome = Math.max(0, adjustedNetIncome - effectivePersonalAllowance)
+  // --- Personal allowance allocation: non-savings first, then savings, then dividends ---
+  const taxableNonDividendIncome = Math.max(0, nonSavingsAfterDeductions - effectivePersonalAllowance)
+  const remainingPAForSavings = Math.max(0, effectivePersonalAllowance - nonSavingsAfterDeductions)
+  const taxableSavings = Math.max(0, savingsAfterDeductions - remainingPAForSavings)
+  const remainingPAForDividends = Math.max(0, remainingPAForSavings - savingsAfterDeductions)
 
-  // --- Income Tax (non-dividend, non-savings) ---
-  // Extend basic rate band for Gift Aid gross-up
+  // --- Tax bands ---
+  // Basic-rate band extends by grossed-up Gift Aid + gross SIPP (relief at source)
+  const bandExtension = grossedUpGiftAid + sippGross
   const baseBands = settings.scottishTaxpayer ? rules.scottishIncomeTaxBands : rules.incomeTaxBands
-  const adjustedBands = extendBasicRateBand(baseBands, grossedUpGiftAid)
+  const adjustedBands = extendBasicRateBand(baseBands, bandExtension)
+  // Savings, dividends and CGT always use England/Wales/NI bands (even for Scottish taxpayers)
+  const englandAdjustedBands = extendBasicRateBand(rules.incomeTaxBands, bandExtension)
 
-  // --- Personal Savings Allowance ---
-  // PA is consumed by non-savings income first; any remainder absorbs savings income
-  const remainingPAForSavings = Math.max(0, effectivePersonalAllowance - adjustedNetIncome)
-  const taxableSavings = Math.max(0, savingsGross - remainingPAForSavings)
+  // --- Savings income: starting rate, then PSA, then bands ---
+  // Starting rate for savings: 0% on up to £5,000, eroded £1-for-£1 by taxable non-savings income
+  const startingRateBand = Math.max(0, rules.startingRateForSavingsLimit - taxableNonDividendIncome)
+  const startingSavingsRateApplied = Math.min(taxableSavings, startingRateBand)
 
-  // PSA tier determined by England/Wales/NI bands regardless of Scottish status.
-  // HMRC bases the tier on total taxable income (non-savings + savings + dividends).
-  const englandBasicRateTop = rules.incomeTaxBands[0].to  // £37,700
-  const taxableDividendsForPSA = Math.max(0, dividendGross - rules.dividendAllowance)
-  const totalTaxableForPSA = taxableNonDividendIncome + taxableSavings + taxableDividendsForPSA
+  // PSA tier determined by England/Wales/NI bands regardless of Scottish status,
+  // using the Gift-Aid/SIPP-extended limits (band extension can keep someone
+  // basic-rate for PSA purposes). HMRC bases the tier on total taxable income
+  // including nil-rated dividends.
+  // The dividend allowance is a nil-rate band: dividends inside it still consume
+  // band space, so the taxed remainder stacks above it.
+  const dividendAllowanceUsed = Math.min(Math.max(0, dividendGross - remainingPAForDividends), rules.dividendAllowance)
+  const taxableDividendsForPSA = Math.max(0, dividendGross - remainingPAForDividends - rules.dividendAllowance)
+  const totalTaxableForPSA = taxableNonDividendIncome + taxableSavings + taxableDividendsForPSA + dividendAllowanceUsed
   let savingsAllowance: number
-  if (totalTaxableForPSA > rules.incomeTaxBands[1].to) {
+  if (totalTaxableForPSA > englandAdjustedBands[1].to) {
     savingsAllowance = rules.savingsAllowanceAdditional // £0
-  } else if (totalTaxableForPSA > englandBasicRateTop) {
+  } else if (totalTaxableForPSA > englandAdjustedBands[0].to) {
     savingsAllowance = rules.savingsAllowanceHigher     // £500
   } else {
     savingsAllowance = rules.savingsAllowanceBasic      // £1,000
   }
-  const savingsAfterAllowance = Math.max(0, taxableSavings - savingsAllowance)
-  const savingsAllowanceApplied = Math.min(savingsAllowance, taxableSavings)
+  const savingsAfterStartingRate = Math.max(0, taxableSavings - startingSavingsRateApplied)
+  const savingsAllowanceApplied = Math.min(savingsAllowance, savingsAfterStartingRate)
+  const savingsAfterAllowance = Math.max(0, savingsAfterStartingRate - savingsAllowance)
+  // The starting rate and PSA are nil-rate bands: savings income inside them is
+  // taxed at 0% but still counts towards the basic/higher rate limits, so it
+  // must be included in the stacking offset for the taxed remainder.
+  const savingsNilRateUsed = startingSavingsRateApplied + savingsAllowanceApplied
   const savingsTax = savingsAfterAllowance > 0
-    ? applyBands(adjustedBands, savingsAfterAllowance, taxableNonDividendIncome)
+    ? applyBands(englandAdjustedBands, savingsAfterAllowance, taxableNonDividendIncome + savingsNilRateUsed)
     : 0
 
   const incomeTaxNonSavings = applyBands(adjustedBands, taxableNonDividendIncome, 0)
   const incomeTax = incomeTaxNonSavings + savingsTax
 
-  // Gift Aid relief = extra tax saving for higher/additional rate taxpayers
-  // (charity already claimed 20%; relief here is the additional saving above 20%)
-  const taxWithoutGiftAid = applyBands(baseBands, Math.max(0, adjustedNetIncome + grossedUpGiftAid - effectivePersonalAllowance), 0)
-  const giftAidRelief = Math.max(0, taxWithoutGiftAid - incomeTax)
+  // Gift Aid relief = extra tax saving for higher/additional rate taxpayers from the
+  // band extension (charity already claimed the basic 20%)
+  const bandsWithoutGiftAid = extendBasicRateBand(baseBands, sippGross)
+  const giftAidRelief = Math.max(0, applyBands(bandsWithoutGiftAid, taxableNonDividendIncome, 0) - incomeTaxNonSavings)
 
   // --- Bond top-slicing relief ---
-  // Top-slicing: tax on full bond gain vs tax on a single annual slice × years
+  // Top-slicing: tax on full bond gain vs tax on a single annual slice × years.
+  // Bond gains sit at the top of the savings layer (above interest), on rUK bands.
   let bondTopSlicingRelief = 0
-  if (bondIncome > 0) {
-    // Base income stripped of ALL bond gains (taxable, so PA already removed upstream)
-    const baseWithoutBonds = Math.max(0, adjustedNetIncome - bondIncome - effectivePersonalAllowance)
-    // Tax with full bond gains already computed above (included in incomeTax via taxableNonDividendIncome)
-    const taxWithFullBond = applyBands(adjustedBands, taxableNonDividendIncome, 0)
+  // Portion of the taxed savings amount attributable to bond gains (PA, starting
+  // rate and PSA are allocated to interest first, so bonds form the top slice)
+  const bondTaxablePortion = Math.min(bondIncome, savingsAfterAllowance)
+  if (bondIncome > 0 && bondTaxablePortion > 0) {
+    const interestTaxedPortion = savingsAfterAllowance - bondTaxablePortion
+    const baseOffset = taxableNonDividendIncome + savingsNilRateUsed + interestTaxedPortion
+    const scale = bondTaxablePortion / bondIncome  // fraction of bond gains actually taxed
 
     let reliefSum = 0
     for (const s of bondSources) {
       const years = Math.max(1, s.yearsHeld ?? 1)
-      const slice = s.grossAmount / years
+      const taxedGain = s.grossAmount * scale
+      const slice = taxedGain / years
       // Per HMRC IPTM3820: base for this bond includes all OTHER bonds' gains
-      const otherBondGross = bondIncome - s.grossAmount
-      const base = baseWithoutBonds + otherBondGross
-      // Marginal tax on the annual slice
-      const taxWithSlice = applyBands(adjustedBands, Math.max(0, base + slice), 0)
-      const taxWithoutSlice = applyBands(adjustedBands, base, 0)
-      const marginalOnSlice = Math.max(0, taxWithSlice - taxWithoutSlice)
-      // Tax on full gain for this bond
-      const taxOnFullGain = applyBands(adjustedBands, Math.max(0, base + s.grossAmount), 0)
-                          - applyBands(adjustedBands, base, 0)
+      const base = baseOffset + (bondTaxablePortion - taxedGain)
+      const taxOnFullGain = applyBands(englandAdjustedBands, taxedGain, base)
+      const marginalOnSlice = applyBands(englandAdjustedBands, slice, base)
       reliefSum += Math.max(0, taxOnFullGain - marginalOnSlice * years)
     }
-    bondTopSlicingRelief = Math.min(reliefSum, taxWithFullBond)
+    // Relief cannot exceed the tax actually charged on the bond portion
+    const taxOnBondPortion = applyBands(englandAdjustedBands, bondTaxablePortion, baseOffset)
+    bondTopSlicingRelief = Math.min(reliefSum, taxOnBondPortion)
   }
 
   // --- EIS / SEIS / VCT Investment Relief ---
@@ -263,14 +322,14 @@ export function calculateTax(
   const incomeTaxAfterRelief = Math.max(0, incomeTax - seisRelief - eisRelief - vctRelief - bondTopSlicingRelief)
 
   // --- Dividend Tax ---
-  // Dividends are taxed after all other income, using remaining band space
-  // Always use England/Wales/NI bands for dividend rate mapping
-  const englandAdjustedBands = extendBasicRateBand(rules.incomeTaxBands, grossedUpGiftAid)
-  const dividendAfterAllowance = Math.max(0, dividendGross - rules.dividendAllowance)
+  // Dividends are taxed after all other income, using remaining band space on
+  // England/Wales/NI bands. Any personal allowance left after non-savings and
+  // savings income covers dividends first, then the dividend allowance applies.
+  const dividendAfterAllowance = Math.max(0, dividendGross - remainingPAForDividends - rules.dividendAllowance)
   let dividendTax = 0
   if (dividendAfterAllowance > 0) {
     let remaining = dividendAfterAllowance
-    let offset = taxableNonDividendIncome + taxableSavings
+    let offset = taxableNonDividendIncome + taxableSavings + dividendAllowanceUsed
 
     for (const band of englandAdjustedBands) {
       if (remaining <= 0) break
@@ -290,17 +349,43 @@ export function calculateTax(
     }
   }
 
+  // --- Marriage Allowance (recipient credit) ---
+  // Recipient must be a basic-rate taxpayer (Scotland: no higher than
+  // intermediate); the credit cannot exceed income tax due
+  let marriageAllowanceCredit = 0
+  if (settings.marriageAllowance === 'receiving') {
+    const recipientBandLimit = settings.scottishTaxpayer
+      ? adjustedBands.filter(b => b.rate < 0.40).slice(-1)[0].to
+      : englandAdjustedBands[0].to
+    const isBasicRate = totalTaxableForPSA <= recipientBandLimit
+    marriageAllowanceCredit = isBasicRate
+      ? Math.min(rules.marriageAllowanceCredit, incomeTaxAfterRelief + dividendTax)
+      : 0
+  }
+
   // --- Mortgage Interest Tax Credit (rental) ---
-  const mortgageTaxCredit = mortgageInterestTotal * 0.20
+  // 20% × lowest of: finance costs, property profits, taxable non-savings income
+  const mortgageTaxCredit = 0.20 * Math.max(
+    0,
+    Math.min(mortgageInterestTotal, rentalNetBeforeMortgage, taxableNonDividendIncome),
+  )
 
   // --- National Insurance ---
-  // Class 1 (employment) — salary sacrifice reduces NI-able earnings
-  let class1NI = 0
-  if (effectiveEmploymentGross > rules.niPrimaryThreshold) {
-    const lowerBand = Math.min(effectiveEmploymentGross, rules.niUpperEarningsLimit) - rules.niPrimaryThreshold
-    const upperBand = Math.max(0, effectiveEmploymentGross - rules.niUpperEarningsLimit)
-    class1NI = lowerBand * rules.niRateLower + upperBand * rules.niRateUpper
+  // Class 1 (employment) — calculated per employment: unlike income tax, each job
+  // gets its own primary threshold and UEL. Salary sacrifice reduces NI-able
+  // earnings; BIK does not attract employee NI.
+  let class1NILowerBandTax = 0
+  let class1NIUpperBandTax = 0
+  for (const s of employmentSources) {
+    const niable = Math.max(0, s.grossAmount + (s.bonus ?? 0) - sourceSalarySacrifice(s))
+    if (niable > rules.niPrimaryThreshold) {
+      const lowerBand = Math.min(niable, rules.niUpperEarningsLimit) - rules.niPrimaryThreshold
+      const upperBand = Math.max(0, niable - rules.niUpperEarningsLimit)
+      class1NILowerBandTax += lowerBand * rules.niRateLower
+      class1NIUpperBandTax += upperBand * rules.niRateUpper
+    }
   }
+  const class1NI = class1NILowerBandTax + class1NIUpperBandTax
 
   // Class 4 (self-employment)
   let class4NI = 0
@@ -310,19 +395,23 @@ export function calculateTax(
     class4NI = lower * rules.selfEmployedClass4Lower + upper * rules.selfEmployedClass4Upper
   }
 
-  // Class 2 (self-employment flat rate if profit > small profits threshold)
-  let class2NI = 0
-  if (selfEmploymentProfit > rules.selfEmployedSmallProfitsThreshold) {
-    class2NI = rules.selfEmployedClass2WeeklyRate * 52
-  }
+  // Class 2: compulsory Class 2 NI was abolished from 6 April 2024. Profits at or above
+  // the small profits threshold earn NI credits automatically at no cost; below it,
+  // Class 2 can be paid voluntarily (not modelled here — it's an optional choice).
+  const class2NI = 0
 
   const nationalInsurance = class1NI + class4NI + class2NI
 
   // --- Student Loan ---
-  // Under self-assessment, all income types count including dividends
+  // SL income is not reduced by relief-at-source pension or Gift Aid (net-pay
+  // deductions do reduce it). Earned income excludes BIK (not repayment income).
+  // Unearned income (savings, bonds, dividends, rental) counts under
+  // self-assessment only when it exceeds £2,000 in total, then in full.
   let studentLoan = 0
   const sl = rules.studentLoan
-  const incomeForSL = adjustedNetIncome + dividendGross
+  const earnedForSL = Math.max(0, effectiveEmploymentGross + selfEmploymentProfit - pensionDeduction)
+  const unearnedForSL = dividendGross + savingsGross + bondIncome + rentalNetBeforeMortgage
+  const incomeForSL = earnedForSL + (unearnedForSL > 2000 ? unearnedForSL : 0)
   if (settings.studentLoanPlan === 'plan1' && incomeForSL > sl.plan1Threshold) {
     studentLoan = (incomeForSL - sl.plan1Threshold) * sl.plan1Rate
   } else if (settings.studentLoanPlan === 'plan2' && incomeForSL > sl.plan2Threshold) {
@@ -349,11 +438,14 @@ export function calculateTax(
   const totalBadrGainsRaw = badrSources.reduce((sum, g) => sum + (g.gainAmount - g.allowableCosts), 0)
   const totalGains = totalNonBadrGains + totalBadrGainsRaw
 
-  // Apply carry-forward losses to non-BADR gains first (maximises BADR benefit)
+  // Brought-forward losses only reduce net gains down to the annual exempt
+  // amount — never below it, so the AEA is not wasted and the unused loss pool
+  // carries forward again. Applied to non-BADR gains first (maximises BADR benefit).
   const lossPool = settings.capitalLossCarryForward ?? 0
-  const lossAgainstNonBadr = Math.min(lossPool, Math.max(0, totalNonBadrGains))
-  const lossRemainder = lossPool - lossAgainstNonBadr
-  const lossAgainstBadr = Math.min(lossRemainder, Math.max(0, totalBadrGainsRaw))
+  const netGainsTotal = Math.max(0, totalNonBadrGains) + Math.max(0, totalBadrGainsRaw)
+  const lossesUsable = Math.min(lossPool, Math.max(0, netGainsTotal - rules.cgtAnnualExemptAmount))
+  const lossAgainstNonBadr = Math.min(lossesUsable, Math.max(0, totalNonBadrGains))
+  const lossAgainstBadr = Math.min(lossesUsable - lossAgainstNonBadr, Math.max(0, totalBadrGainsRaw))
   const carryForwardLossesApplied = lossAgainstNonBadr + lossAgainstBadr
 
   // Annual exempt amount: applied to non-BADR gains first
@@ -379,9 +471,10 @@ export function calculateTax(
   const regularTaxableGain = taxableNonBadr + overLimitBadrGain
   let regularCgt = 0
   if (regularTaxableGain > 0) {
-    // CGT uses remaining basic rate band (after income + dividends)
+    // CGT uses remaining basic rate band (after income + dividends, including
+    // the band space consumed by the dividend nil-rate allowance)
     const basicRateBandTop = englandAdjustedBands[0].to
-    const bandUsed = taxableNonDividendIncome + taxableSavings + dividendAfterAllowance
+    const bandUsed = taxableNonDividendIncome + taxableSavings + dividendAfterAllowance + dividendAllowanceUsed
     const remainingBasicRate = Math.max(0, basicRateBandTop - bandUsed)
     const basicRatePortion = Math.min(regularTaxableGain, remainingBasicRate)
     const higherRatePortion = regularTaxableGain - basicRatePortion
@@ -407,11 +500,14 @@ export function calculateTax(
     return sum + s.employerPensionAmount
   }, 0)
   employerPension += perSourceEmployerPension
-  const totalPensionFunding = pensionDeduction + sippContribution + employerPension + salarySacrificePension
-  // Threshold income = adjusted net income + dividends (before pension deduction being re-added)
-  // Adjusted income for taper = threshold income + employer contributions
-  const thresholdIncomeForAA = adjustedNetIncome + dividendGross + totalDeductions
-  const adjustedIncomeForAA = thresholdIncomeForAA + employerPension
+  // AA funding counts the GROSS SIPP contribution (net + provider-claimed relief)
+  const totalPensionFunding = pensionDeduction + sippGross + employerPension + salarySacrificePension
+  // Threshold income: total income after net-pay deductions, minus gross RAS (SIPP),
+  // plus salary-sacrifice pension amounts (post-July-2015 anti-avoidance add-back)
+  const totalIncomeAfterNetPay = nonSavingsAfterDeductions + savingsAfterDeductions + dividendGross
+  const thresholdIncomeForAA = Math.max(0, totalIncomeAfterNetPay - sippGross + salarySacrificePension)
+  // Adjusted income: total income plus all pension contributions that received relief
+  const adjustedIncomeForAA = totalIncomeAfterNetPay + pensionDeduction + employerPension + salarySacrificePension
   // MPAA: if flexibly accessed DC pension, AA drops to MPAA (£10,000)
   const baseAnnualAllowance = (settings.hasMPAA ?? false)
     ? rules.mpaa
@@ -437,7 +533,7 @@ export function calculateTax(
   // --- Annual Allowance Tax Charge ---
   // The excess is taxed at marginal income tax rate(s), sitting on top of all other taxable income
   const annualAllowanceCharge = annualAllowanceExcess > 0
-    ? applyBands(adjustedBands, annualAllowanceExcess, taxableNonDividendIncome + taxableSavings + dividendAfterAllowance)
+    ? applyBands(adjustedBands, annualAllowanceExcess, taxableNonDividendIncome + taxableSavings + dividendAfterAllowance + dividendAllowanceUsed)
     : 0
   // Allow user to exclude AA charge from tax total (e.g. if using Scheme Pays)
   const annualAllowanceChargeApplied = (settings.includeAnnualAllowanceCharge ?? true)
@@ -445,7 +541,10 @@ export function calculateTax(
 
   // --- Self-Assessment Tax Estimate (for Payments on Account) ---
   // Approximation: total tax minus employee Class 1 NI (deducted via PAYE)
-  const selfAssessmentTaxEstimate = Math.max(0, incomeTaxAfterRelief + dividendTax - mortgageTaxCredit + studentLoan + postgradLoanRepayment + capitalGainsTax + class2NI + class4NI + hicbc - marriageAllowanceCredit + annualAllowanceChargeApplied)
+  const selfAssessmentTaxEstimate = Math.max(0, incomeTaxAfterRelief + dividendTax - mortgageTaxCredit + studentLoan + postgradLoanRepayment + capitalGainsTax + class4NI + hicbc - marriageAllowanceCredit + annualAllowanceChargeApplied)
+  // POA "relevant amount": as above but excluding CGT and student loans, which are
+  // settled via the balancing payment only
+  const poaRelevantTax = Math.max(0, incomeTaxAfterRelief + dividendTax - mortgageTaxCredit + class4NI + hicbc - marriageAllowanceCredit + annualAllowanceChargeApplied)
 
   // --- Totals ---
   // Child Benefit received is included in grossIncome (it's actual money in);
@@ -457,7 +556,9 @@ export function calculateTax(
     + studentLoan + postgradLoanRepayment + capitalGainsTax - marriageAllowanceCredit + hicbc
     + annualAllowanceChargeApplied,
   )
-  const netIncome = grossIncome - selfEmploymentAllowableExpenses - rentalAllowableExpenses - totalDeductions - totalSalarySacrifice - totalTax
+  // Mortgage interest is real cash out for a landlord (it only enters the tax
+  // calc as a 20% credit), so net income subtracts it like other expenses
+  const netIncome = grossIncome - selfEmploymentAllowableExpenses - rentalAllowableExpenses - mortgageInterestTotal - totalDeductions - totalSalarySacrifice - totalTax
   const effectiveTaxRate = grossIncome > 0 ? totalTax / grossIncome : 0
 
   const _result: TaxSummary = {
@@ -475,6 +576,7 @@ export function calculateTax(
     postgradLoanRepayment,
     giftAidRelief,
     marriageAllowanceCredit,
+    marriageAllowanceTransferApplied,
     capitalGainsTax,
     taxableGain,
     totalGains,
@@ -488,8 +590,11 @@ export function calculateTax(
     rentalGross,
     rentalAllowableExpenses,
     rentalNetBeforeMortgage,
+    rentalMortgageInterest: mortgageInterestTotal,
     dividendGross,
     class1NI,
+    class1NILowerBandTax,
+    class1NIUpperBandTax,
     class2NI,
     class4NI,
     salarySacrificeTotal: totalSalarySacrifice,
@@ -511,6 +616,7 @@ export function calculateTax(
     annualAllowanceRemaining,
     carryForwardLossesApplied,
     selfAssessmentTaxEstimate,
+    poaRelevantTax,
     badrGains,
     badrTax,
     bondIncome,
@@ -518,6 +624,9 @@ export function calculateTax(
     savingsIncome: savingsGross,
     savingsTax,
     savingsAllowanceApplied,
+    startingSavingsRateApplied,
+    nonSavingsIncomeAfterDeductions: nonSavingsAfterDeductions,
+    sippGrossContribution: sippGross,
   }
 
   // Store in cache (clear if full)

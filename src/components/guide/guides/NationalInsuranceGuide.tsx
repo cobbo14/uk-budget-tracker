@@ -31,7 +31,7 @@ export function NationalInsuranceGuide() {
             rows={[
               ['Class 1 Employee', 'Employees', 'Deducted from wages via PAYE'],
               ['Class 1 Employer', 'Employers', 'Paid on top of employee wages'],
-              ['Class 2', 'Self-employed', 'Flat weekly rate for NI record'],
+              ['Class 2', 'Self-employed', 'Abolished Apr 2024 — credits given free; voluntary below threshold'],
               ['Class 3', 'Voluntary', 'Fill gaps in NI record'],
               ['Class 4', 'Self-employed', 'Percentage of profits'],
             ]}
@@ -98,20 +98,21 @@ export function NationalInsuranceGuide() {
           <CardTitle className="text-lg">Self-Employed NI: Class 2 &amp; Class 4</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Class 2 NI</p>
+          <p className="font-medium text-foreground">Class 2 NI — abolished from April 2024</p>
+          <p>
+            Compulsory Class 2 NI was abolished from 6 April 2024. If your profits are at
+            or above the Small Profits Threshold, you receive National Insurance credits
+            (which count towards your State Pension) automatically and at no cost. Below
+            the threshold, you can still pay Class 2 voluntarily to protect your record.
+          </p>
           <Table
-            headers={['Tax Year', 'Weekly Rate', 'Small Profits Threshold']}
+            headers={['Tax Year', 'Voluntary Weekly Rate', 'Small Profits Threshold']}
             rows={[
               ['2024/25', '£3.45', '£6,725'],
-              ['2025/26', '£3.50', '£6,725'],
-              ['2026/27', '£3.50', '£6,725'],
+              ['2025/26', '£3.50', '£6,845'],
+              ['2026/27', '£3.65', '£7,105'],
             ]}
           />
-          <p>
-            Class 2 is a flat-rate contribution that counts towards your State Pension. If
-            profits are below the Small Profits Threshold you are not required to pay but
-            can choose to voluntarily.
-          </p>
 
           <p className="font-medium text-foreground">Class 4 NI</p>
           <Table
@@ -125,7 +126,7 @@ export function NationalInsuranceGuide() {
           <p>
             Class 4 NI is calculated on your self-employed profits. You pay <strong>6%</strong>{' '}
             on profits between £12,570 and £50,270, and <strong>2%</strong> on profits above
-            £50,270. Both Class 2 and Class 4 are collected via Self Assessment.
+            £50,270, collected via Self Assessment.
           </p>
         </CardContent>
       </Card>
@@ -160,8 +161,8 @@ export function NationalInsuranceGuide() {
             <strong>£17.45 per week</strong> (2025/26).
           </p>
           <p>
-            Each qualifying year of NI adds approximately <strong>£328</strong> per year to
-            your State Pension (full rate £11,502/year ÷ 35 years). Since the cost of buying
+            Each qualifying year of NI adds approximately <strong>£342</strong> per year to
+            your State Pension (full rate £11,973/year ÷ 35 years). Since the cost of buying
             a year (£907) is recouped in under 3 years of pension payments, it is usually
             excellent value.
           </p>
@@ -182,8 +183,9 @@ export function NationalInsuranceGuide() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
             You need <strong>35 qualifying years</strong> of NI contributions or credits to
-            receive the full new State Pension (£11,502/year in 2025/26). You need a minimum
-            of <strong>10 qualifying years</strong> to receive any State Pension at all.
+            receive the full new State Pension (£11,973/year in 2025/26, £12,548 in 2026/27).
+            You need a minimum of <strong>10 qualifying years</strong> to receive any State
+            Pension at all.
           </p>
           <p>
             A qualifying year is one where you:

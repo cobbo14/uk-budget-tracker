@@ -10,12 +10,12 @@ const rules: TaxRules = {
     { from: 112570, to: Infinity, rate: 0.45 }, // Additional rate
   ],
   scottishIncomeTaxBands: [
-    { from: 0, to: 2827, rate: 0.19 },       // Starter
-    { from: 2827, to: 14921, rate: 0.20 },   // Basic
-    { from: 14921, to: 31092, rate: 0.21 },  // Intermediate
-    { from: 31092, to: 62430, rate: 0.42 },  // Higher
-    { from: 62430, to: 112570, rate: 0.45 }, // Advanced
-    { from: 112570, to: Infinity, rate: 0.48 }, // Top
+    { from: 0, to: 2306, rate: 0.19 },       // Starter      (total: £12,571–£14,876)
+    { from: 2306, to: 13991, rate: 0.20 },   // Basic        (total: £14,877–£26,561)
+    { from: 13991, to: 31092, rate: 0.21 },  // Intermediate (total: £26,562–£43,662)
+    { from: 31092, to: 62430, rate: 0.42 },  // Higher       (total: £43,663–£75,000)
+    { from: 62430, to: 112570, rate: 0.45 }, // Advanced     (total: £75,001–£125,140)
+    { from: 112570, to: Infinity, rate: 0.48 }, // Top       (total: £125,140+)
   ],
   niPrimaryThreshold: 12570,
   niUpperEarningsLimit: 50270,
@@ -65,6 +65,7 @@ const rules: TaxRules = {
   savingsAllowanceBasic: 1000,
   savingsAllowanceHigher: 500,
   savingsAllowanceAdditional: 0,
+  startingRateForSavingsLimit: 5000,
   // Marriage Allowance (10% of PA = £1,257, rounded up to £1,260; credit = £1,260 × 20%)
   marriageAllowanceTransfer: 1260,
   marriageAllowanceCredit: 252,

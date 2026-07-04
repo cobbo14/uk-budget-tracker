@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useAppContext } from '@/store/AppContext'
-import { selectIncomeSources, selectGainSources, selectTotalAnnualExpenses } from '@/store/selectors'
+import { selectIncomeSources, selectGainSources, sumAnnualExpenses } from '@/store/selectors'
 import { calculateTax } from '@/utils/taxCalculations'
 import { getTaxRules } from '@/taxRules'
 
@@ -20,8 +20,8 @@ export function useTaxSummary() {
   )
 
   const totalAnnualExpenses = useMemo(
-    () => selectTotalAnnualExpenses(state),
-    [state.expenses], // eslint-disable-line react-hooks/exhaustive-deps
+    () => sumAnnualExpenses(state.expenses),
+    [state.expenses],
   )
 
   const leftoverIncome = taxSummary.netIncome - totalAnnualExpenses

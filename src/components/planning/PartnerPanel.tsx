@@ -32,7 +32,8 @@ export function PartnerPanel() {
 
   // Marriage Allowance direction recommendation
   // Transfer is only beneficial if one partner is a non-taxpayer (income < PA) and the other is a basic-rate taxpayer
-  const myAdjustedIncome = taxSummary.adjustedNetIncome + taxSummary.dividendIncome
+  // adjustedNetIncome follows the HMRC definition (dividends/savings already included)
+  const myAdjustedIncome = taxSummary.adjustedNetIncome
   const iAmBasicRate = myAdjustedIncome > rules.personalAllowance && myAdjustedIncome <= rules.personalAllowance + rules.incomeTaxBands[0].to
   const partnerIsNonTaxpayer = partnerIncome < rules.personalAllowance
   const iAmNonTaxpayer = myAdjustedIncome < rules.personalAllowance
@@ -45,13 +46,15 @@ export function PartnerPanel() {
     marriageAllowanceNote = 'You could transfer £1,260 of your Personal Allowance to your partner, saving them £252/yr in tax.'
   }
 
-  // Child Benefit optimal claimer: the lower earner should be the named claimant
+  // HICBC falls on the partner with the higher adjusted net income — switching
+  // the named claimant does NOT avoid the charge (claiming only determines who
+  // receives the payment and earns NI credits).
   let childBenefitNote: string | null = null
   if (taxSummary.childBenefitAnnual > 0) {
-    if (myAdjustedIncome > rules.hicbcThreshold && partnerIncome <= rules.hicbcThreshold) {
-      childBenefitNote = 'Your partner has the lower income — if they are the named Child Benefit claimant, the HICBC may not apply.'
-    } else if (partnerIncome > rules.hicbcThreshold && myAdjustedIncome <= rules.hicbcThreshold) {
-      childBenefitNote = 'You have the lower income — if you are the named Child Benefit claimant, the HICBC may not apply to your household.'
+    if (partnerIncome > rules.hicbcThreshold && partnerIncome > myAdjustedIncome) {
+      childBenefitNote = 'Your partner is the higher earner, so the HICBC is legally their liability (declared on their Self Assessment) — this calculator applies the charge to your income, which may overstate your own tax. Who is the named claimant makes no difference to the charge.'
+    } else if (myAdjustedIncome > rules.hicbcThreshold && myAdjustedIncome >= partnerIncome) {
+      childBenefitNote = 'You are the higher earner, so the HICBC is your liability regardless of which of you is the named claimant. It is still usually worth claiming — the claimant earns National Insurance credits towards their State Pension even if payments are opted out of.'
     }
   }
 

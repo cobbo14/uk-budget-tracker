@@ -71,6 +71,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   // ── Help ──
   { id: 'help-getting-started', label: 'Getting Started', description: 'How to use UK Budget Tracker', keywords: ['getting started', 'install', 'pwa', 'how to', 'begin', 'tutorial'], tab: 'help' },
   { id: 'help-all', label: 'Help & Guide', description: 'Full help documentation', keywords: ['help', 'guide', 'documentation', 'faq'], tab: 'help' },
+  { id: 'help-methodology', label: 'How Calculations Work', description: 'Calculation methodology and known approximations', keywords: ['methodology', 'how calculations work', 'accuracy', 'assumptions', 'approximations', 'starting rate', 'relief at source', 'net pay'], tab: 'help' },
 
   // ── Guides ──
   { id: 'guide-income-tax', label: 'Income Tax Rates & Bands Guide', description: 'Full rate tables, Personal Allowance, Scottish rates', keywords: ['income tax', 'rates', 'bands', 'personal allowance', 'tax tables'], tab: 'guide', hash: 'guide/uk-income-tax-rates' },

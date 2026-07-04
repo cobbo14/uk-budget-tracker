@@ -67,6 +67,9 @@ export interface TaxRules {
   savingsAllowanceBasic: number           // £1,000 for basic rate taxpayers
   savingsAllowanceHigher: number          // £500 for higher rate taxpayers
   savingsAllowanceAdditional: number      // £0 for additional rate taxpayers
+  // Starting rate for savings: 0% band for savings income, eroded £1-for-£1 by
+  // taxable non-savings income
+  startingRateForSavingsLimit: number     // £5,000
   // Marriage Allowance
   marriageAllowanceTransfer: number       // amount transferred (10% of PA, rounded up)
   marriageAllowanceCredit: number         // tax credit for recipient (transfer × basic rate)

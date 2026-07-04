@@ -12,7 +12,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { UPDATE_SETTINGS, HYDRATE } from '@/store/actions'
 import { getAvailableTaxYears, getTaxRules } from '@/taxRules'
-import { exportStateAsJSON, parseImportedState } from '@/services/localStorage'
+import { exportStateAsJSON, parseImportedState, mergeWithDefaults } from '@/services/localStorage'
 import { generateCSV } from '@/utils/exportUtils'
 import type { StudentLoanPlan, AppSettings } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
@@ -77,7 +77,9 @@ export function SettingsView() {
       if (typeof text !== 'string') { setImportStatus('error'); return }
       const parsed = parseImportedState(text)
       if (!parsed) { setImportStatus('error'); return }
-      dispatch({ type: HYDRATE, payload: parsed })
+      // Merge over defaults so exports from older versions can't leave
+      // newer settings fields undefined
+      dispatch({ type: HYDRATE, payload: mergeWithDefaults(parsed) })
       setImportStatus('success')
       setTimeout(() => setImportStatus('idle'), 3000)
     }
@@ -198,8 +200,9 @@ export function SettingsView() {
                   placeholder={settings.pensionContributionType === 'percentage' ? '5' : '2000'}
                 />
                 <p className="text-xs text-muted-foreground">
-                  These are relief at source contributions — your pension provider claims 20% basic rate tax relief automatically.
-                  If you're a higher or additional rate taxpayer, claim the extra relief via self-assessment or by asking HMRC to adjust your tax code.
+                  These are treated as net pay (workplace scheme) contributions — deducted from your salary before
+                  tax, so you get full marginal-rate relief automatically through payroll. If your personal pension
+                  is relief at source instead, enter it in the SIPP field below.
                 </p>
               </div>
             )}
@@ -266,9 +269,9 @@ export function SettingsView() {
                 onChange={e => update({ sippContribution: parseFloat(e.target.value) || 0 })}
               />
               <p className="text-xs text-muted-foreground">
-                SIPP contributions are relief at source — your provider claims 20% basic rate tax relief automatically (e.g. you pay £800 and £1,000 goes into your pension).
-                If you're a higher or additional rate taxpayer, claim the extra relief via self-assessment or by asking HMRC to adjust your tax code.
-                Counts toward the Annual Allowance.
+                Enter the amount you actually pay. SIPP contributions are relief at source — your provider claims 20% basic rate tax relief automatically (e.g. you pay £800 and £1,000 goes into your pension).
+                Higher and additional rate relief is modelled by extending your basic-rate band (claim it via self-assessment or a tax code adjustment).
+                The gross amount counts toward the Annual Allowance.
               </p>
             </div>
           </div>
@@ -393,7 +396,13 @@ export function SettingsView() {
               <p className="text-xs text-muted-foreground">
                 You give £1,260 of your personal allowance to your partner, reducing your own allowance.
               </p>
-              {taxSummary.effectivePersonalAllowance === 0 && (
+              {!taxSummary.marriageAllowanceTransferApplied && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Your income is above the basic rate band, so HMRC would not accept a Marriage
+                  Allowance transfer — it has not been applied to your calculation.
+                </p>
+              )}
+              {taxSummary.marriageAllowanceTransferApplied && taxSummary.effectivePersonalAllowance === 0 && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
                   Your personal allowance is fully tapered — there is no unused allowance to transfer.
                 </p>
@@ -401,9 +410,17 @@ export function SettingsView() {
             </>
           )}
           {settings.marriageAllowance === 'receiving' && (
-            <p className="text-xs text-muted-foreground">
-              You receive a £252 tax credit from your partner's transferred allowance.
-            </p>
+            <>
+              <p className="text-xs text-muted-foreground">
+                You receive a £252 tax credit from your partner's transferred allowance.
+              </p>
+              {taxSummary.marriageAllowanceCredit === 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  No credit is being applied — only basic-rate taxpayers are eligible to receive
+                  Marriage Allowance, and the credit cannot exceed your income tax bill.
+                </p>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

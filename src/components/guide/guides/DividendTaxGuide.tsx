@@ -70,15 +70,17 @@ export function DividendTaxGuide() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <Table
-            headers={['Tax band', 'Dividend rate', 'Equivalent income tax rate']}
+            headers={['Tax band', '2024/25 & 2025/26', '2026/27', 'Equivalent income tax rate']}
             rows={[
-              ['Basic Rate', '8.75%', '20%'],
-              ['Higher Rate', '33.75%', '40%'],
-              ['Additional Rate', '39.35%', '45%'],
+              ['Basic Rate', '8.75%', '10.75%', '20%'],
+              ['Higher Rate', '33.75%', '35.75%', '40%'],
+              ['Additional Rate', '39.35%', '39.35%', '45%'],
             ]}
           />
           <p>
-            Dividend rates are lower than income tax rates at every band. This is because
+            The Autumn Budget 2025 raised the basic and higher dividend rates by 2
+            percentage points from 6 April 2026 (the additional rate is unchanged).
+            Dividend rates remain lower than income tax rates at every band because
             companies pay Corporation Tax on profits before distributing dividends, so
             the lower rate partially accounts for the tax already paid at company level.
           </p>
@@ -131,7 +133,7 @@ export function DividendTaxGuide() {
             </li>
             <li>
               <strong>Dividends up to the basic rate band</strong> &mdash; taxed at just
-              8.75% (after the £500 allowance), with no NI.
+              8.75% in 2025/26 (10.75% from April 2026), after the £500 allowance, with no NI.
             </li>
           </ul>
           <p>

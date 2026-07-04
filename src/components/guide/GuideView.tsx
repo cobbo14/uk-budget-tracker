@@ -212,7 +212,7 @@ const GUIDES: GuideEntry[] = [
       },
       {
         question: 'What are the UK dividend tax rates?',
-        answer: 'Basic-rate taxpayers pay 8.75% on dividends above the £500 allowance. Higher-rate taxpayers pay 33.75%, and additional-rate taxpayers pay 39.35%. These rates are lower than income tax because companies have already paid Corporation Tax.',
+        answer: 'In 2025/26, basic-rate taxpayers pay 8.75% on dividends above the £500 allowance, higher-rate 33.75%, and additional-rate 39.35%. From April 2026 the basic and higher rates rise to 10.75% and 35.75%. These rates are lower than income tax because companies have already paid Corporation Tax.',
       },
       {
         question: 'Is it more tax-efficient to take dividends or salary?',
@@ -281,7 +281,7 @@ const GUIDES: GuideEntry[] = [
       },
       {
         question: 'What National Insurance do self-employed people pay?',
-        answer: 'Self-employed pay Class 2 NI (flat rate ~£3.50/week if profits exceed £6,725) and Class 4 NI (6% on profits between £12,570–£50,270, 2% above £50,270).',
+        answer: 'Self-employed pay Class 4 NI (6% on profits between £12,570–£50,270, 2% above £50,270). Compulsory Class 2 was abolished from April 2024 — profits at or above the Small Profits Threshold earn State Pension credits at no cost.',
       },
       {
         question: 'What are payments on account for self-assessment?',
@@ -442,7 +442,7 @@ const GUIDES: GuideEntry[] = [
       },
       {
         question: 'What NI do self-employed people pay?',
-        answer: 'Self-employed pay Class 2 NI (flat rate ~£3.50/week) and Class 4 NI (6% on profits between £12,570 and £50,270, 2% above £50,270). Both are collected via Self Assessment.',
+        answer: 'Self-employed pay Class 4 NI (6% on profits between £12,570 and £50,270, 2% above £50,270), collected via Self Assessment. Compulsory Class 2 was abolished from April 2024; it can still be paid voluntarily by those with low profits to protect State Pension entitlement.',
       },
       {
         question: 'How many NI qualifying years do I need for the full State Pension?',

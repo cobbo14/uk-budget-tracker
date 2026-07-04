@@ -54,8 +54,8 @@ const rules: TaxRules = {
   childBenefitAdditionalWeekly: 17.25,
   hicbcThreshold: 60000,
   hicbcTaperEnd: 80000,
-  // Blind Person's Allowance
-  blindPersonsAllowance: 3070,
+  // Blind Person's Allowance (2025/26: uprated from £3,070)
+  blindPersonsAllowance: 3130,
   // Pension Annual Allowance
   pensionAnnualAllowance: 60000,
   pensionAnnualAllowanceMinimum: 10000,
@@ -68,6 +68,7 @@ const rules: TaxRules = {
   savingsAllowanceBasic: 1000,
   savingsAllowanceHigher: 500,
   savingsAllowanceAdditional: 0,
+  startingRateForSavingsLimit: 5000,
   // Marriage Allowance (10% of PA = £1,257, rounded up to £1,260; credit = £1,260 × 20%)
   marriageAllowanceTransfer: 1260,
   marriageAllowanceCredit: 252,

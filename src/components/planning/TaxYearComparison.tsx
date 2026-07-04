@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useBudget } from '@/hooks/useBudget'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { calculateTax } from '@/utils/taxCalculations'
-import { getAvailableTaxYears, getTaxRules } from '@/taxRules'
+import { getAvailableTaxYears, getTaxRules, getHigherRateThreshold } from '@/taxRules'
 import { formatCurrency, formatPercent } from '@/utils/formatting'
 
 export function TaxYearComparison() {
@@ -48,8 +48,8 @@ export function TaxYearComparison() {
     },
     {
       label: 'Distance to higher-rate',
-      current: formatCurrency(Math.max(0, rules.niUpperEarningsLimit - (taxSummary.adjustedNetIncome + taxSummary.dividendIncome))),
-      next: formatCurrency(Math.max(0, nextRules.niUpperEarningsLimit - (nextSummary.adjustedNetIncome + nextSummary.dividendIncome))),
+      current: formatCurrency(Math.max(0, getHigherRateThreshold(rules, settings.scottishTaxpayer) - taxSummary.adjustedNetIncome)),
+      next: formatCurrency(Math.max(0, getHigherRateThreshold(nextRules, settings.scottishTaxpayer) - nextSummary.adjustedNetIncome)),
     },
   ]
 

@@ -30,8 +30,9 @@ const rules: TaxRules = {
   selfEmployedClass2WeeklyRate: 3.65,       // up from £3.50 in 2025/26
   selfEmployedSmallProfitsThreshold: 7105,  // up from £6,845 in 2025/26
   dividendAllowance: 500,
-  dividendBasicRate: 0.0875,
-  dividendHigherRate: 0.3375,
+  // Autumn Budget 2025: dividend rates +2pp from 6 Apr 2026 (additional rate unchanged)
+  dividendBasicRate: 0.1075,
+  dividendHigherRate: 0.3575,
   dividendAdditionalRate: 0.3935,
   propertyAllowance: 1000,
   studentLoan: {
@@ -53,7 +54,7 @@ const rules: TaxRules = {
   hicbcThreshold: 60000,
   hicbcTaperEnd: 80000,
   // Blind Person's Allowance (2026/27 rate not yet confirmed — using 2025/26 as placeholder)
-  blindPersonsAllowance: 3070,
+  blindPersonsAllowance: 3130,
   // Pension Annual Allowance
   pensionAnnualAllowance: 60000,
   pensionAnnualAllowanceMinimum: 10000,
@@ -66,11 +67,12 @@ const rules: TaxRules = {
   savingsAllowanceBasic: 1000,
   savingsAllowanceHigher: 500,
   savingsAllowanceAdditional: 0,
+  startingRateForSavingsLimit: 5000,
   // Marriage Allowance (10% of PA = £1,257, rounded up to £1,260; credit = £1,260 × 20%)
   marriageAllowanceTransfer: 1260,
   marriageAllowanceCredit: 252,
-  // State Pension (2026/27 not yet confirmed — using 2025/26 as placeholder)
-  statePensionFullAnnual: 11973,
+  // State Pension (2026/27: £241.30/week × 52 — 4.8% triple lock uplift, Autumn Budget 2025)
+  statePensionFullAnnual: 12547.60,
   statePensionDefaultAge: 67,
   // Lump Sum Allowance
   lumpSumAllowance: 268275,

@@ -12,6 +12,7 @@ import { HelpView } from '@/components/help/HelpView'
 import { GuideView } from '@/components/guide/GuideView'
 import { LegalView } from '@/components/legal/LegalView'
 import { useBudget } from '@/hooks/useBudget'
+import { useEmployeeMode, setEmployeeMode } from '@/hooks/useEmployeeMode'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { SearchDialog } from '@/components/search/SearchDialog'
 import { WelcomeGuide } from '@/components/welcome/WelcomeGuide'
@@ -47,9 +48,7 @@ function AppContent() {
   const [budgetingMode, setBudgetingMode] = useState(
     () => localStorage.getItem('budgetingMode') === 'true',
   )
-  const [employeeMode, setEmployeeMode] = useState(
-    () => localStorage.getItem('employeeMode') !== 'false',
-  )
+  const employeeMode = useEmployeeMode()
   const [searchOpen, setSearchOpen] = useState(false)
   const { canUndo, undo } = useBudget()
 
@@ -69,10 +68,6 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('budgetingMode', budgetingMode ? 'true' : 'false')
   }, [budgetingMode])
-
-  useEffect(() => {
-    localStorage.setItem('employeeMode', employeeMode ? 'true' : 'false')
-  }, [employeeMode])
 
   // Update document title per tab (guide pages set their own titles)
   useEffect(() => {
@@ -100,7 +95,14 @@ function AppContent() {
   // Global Ctrl+Z / Cmd+Z undo shortcut
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && canUndo) {
+      // Leave Cmd/Ctrl+Z alone inside editable fields — there it should undo
+      // the user's typing, not the last app data change
+      const target = e.target as HTMLElement | null
+      const inEditableField = !!target && (
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
+        || target.tagName === 'SELECT' || target.isContentEditable
+      )
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !inEditableField && canUndo) {
         e.preventDefault()
         undo()
       }
@@ -139,7 +141,7 @@ function AppContent() {
   }
 
   const handleEmployeeModeChange = useCallback((enabled: boolean) => {
-    setEmployeeMode(enabled)
+    setEmployeeMode(enabled) // external store: persists and notifies all subscribers
   }, [])
 
   function handleBudgetingModeChange(enabled: boolean) {

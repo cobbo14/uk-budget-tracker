@@ -34,7 +34,6 @@ export function PensionProjection() {
   const [showInTodaysMoney, setShowInTodaysMoney] = useState(true)
 
   const { totalPensionFunding } = taxSummary
-  if (totalPensionFunding === 0) return null
 
   const proj = settings.pensionProjection ?? DEFAULTS
 
@@ -191,6 +190,9 @@ export function PensionProjection() {
     }
     return points
   }, [hasInput, projection, proj.pensionAccessAge, proj.currentAge, proj.inflationRate, showInTodaysMoney])
+
+  // Early return must come after all hooks (rules-of-hooks)
+  if (totalPensionFunding === 0) return null
 
   // Pot management helpers
   const addPot = () => {

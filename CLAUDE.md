@@ -9,7 +9,7 @@ Client-side UK tax planning PWA. No backend, no env vars — all state lives in 
 - `npm run preview` — preview build at localhost:4173 (use this to install as PWA)
 - `npm run test` — run vitest once
 - `npm run test:watch` — vitest watch mode
-- `npm run lint` — ESLint check
+- `npm run lint` — ESLint check (needs `@babel/core` devDependency — required by eslint-plugin-react-hooks v7)
 
 ## Stack
 
@@ -27,11 +27,11 @@ Client-side UK tax planning PWA. No backend, no env vars — all state lives in 
   - `ProfilesContext` — manages profile list + active profile
   - `AppProvider` — per-profile state via reducer
 - **Custom hooks** (`useBudget`, `useIncomeSources`, `useExpenses`, etc.) provide memoised selectors
-- **localStorage persistence** — debounced 300ms save. Keys: `uk_budget_tracker_profiles`, `uk_budget_tracker_state_{profileId}`
-- **Undo/redo** — snapshot stack (max 10) for data-modifying actions
+- **localStorage persistence** — debounced 300ms save, flushed on unmount/page-hide. Keys: `uk_budget_tracker_profiles`, `uk_budget_tracker_state_{profileId}`
+- **Undo** (no redo) — snapshot stack (max 10) for data-modifying actions; rapid consecutive settings updates coalesce into one step
 
 ### Routing
-- Hash-based (`window.location.hash`)
+- Hash-based (`window.location.hash`); prerendered paths (`/guide/*`, `/about`, …) are mapped onto the hash at boot in `main.tsx`
 - Valid tabs: summary, income, gains, expenses, planning, settings, help, guide
 - Legal pages: disclaimer, privacy, terms
 

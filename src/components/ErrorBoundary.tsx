@@ -10,15 +10,36 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, message: error.message }
   }
 
-  private handleReset = () => {
+  private handleResetProfile = () => {
+    if (!window.confirm('Reset the active profile’s data? This permanently deletes its saved data from this browser.')) return
     try {
-      // Clear all app data from localStorage to recover from corrupt state
+      const raw = localStorage.getItem('uk_budget_tracker_profiles')
+      const activeId = raw ? (JSON.parse(raw) as { activeProfileId?: string }).activeProfileId : undefined
+      if (activeId) {
+        localStorage.removeItem(`uk_budget_tracker_state_${activeId}`)
+      } else {
+        // No profile metadata to scope by — fall back to clearing everything
+        this.clearAllKeys()
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    window.location.reload()
+  }
+
+  private handleResetAll = () => {
+    if (!window.confirm('Reset ALL profiles? This permanently deletes every profile’s data from this browser.')) return
+    this.clearAllKeys()
+    window.location.reload()
+  }
+
+  private clearAllKeys() {
+    try {
       const keys = Object.keys(localStorage).filter(k => k.startsWith('uk_budget_tracker'))
       for (const key of keys) localStorage.removeItem(key)
     } catch {
       // Ignore storage errors
     }
-    window.location.reload()
   }
 
   render() {
@@ -36,9 +57,15 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
             <button
               className="text-sm underline underline-offset-2 text-destructive"
-              onClick={this.handleReset}
+              onClick={this.handleResetProfile}
             >
-              Reset all data
+              Reset this profile
+            </button>
+            <button
+              className="text-xs underline underline-offset-2 text-muted-foreground"
+              onClick={this.handleResetAll}
+            >
+              Reset all profiles
             </button>
           </div>
         </div>

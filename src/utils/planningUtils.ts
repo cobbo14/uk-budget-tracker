@@ -1,6 +1,7 @@
 import type { IncomeSource, GainSource, AppSettings, TaxSummary } from '@/types'
 import type { TaxRules } from '@/taxRules/types'
 import { calculateTax } from '@/utils/taxCalculations'
+import { getHigherRateThreshold } from '@/taxRules'
 
 export interface ThresholdAlert {
   name: string
@@ -21,8 +22,9 @@ export function getThresholdAlerts(
   t: TaxSummary,
   rules: TaxRules,
 ): ThresholdAlert[] {
-  // Use adjustedNetIncome directly from TaxSummary (avoids previous reconstruction bug)
-  const comparatorIncome = t.adjustedNetIncome + t.dividendGross
+  // adjustedNetIncome now follows the HMRC definition: all income less gross
+  // relief-at-source pension and grossed-up Gift Aid (dividends/savings included)
+  const comparatorIncome = t.adjustedNetIncome
 
   const taperStart = rules.personalAllowanceTaperThreshold
   const taperEnd = taperStart + rules.personalAllowance * 2
@@ -115,22 +117,26 @@ export function getPensionScenarios(
   gainSources: GainSource[] = [],
 ): PensionScenario[] {
   const baseSummary = calculateTax(incomeSources, settings, rules, gainSources)
-  const comparatorIncome = baseSummary.adjustedNetIncome + baseSummary.dividendGross
+  const comparatorIncome = baseSummary.adjustedNetIncome
 
   const thresholds = [
-    { amount: rules.niUpperEarningsLimit, name: 'Higher Rate' },
+    { amount: getHigherRateThreshold(rules, settings.scottishTaxpayer), name: 'Higher Rate' },
     { amount: rules.personalAllowanceTaperThreshold, name: 'Taper Start' },
     { amount: rules.personalAllowanceTaperThreshold + rules.personalAllowance, name: 'Taper End' },
   ]
+
+  // Mirror the engine's pension-eligible income: employment net of salary
+  // sacrifice, plus self-employment profit including any transitional spread
+  const pensionEligibleIncome =
+    Math.max(0, baseSummary.employmentGross - baseSummary.salarySacrificeTotal) +
+    Math.max(0, baseSummary.selfEmploymentGross - baseSummary.selfEmploymentAllowableExpenses) +
+    (settings.transitionalProfitSpread ?? 0)
 
   // Current flat pension contribution
   let currentContributionFlat = 0
   if (settings.pensionContributionType === 'flat') {
     currentContributionFlat = settings.pensionContributionValue
   } else if (settings.pensionContributionType === 'percentage') {
-    const pensionEligibleIncome =
-      baseSummary.employmentGross +
-      Math.max(0, baseSummary.selfEmploymentGross - baseSummary.selfEmploymentAllowableExpenses)
     currentContributionFlat = pensionEligibleIncome * (settings.pensionContributionValue / 100)
   }
 
@@ -157,8 +163,7 @@ export function getPensionScenarios(
 
   // Add AA limit candidate — max employee contribution before breaching annual allowance
   const employerPension = settings.employerPensionContributionType === 'percentage'
-    ? (baseSummary.employmentGross + Math.max(0, baseSummary.selfEmploymentGross - baseSummary.selfEmploymentAllowableExpenses))
-      * ((settings.employerPensionContributionValue ?? 0) / 100)
+    ? pensionEligibleIncome * ((settings.employerPensionContributionValue ?? 0) / 100)
     : (settings.employerPensionContributionValue ?? 0)
   const carryForward = settings.pensionCarryForward ?? { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 }
   const totalCarryForward = (carryForward.threeYearsAgo ?? 0) + (carryForward.twoYearsAgo ?? 0) + (carryForward.oneYearAgo ?? 0)
@@ -212,7 +217,7 @@ export function getPensionChartPoints(
   stepSize = 500,
 ): PensionChartPoint[] {
   const baseSummary = calculateTax(incomeSources, settings, rules, gainSources)
-  const comparatorIncome = baseSummary.adjustedNetIncome + baseSummary.dividendGross
+  const comparatorIncome = baseSummary.adjustedNetIncome
   const maxContribution = Math.max(0, Math.ceil(comparatorIncome / stepSize) * stepSize)
 
   const points: PensionChartPoint[] = []

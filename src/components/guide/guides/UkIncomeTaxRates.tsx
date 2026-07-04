@@ -144,8 +144,10 @@ export function UkIncomeTaxRates() {
           />
 
           <p>
-            Self-employed individuals also pay Class 2 NI of approximately £3.45&ndash;£3.65
-            per week (depending on tax year) if profits exceed the Small Profits Threshold.
+            Compulsory Class 2 NI was abolished from April 2024. Self-employed individuals
+            with profits at or above the Small Profits Threshold receive State Pension
+            credits automatically at no cost; below it, voluntary Class 2 (approximately
+            £3.45&ndash;£3.65 per week depending on tax year) can protect your NI record.
           </p>
         </CardContent>
       </Card>
@@ -158,19 +160,26 @@ export function UkIncomeTaxRates() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
             The <strong>Dividend Allowance</strong> is £500 for all three tax years. Dividends
-            above this are taxed at:
+            above this are taxed at the rates below. The Autumn Budget 2025 raised the basic
+            and higher dividend rates by 2 percentage points from April 2026:
           </p>
           <Table
-            headers={['Tax band', 'Dividend rate']}
+            headers={['Tax band', '2024/25 & 2025/26', '2026/27']}
             rows={[
-              ['Basic Rate', '8.75%'],
-              ['Higher Rate', '33.75%'],
-              ['Additional Rate', '39.35%'],
+              ['Basic Rate', '8.75%', '10.75%'],
+              ['Higher Rate', '33.75%', '35.75%'],
+              ['Additional Rate', '39.35%', '39.35%'],
             ]}
           />
           <p>
             The <strong>Personal Savings Allowance</strong> is £1,000 for basic rate taxpayers,
             £500 for higher rate, and £0 for additional rate taxpayers.
+          </p>
+          <p>
+            In addition, the <strong>starting rate for savings</strong> taxes up to £5,000 of
+            interest at 0%. It is reduced £1-for-£1 by taxable non-savings income, so it
+            disappears entirely once non-savings income exceeds £17,570 &mdash; but it can make
+            a large difference for low earners and retirees living off savings.
           </p>
         </CardContent>
       </Card>

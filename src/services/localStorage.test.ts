@@ -4,7 +4,9 @@ import {
   loadProfileState,
   saveProfileState,
   parseImportedState,
+  mergeWithDefaults,
 } from './localStorage'
+import type { AppState } from '@/types'
 
 // ─── In-memory localStorage mock ─────────────────────────────────────────────
 
@@ -182,5 +184,40 @@ describe('parseImportedState', () => {
 
   it('returns null for top-level string', () => {
     expect(parseImportedState('"hello"')).toBeNull()
+  })
+})
+
+// ─── mergeWithDefaults ────────────────────────────────────────────────────────
+
+describe('mergeWithDefaults', () => {
+  it('fills settings fields missing from older exports with defaults', () => {
+    const partial = {
+      incomeSources: [],
+      gainSources: [],
+      expenses: [],
+      settings: { taxYear: '2024-25' },
+    } as unknown as Partial<AppState>
+    const merged = mergeWithDefaults(partial)
+    expect(merged.settings.taxYear).toBe('2024-25')
+    expect(merged.settings.isaContributions).toEqual(DEFAULT_STATE.settings.isaContributions)
+    expect(merged.settings.pensionCarryForward).toEqual(DEFAULT_STATE.settings.pensionCarryForward)
+    expect(merged.ui).toEqual(DEFAULT_STATE.ui)
+  })
+})
+
+describe('parseImportedState — settings type checks', () => {
+  it('drops mistyped settings keys instead of rejecting the file', () => {
+    const json = JSON.stringify({
+      incomeSources: [],
+      gainSources: [],
+      expenses: [],
+      settings: { taxYear: 123, numberOfChildren: 'five', giftAidDonations: 250 },
+    })
+    const parsed = parseImportedState(json)
+    expect(parsed).not.toBeNull()
+    const settings = parsed!.settings as unknown as Record<string, unknown>
+    expect(settings.taxYear).toBeUndefined()
+    expect(settings.numberOfChildren).toBeUndefined()
+    expect(settings.giftAidDonations).toBe(250)
   })
 })

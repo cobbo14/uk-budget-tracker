@@ -178,7 +178,7 @@ export function projectPensionPotAdvanced(
     : [{ id: 'default', name: 'Pension', value: options.currentPotValue }]
 
   // --- ISA pot balances ---
-  let isaBalances = isaPots.map(p => ({
+  const isaBalances = isaPots.map(p => ({
     ...p,
     balance: p.currentValue,
     rate: Math.max(0, (p.growthRateOverride ?? (p.type === 'cash' ? ISA_CASH_DEFAULT_GROWTH : inflationRate + ISA_EQUITY_PREMIUM)) - annualFeeRate) / 100,
@@ -188,7 +188,7 @@ export function projectPensionPotAdvanced(
   let isaContribAmounts = isaBalances.map(p => p.annualContribution)
 
   // --- Accumulation phase ---
-  let potBalances = pots.map(p => ({
+  const potBalances = pots.map(p => ({
     ...p,
     balance: p.value,
     rate: ((p.growthRateOverride ?? assumedGrowthRate) - annualFeeRate) / 100,
@@ -278,7 +278,8 @@ export function projectPensionPotAdvanced(
   const projectedNIYears = qualifyingNIYears != null
     ? Math.min(qualifyingNIYears + yearsToAccess, 35)
     : undefined
-  const statePensionAnnual = projectedNIYears != null && statePensionFullAnnual > 0
+  // Fewer than 10 qualifying years pays no State Pension at all
+  const statePensionAnnual = projectedNIYears != null && projectedNIYears >= 10 && statePensionFullAnnual > 0
     ? (projectedNIYears / 35) * statePensionFullAnnual
     : 0
 
@@ -432,8 +433,12 @@ export function projectPensionPotAdvanced(
       nonLisaIsaBalance += isaGrowth * (1 - lisaRatio)
     }
 
-    // In tax-free-first mode, pension withdrawals are tax-free until allowance is depleted
-    const taxFreeThisYear = Math.min(pensionWithdrawal, taxFreeRemaining)
+    // In tax-free-first mode, pension withdrawals draw on the finite tax-free
+    // pool — but only after using free personal-allowance headroom, which taxes
+    // withdrawals at 0% anyway and can't be carried forward
+    const paRoom = Math.max(0, drawdownPA - spThisYear - dbThisYear)
+    const coveredByPA = Math.min(pensionWithdrawal, paRoom)
+    const taxFreeThisYear = Math.min(pensionWithdrawal - coveredByPA, taxFreeRemaining)
     taxFreeRemaining -= taxFreeThisYear
     const taxablePensionWithdrawal = pensionWithdrawal - taxFreeThisYear
 

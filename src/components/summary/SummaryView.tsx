@@ -121,7 +121,6 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
       total: t.totalTax - w.totalTax,
       incomeTax: t.incomeTax - w.incomeTax,
       class1NI: t.class1NI - w.class1NI,
-      class2NI: t.class2NI - w.class2NI,
       class4NI: t.class4NI - w.class4NI,
       dividendTax: t.dividendTax - w.dividendTax,
       studentLoan: t.studentLoan - w.studentLoan,
@@ -159,10 +158,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
       .map(e => ({ name: e.name, annual: effectiveAnnual(e) }))
       .sort((a, b) => b.annual - a.annual)
 
-    // NI band amounts
-    const effEmpGross = t.employmentGross - t.salarySacrificeTotal
-    const ni1Lower = Math.max(0, Math.min(effEmpGross, rules.niUpperEarningsLimit) - rules.niPrimaryThreshold)
-    const ni1Upper = Math.max(0, effEmpGross - rules.niUpperEarningsLimit)
+    // NI band amounts (Class 1 comes from the engine, which computes per employment)
     const seProfit = Math.max(0, t.selfEmploymentGross - t.selfEmploymentAllowableExpenses)
     const ni4Lower = Math.max(0, Math.min(seProfit, rules.selfEmployedClass4UpperThreshold) - rules.selfEmployedClass4LowerThreshold)
     const ni4Upper = Math.max(0, seProfit - rules.selfEmployedClass4UpperThreshold)
@@ -171,9 +167,9 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
     const sipp = settings.sippContribution ?? 0
     const employeePension = t.totalDeductions - sipp
 
-    // PA breakdown
-    const adjustedTotal = t.adjustedNetIncome + t.dividendGross + t.savingsIncome
-    const taperReduction = Math.max(0, Math.min(rules.personalAllowance, Math.floor(Math.max(0, adjustedTotal - rules.personalAllowanceTaperThreshold) / 2)))
+    // PA breakdown — adjustedNetIncome follows the HMRC definition (all income
+    // less gross RAS pension and grossed-up Gift Aid)
+    const taperReduction = Math.max(0, Math.min(rules.personalAllowance, Math.floor(Math.max(0, t.adjustedNetIncome - rules.personalAllowanceTaperThreshold) / 2)))
 
     // IT breakdown
     const grossIT = t.incomeTax + t.seisRelief + t.eisRelief + t.vctRelief + t.bondTopSlicingRelief
@@ -189,7 +185,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
 
     return {
       emp, se, rent, div, sav, ssItems, bikItems, expItems,
-      ni1Lower, ni1Upper, ni4Lower, ni4Upper,
+      ni4Lower, ni4Upper,
       sipp, employeePension, taperReduction,
       nonSavingsIT, grossIT, slInfo,
     }
@@ -328,6 +324,13 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                   <Row label="Savings / Interest income" value={formatCurrency(v(t.savingsIncome))} showBonusCol={showBonusCol}
                     tooltip={srcTip(td.sav)}
                   />
+                  {t.startingSavingsRateApplied > 0 && (
+                    <Row label="Starting rate for savings (0%)" value={`−${formatCurrency(v(t.startingSavingsRateApplied))}`} indent showBonusCol={showBonusCol}
+                      tooltip={<TooltipBreakdown items={[
+                        { label: 'Up to £5,000 of interest is taxed at 0%, reduced £1-for-£1 by taxable non-savings income', value: '' },
+                      ]} />}
+                    />
+                  )}
                   {t.savingsAllowanceApplied > 0 && (
                     <Row label="Personal Savings Allowance" value={`−${formatCurrency(v(t.savingsAllowanceApplied))}`} indent showBonusCol={showBonusCol} />
                   )}
@@ -366,9 +369,9 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               {t.blindPersonsAllowanceApplied > 0 && (
                 <Row label="incl. Blind Person's Allowance" value={`+${formatCurrency(v(t.blindPersonsAllowanceApplied))}`} indent showBonusCol={showBonusCol} />
               )}
-              <Row label="Taxable income (non-dividend)" value={formatCurrency(v(t.taxableNonDividendIncome))} bold showBonusCol={showBonusCol}
+              <Row label="Taxable income (non-savings)" value={formatCurrency(v(t.taxableNonDividendIncome))} bold showBonusCol={showBonusCol}
                 tooltip={<TooltipBreakdown items={[
-                  { label: 'Adjusted net income', value: formatCurrency(v(t.adjustedNetIncome)) },
+                  { label: 'Non-savings income after deductions', value: formatCurrency(v(t.nonSavingsIncomeAfterDeductions)) },
                   { label: 'Personal allowance', value: `−${formatCurrency(v(t.effectivePersonalAllowance))}` },
                   { label: 'Taxable income', value: formatCurrency(v(t.taxableNonDividendIncome)), bold: true },
                 ]} />}
@@ -388,18 +391,16 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                 ]} /> : undefined}
               />
               {t.class1NI > 0 && <Row label="National Insurance (Class 1)" value={showBonusCol ? formatCurrency(v(t.class1NI - (bonusMarginal?.class1NI ?? 0))) : formatCurrency(v(t.class1NI))} highlight="red" indent showBonusCol={showBonusCol} bonusValue={bonusMarginal?.class1NI ? formatCurrency(bonusMarginal.class1NI) : undefined}
-                tooltip={td.ni1Upper > 0 ? <TooltipBreakdown items={[
-                  { label: `Main rate (${(rules.niRateLower * 100).toFixed(0)}%)`, value: formatCurrency(v(td.ni1Lower * rules.niRateLower)) },
-                  { label: `Upper rate (${(rules.niRateUpper * 100).toFixed(0)}%)`, value: formatCurrency(v(td.ni1Upper * rules.niRateUpper)) },
+                tooltip={t.class1NIUpperBandTax > 0 ? <TooltipBreakdown items={[
+                  { label: `Main rate (${(rules.niRateLower * 100).toFixed(0)}%)`, value: formatCurrency(v(t.class1NILowerBandTax)) },
+                  { label: `Upper rate (${(rules.niRateUpper * 100).toFixed(0)}%)`, value: formatCurrency(v(t.class1NIUpperBandTax)) },
                 ]} /> : undefined}
               />}
-              {t.class2NI > 0 && <Row label="National Insurance (Class 2)" value={formatCurrency(v(t.class2NI))} highlight="red" indent showBonusCol={showBonusCol}
-                tooltip={<TooltipBreakdown items={[{ label: `Flat rate ${formatCurrency(rules.selfEmployedClass2WeeklyRate)}/wk × 52`, value: formatCurrency(v(t.class2NI)) }]} />}
-              />}
-              {t.class2NI === 0 && t.selfEmploymentGross > 0 && <Row label="National Insurance (Class 2)" value="£0" highlight="green" indent showBonusCol={showBonusCol}
+              {t.selfEmploymentGross > 0 && <Row label="National Insurance (Class 2)" value="£0" highlight="green" indent showBonusCol={showBonusCol}
                 tooltip={<TooltipBreakdown items={[
-                  { label: `Profit below Small Profits Threshold (${formatCurrency(rules.selfEmployedSmallProfitsThreshold)})`, value: 'Exempt' },
-                  { label: 'You can still pay voluntarily to protect State Pension', value: '' },
+                  { label: 'Compulsory Class 2 NI was abolished from April 2024', value: '' },
+                  { label: `Profits ≥ ${formatCurrency(rules.selfEmployedSmallProfitsThreshold)} earn NI credits at no cost`, value: '' },
+                  { label: `Below that, you can pay voluntarily (${formatCurrency(rules.selfEmployedClass2WeeklyRate)}/wk) to protect State Pension`, value: '' },
                 ]} />}
               />}
               {t.class4NI > 0 && <Row label="National Insurance (Class 4)" value={formatCurrency(v(t.class4NI))} highlight="red" indent showBonusCol={showBonusCol}
@@ -492,6 +493,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                   ...incomeSources.map(s => ({ label: s.name, value: formatCurrency(v(s.grossAmount + (s.bonus ?? 0))) })),
                   ...(t.selfEmploymentAllowableExpenses > 0 ? [{ label: 'Business expenses', value: `−${formatCurrency(v(t.selfEmploymentAllowableExpenses))}` }] : []),
                   ...(t.rentalAllowableExpenses > 0 ? [{ label: 'Rental expenses', value: `−${formatCurrency(v(t.rentalAllowableExpenses))}` }] : []),
+                  ...(t.rentalMortgageInterest > 0 ? [{ label: 'Mortgage interest', value: `−${formatCurrency(v(t.rentalMortgageInterest))}` }] : []),
                   ...(t.totalDeductions > 0 ? [{ label: 'Pension deductions', value: `−${formatCurrency(v(t.totalDeductions))}` }] : []),
                   ...(t.salarySacrificeTotal > 0 ? [{ label: 'Salary sacrifice', value: `−${formatCurrency(v(t.salarySacrificeTotal))}` }] : []),
                   { label: 'Total tax', value: `−${formatCurrency(v(t.totalTax))}` },
@@ -520,6 +522,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                     { label: 'Gross income', value: formatCurrency(v(t.grossIncome)) },
                     ...(t.selfEmploymentAllowableExpenses > 0 ? [{ label: 'Business expenses', value: `−${formatCurrency(v(t.selfEmploymentAllowableExpenses))}` }] : []),
                     ...(t.rentalAllowableExpenses > 0 ? [{ label: 'Rental expenses', value: `−${formatCurrency(v(t.rentalAllowableExpenses))}` }] : []),
+                    ...(t.rentalMortgageInterest > 0 ? [{ label: 'Mortgage interest', value: `−${formatCurrency(v(t.rentalMortgageInterest))}` }] : []),
                     ...(t.totalDeductions > 0 ? [{ label: 'Pension deductions', value: `−${formatCurrency(v(t.totalDeductions))}` }] : []),
                     ...(t.salarySacrificeTotal > 0 ? [{ label: 'Salary sacrifice', value: `−${formatCurrency(v(t.salarySacrificeTotal))}` }] : []),
                     { label: 'Total tax', value: `−${formatCurrency(v(t.totalTax))}` },

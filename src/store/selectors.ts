@@ -24,13 +24,17 @@ export function selectExpenseById(state: AppState, id: string): Expense | undefi
   return state.expenses.find(e => e.id === id)
 }
 
-export function selectExpensesByCategory(state: AppState): Map<ExpenseCategory, Expense[]> {
+export function groupExpensesByCategory(expenses: Expense[]): Map<ExpenseCategory, Expense[]> {
   const map = new Map<ExpenseCategory, Expense[]>()
-  for (const expense of state.expenses) {
+  for (const expense of expenses) {
     const existing = map.get(expense.category) ?? []
     map.set(expense.category, [...existing, expense])
   }
   return map
+}
+
+export function selectExpensesByCategory(state: AppState): Map<ExpenseCategory, Expense[]> {
+  return groupExpensesByCategory(state.expenses)
 }
 
 /** Convert an expense amount to an annual figure */
@@ -52,8 +56,12 @@ export function effectiveAnnual(expense: Expense): number {
   return toAnnual(effectiveAmount(expense), expense.frequency)
 }
 
+export function sumAnnualExpenses(expenses: Expense[]): number {
+  return expenses.reduce((sum, e) => sum + effectiveAnnual(e), 0)
+}
+
 export function selectTotalAnnualExpenses(state: AppState): number {
-  return state.expenses.reduce((sum, e) => sum + effectiveAnnual(e), 0)
+  return sumAnnualExpenses(state.expenses)
 }
 
 /** Returns true if the expense has a renewal date within the next `withinDays` days */

@@ -10,6 +10,7 @@ import {
   BookOpen,
   ToggleRight,
   Keyboard,
+  Calculator,
 } from 'lucide-react'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -127,7 +128,7 @@ export function HelpView() {
         </p>
         <p>
           <strong>Sole Trader mode</strong> shows everything &mdash;
-          including self-employment income, Class 2 &amp; 4 National Insurance,
+          including self-employment income, Class 4 National Insurance,
           allowable business expenses, and the self-employment guide. Sole
           traders who also have employment income will see both sets of features.
         </p>
@@ -171,8 +172,8 @@ export function HelpView() {
           <strong>Employment income</strong> supports salary sacrifice (pension,
           cycle-to-work, electric vehicle schemes) and benefits in kind.{' '}
           <strong>Self-employment income</strong> lets you enter allowable
-          business expenses. The app automatically calculates Class 2 and Class 4
-          National Insurance contributions.
+          business expenses. The app automatically calculates Class 4 National
+          Insurance (compulsory Class 2 was abolished from April 2024).
         </p>
         <p>
           Click &ldquo;Add Income&rdquo; to record a new source. The form adapts
@@ -419,6 +420,52 @@ export function HelpView() {
               National Insurance Rates
             </a>{' '}
             &mdash; employee, employer, and self-employed NI rates and State Pension qualification.
+          </li>
+        </ul>
+      </Section>
+
+      <Section icon={Calculator} title="How Calculations Work">
+        <p>
+          The tax engine follows HMRC&rsquo;s ordering: non-savings income is taxed
+          first (on Scottish bands if you are a Scottish taxpayer), then savings
+          income &mdash; including onshore bond gains &mdash; and finally dividends, both
+          always on UK-wide bands. The personal allowance is allocated to
+          non-savings income first, then savings, then dividends. The starting rate
+          for savings, Personal Savings Allowance, and dividend allowance are
+          applied before band rates. Gift Aid and SIPP contributions (relief at
+          source) extend the basic-rate band rather than reducing taxable income,
+          and both reduce adjusted net income for the personal allowance taper and
+          High Income Child Benefit Charge.
+        </p>
+        <p>
+          The calculator is a planning estimate, not a tax return. Known
+          simplifications, which usually differ from HMRC by at most a few pounds
+          at band boundaries:
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            The Personal Savings Allowance and dividend allowance are treated as
+            exemptions rather than 0%-rate bands, so they do not consume band space.
+          </li>
+          <li>
+            The personal allowance is allocated in the standard order rather than
+            the rare HMRC-optimal split across income types.
+          </li>
+          <li>
+            National Insurance is calculated annually, not per pay period &mdash;
+            irregular pay or one-off bonuses can give slightly different real-world NI.
+          </li>
+          <li>
+            Percentage-based salary sacrifice and employer pension contributions are
+            calculated on base salary, excluding one-off bonuses.
+          </li>
+          <li>
+            Top-slicing relief on investment bonds uses a simplified calculation that
+            does not recompute allowances within the relief.
+          </li>
+          <li>
+            Workplace pension contributions are assumed to be net pay (deducted before
+            tax); SIPP contributions are assumed to be relief at source.
           </li>
         </ul>
       </Section>

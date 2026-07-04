@@ -55,7 +55,7 @@ export interface IncomeSource {
   // Rental
   mortgageInterestAnnual?: number
   rentalExpenses?: number
-  // Dividend
+  // Dividend / savings: income held inside an ISA (excluded from all tax)
   fromISA?: boolean
   // Bond gains: complete years held (for top-slicing relief)
   yearsHeld?: number
@@ -251,6 +251,7 @@ export interface TaxSummary {
   postgradLoanRepayment: number
   giftAidRelief: number
   marriageAllowanceCredit: number
+  marriageAllowanceTransferApplied: boolean // false when the transferor is above basic rate (transfer skipped)
   capitalGainsTax: number
   taxableGain: number
   totalGains: number
@@ -265,10 +266,13 @@ export interface TaxSummary {
   rentalGross: number
   rentalAllowableExpenses: number
   rentalNetBeforeMortgage: number
+  rentalMortgageInterest: number // annual mortgage interest cash cost (subtracted from netIncome)
   dividendGross: number
   class2NI: number
   class4NI: number
   class1NI: number
+  class1NILowerBandTax: number // Class 1 NI charged at the main rate, summed across employments
+  class1NIUpperBandTax: number // Class 1 NI charged at the upper rate, summed across employments
   salarySacrificeTotal: number
   salarySacrificePension: number
   bikTotal: number
@@ -294,6 +298,9 @@ export interface TaxSummary {
   carryForwardLossesApplied: number
   // Self-assessment tax estimate (for Payments on Account)
   selfAssessmentTaxEstimate: number
+  // POA "relevant amount": income tax + Class 4 + HICBC + AA charge,
+  // excluding CGT and student loans (those are balancing-payment only)
+  poaRelevantTax: number
   // BADR
   badrGains: number
   badrTax: number
@@ -304,4 +311,10 @@ export interface TaxSummary {
   savingsIncome: number
   savingsTax: number
   savingsAllowanceApplied: number
+  // Starting rate for savings (0% on up to £5,000, eroded by non-savings income)
+  startingSavingsRateApplied: number
+  // Non-savings income after net-pay pension deductions (before personal allowance)
+  nonSavingsIncomeAfterDeductions: number
+  // Gross (grossed-up) SIPP contribution — relief at source
+  sippGrossContribution: number
 }

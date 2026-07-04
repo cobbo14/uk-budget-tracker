@@ -76,7 +76,7 @@ export function GainsView() {
       <div data-search="carried-forward-losses" className="rounded-lg border bg-muted/30 px-4 py-3 text-sm space-y-3">
         <p className="font-medium">Prior-year losses carried forward</p>
         <p className="text-xs text-muted-foreground">
-          Enter capital losses carried forward from previous tax years. These are applied against this year's gains before the £{rules.cgtAnnualExemptAmount.toLocaleString()} annual exempt amount.
+          Enter capital losses carried forward from previous tax years. These are only used to bring this year's gains down to the £{rules.cgtAnnualExemptAmount.toLocaleString()} annual exempt amount — any unused losses stay in your pool for future years.
         </p>
         <div className="grid gap-1.5 w-full max-w-xs">
           <Label htmlFor="capital-loss-cf">Carried-forward capital losses (£)</Label>

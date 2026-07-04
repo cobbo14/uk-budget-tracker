@@ -99,11 +99,13 @@ export function SelfEmploymentTaxGuide() {
           <CardTitle className="text-lg">National Insurance for the Self-Employed</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Class 2 NI</p>
+          <p className="font-medium text-foreground">Class 2 NI — abolished from April 2024</p>
           <p>
-            A flat weekly rate (approximately £3.45&ndash;£3.65 per week depending on tax
-            year) if your profits exceed the Small Profits Threshold (£6,725). This
-            contribution qualifies you for the State Pension and certain benefits.
+            You no longer pay compulsory Class 2 NI. If your profits are at or above the
+            Small Profits Threshold (£6,845 in 2025/26), you receive National Insurance
+            credits for the State Pension automatically and at no cost. Below the
+            threshold, you can pay voluntarily (about £3.45&ndash;£3.65 per week depending
+            on tax year) to protect your record.
           </p>
 
           <p className="font-medium text-foreground">Class 4 NI (all years 2024&ndash;27)</p>
@@ -169,8 +171,8 @@ export function SelfEmploymentTaxGuide() {
               ['Taxable income', '', '£29,430'],
               ['Income Tax (20%)', '£29,430 × 20%', '£5,886'],
               ['Class 4 NI (6%)', '(£42,000 − £12,570) × 6%', '£1,766'],
-              ['Class 2 NI', '52 × ~£3.50', '£182'],
-              ['Total tax & NI', '', '£7,834'],
+              ['Class 2 NI', 'Abolished from April 2024', '£0'],
+              ['Total tax & NI', '', '£7,652'],
             ]}
           />
         </CardContent>

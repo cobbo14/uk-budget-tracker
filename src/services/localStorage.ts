@@ -87,18 +87,23 @@ export function saveProfiles(data: PersistedProfiles): void {
   }
 }
 
+/** Merge a partial persisted/imported state over the defaults so fields added
+ *  in later versions are always present. UI state is never persisted. */
+export function mergeWithDefaults(partial: Partial<AppState>): AppState {
+  return {
+    ...DEFAULT_STATE,
+    ...partial,
+    settings: { ...DEFAULT_STATE.settings, ...partial.settings },
+    ui: DEFAULT_STATE.ui,
+  }
+}
+
 export function loadProfileState(profileId: string): AppState {
   try {
     const raw = localStorage.getItem(profileStateKey(profileId))
     if (!raw) return DEFAULT_STATE
     const parsed = JSON.parse(raw) as Partial<AppState>
-    return {
-      ...DEFAULT_STATE,
-      ...parsed,
-      settings: { ...DEFAULT_STATE.settings, ...parsed.settings },
-      // UI state is never persisted
-      ui: DEFAULT_STATE.ui,
-    }
+    return mergeWithDefaults(parsed)
   } catch {
     return DEFAULT_STATE
   }
@@ -202,6 +207,19 @@ export function parseImportedState(json: string): Partial<AppState> | null {
     for (const e of parsed.expenses) {
       if (!e || typeof e.id !== 'string' || typeof e.name !== 'string' || typeof e.amount !== 'number') return null
     }
+    // Settings: drop keys with the wrong type rather than rejecting the file —
+    // mergeWithDefaults fills the gaps, preventing NaN/undefined cascades
+    const s = parsed.settings as Record<string, unknown>
+    const numericKeys = [
+      'pensionContributionValue', 'employerPensionContributionValue', 'sippContribution',
+      'giftAidDonations', 'numberOfChildren', 'seisInvestment', 'eisInvestment', 'vctInvestment',
+      'capitalLossCarryForward', 'previousYearSaTaxBill', 'badrLifetimeUsed', 'partnerIncome',
+      'transitionalProfitSpread',
+    ]
+    for (const key of numericKeys) {
+      if (key in s && typeof s[key] !== 'number') delete s[key]
+    }
+    if ('taxYear' in s && typeof s.taxYear !== 'string') delete s.taxYear
     return parsed as Partial<AppState>
   } catch {
     return null

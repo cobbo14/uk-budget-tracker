@@ -1,9 +1,16 @@
 import type { AppState, TaxSummary } from '@/types'
+import type { TaxRules } from '@/taxRules/types'
+import { getTaxRules } from '@/taxRules'
 import { effectiveAmount, toAnnual } from '@/store/selectors'
 
 function csvRow(...cells: (string | number)[]): string {
   return cells.map(cell => {
-    const s = String(cell)
+    let s = String(cell)
+    // Guard against spreadsheet formula injection: prefix cells that a
+    // spreadsheet would evaluate (=, +, -, @, tab, CR) unless they are
+    // plain numbers (e.g. negative amounts)
+    const isPlainNumber = s !== '' && !Number.isNaN(Number(s))
+    if (/^[=+\-@\t\r]/.test(s) && !isPlainNumber) s = `'${s}`
     return s.includes(',') || s.includes('"') || s.includes('\n')
       ? `"${s.replace(/"/g, '""')}"`
       : s
@@ -14,7 +21,8 @@ function currency(n: number): string {
   return n.toFixed(2)
 }
 
-export function generateCSV(state: AppState, taxSummary: TaxSummary): string {
+export function generateCSV(state: AppState, taxSummary: TaxSummary, rules?: TaxRules): string {
+  const taxRules = rules ?? getTaxRules(state.settings.taxYear)
   const lines: string[] = []
 
   // --- Income Sources ---
@@ -25,7 +33,13 @@ export function generateCSV(state: AppState, taxSummary: TaxSummary): string {
     if (src.type === 'self-employment') {
       net = Math.max(0, src.grossAmount - (src.usesTradingAllowance ? Math.min(1000, src.grossAmount) : (src.allowableExpenses ?? 0)))
     } else if (src.type === 'rental') {
-      net = Math.max(0, src.grossAmount - Math.max(src.rentalExpenses ?? 0, 1000))
+      // Property allowance applies only when it beats actual expenses and no
+      // mortgage interest is claimed (mirrors the tax engine)
+      const usesAllowance = (src.mortgageInterestAnnual ?? 0) === 0
+        && taxRules.propertyAllowance > (src.rentalExpenses ?? 0)
+      net = Math.max(0, src.grossAmount - (usesAllowance
+        ? Math.min(taxRules.propertyAllowance, src.grossAmount)
+        : (src.rentalExpenses ?? 0)))
     }
     lines.push(csvRow(src.name, src.type, currency(src.grossAmount), currency(net)))
   }

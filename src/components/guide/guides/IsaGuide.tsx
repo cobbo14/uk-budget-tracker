@@ -107,7 +107,8 @@ export function IsaGuide() {
           <p>
             The tax advantages compound over time. For higher and additional-rate
             taxpayers, the savings are particularly significant &mdash; dividends that
-            would be taxed at 33.75% or 39.35% are completely free within an ISA.
+            would be taxed at 33.75% or 39.35% (35.75% higher rate from April 2026) are
+            completely free within an ISA.
           </p>
         </CardContent>
       </Card>
