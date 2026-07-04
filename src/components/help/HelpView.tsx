@@ -62,7 +62,7 @@ export function HelpView() {
         </h1>
         <p className="text-muted-foreground">
           A free UK tax calculator, pension optimiser, and budget planner covering
-          the 2024/25, 2025/26, and 2026/27 tax years. Track your income, expenses,
+          the 2025/26 and 2026/27 tax years. Track your income, expenses,
           and capital gains &mdash; and see your tax position update in real time.
         </p>
       </div>
@@ -253,14 +253,14 @@ export function HelpView() {
       <Section icon={TrendingUp} title="Capital Gains Tax" tabHash="gains">
         <p>
           Record disposals of shares, property, or business assets. The app
-          automatically applies the Annual Exempt Amount (£3,000 for 2024/25
-          onwards), carry-forward losses, and the correct Capital Gains Tax
+          automatically applies the £3,000 Annual Exempt Amount,
+          carry-forward losses, and the correct Capital Gains Tax
           rate based on your total taxable income.
         </p>
         <p>
           Business Asset Disposal Relief (BADR), formerly Entrepreneurs&rsquo;
           Relief, is supported for qualifying disposals at the reduced rate
-          (10% in 2024/25, 14% in 2025/26, 18% in 2026/27).
+          (14% in 2025/26, 18% in 2026/27).
         </p>
         <p>
           The Gains tab also includes an <strong>ISA Allowance Tracker</strong>{' '}
@@ -319,7 +319,7 @@ export function HelpView() {
         <ul className="list-disc pl-5 space-y-1">
           <li>
             <a href="#guide/uk-income-tax-rates" className="text-emerald-600 font-medium hover:underline">
-              UK Income Tax Rates &amp; Bands 2024&ndash;27
+              UK Income Tax Rates &amp; Bands 2025&ndash;27
             </a>{' '}
             &mdash; full rate tables, personal allowance, Scottish rates, and worked examples.
           </li>

@@ -1,10 +1,8 @@
 import type { TaxRules } from './types'
-import rules2425 from './2024-25'
 import rules2526 from './2025-26'
 import rules2627 from './2026-27'
 
 export const TAX_RULES: Record<string, TaxRules> = {
-  '2024-25': rules2425,
   '2025-26': rules2526,
   '2026-27': rules2627,
 }
@@ -25,7 +23,9 @@ export const DEFAULT_TAX_YEAR = TAX_RULES[getCurrentTaxYear()]
   : AVAILABLE_YEARS[AVAILABLE_YEARS.length - 1]
 
 export function getTaxRules(year: string): TaxRules {
-  return TAX_RULES[year] ?? rules2526
+  // Retired years (e.g. 2024-25) fall back to the default — saved settings
+  // are migrated in mergeWithDefaults, so this is a last-resort safety net
+  return TAX_RULES[year] ?? TAX_RULES[DEFAULT_TAX_YEAR]
 }
 
 export function getAvailableTaxYears(): string[] {

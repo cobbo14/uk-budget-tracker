@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { calculateTax } from './taxCalculations'
 import rules from '@/taxRules/2025-26'
-import rules2425 from '@/taxRules/2024-25'
 import rules2627 from '@/taxRules/2026-27'
 import type { IncomeSource, GainSource, AppSettings } from '@/types'
 
@@ -1011,28 +1010,28 @@ describe('student loan income base', () => {
 
 describe('cross-year behaviour', () => {
   it('returns different results for different tax years with identical inputs (cache regression)', () => {
-    // Plan 2 thresholds differ: 2024/25 £27,295 vs 2025/26 £28,470
-    // £40,000 → SL 2024/25: £12,705 × 9% = £1,143.45; 2025/26: £11,530 × 9% = £1,037.70
+    // Plan 2 thresholds differ: 2025/26 £28,470 vs 2026/27 £29,385
+    // £40,000 → SL 2025/26: £11,530 × 9% = £1,037.70; 2026/27: £10,615 × 9% = £955.35
     const slSettings = settings({ studentLoanPlan: 'plan2' })
-    const a = calculateTax([employment(40000)], slSettings, rules2425)
-    const b = calculateTax([employment(40000)], slSettings, rules)
+    const a = calculateTax([employment(40000)], slSettings, rules)
+    const b = calculateTax([employment(40000)], settings({ studentLoanPlan: 'plan2', taxYear: '2026-27' }), rules2627)
     expect(a).not.toBe(b)
-    expectGBP(a.studentLoan, 1143.45)
-    expectGBP(b.studentLoan, 1037.70)
+    expectGBP(a.studentLoan, 1037.70)
+    expectGBP(b.studentLoan, 955.35)
   })
 
-  it('uses correct Scottish bands for 2024/25', () => {
+  it('uses correct Scottish bands for 2026/27', () => {
     // £30,000: taxable = £17,430
-    //   £2,306 × 19%  = £438.14   (£12,571–£14,876)
-    //   £11,685 × 20% = £2,337.00 (£14,877–£26,561)
-    //   £3,439 × 21%  = £722.19   (£26,562–£30,000)
-    //   Total         = £3,497.33
+    //   £3,967 × 19%  = £753.73   (£12,571–£16,537)
+    //   £12,989 × 20% = £2,597.80 (£16,538–£29,526)
+    //   £474 × 21%    = £99.54    (£29,527–£30,000)
+    //   Total         = £3,451.07
     const result = calculateTax(
       [employment(30000)],
-      settings({ taxYear: '2024-25', scottishTaxpayer: true }),
-      rules2425,
+      settings({ taxYear: '2026-27', scottishTaxpayer: true }),
+      rules2627,
     )
-    expectGBP(result.incomeTax, 3497.33)
+    expectGBP(result.incomeTax, 3451.07)
   })
 
   it('applies the 2026/27 dividend rates (+2pp from Autumn Budget 2025)', () => {
@@ -1060,7 +1059,7 @@ describe('cross-year behaviour', () => {
   // Per-year smoke tests against hand-computed examples — catches rule-file
   // transcription errors (frozen rUK thresholds → identical IT/NI across years)
   it('per-year smoke: £50,000 employment', () => {
-    for (const [yr, r] of [['2024-25', rules2425], ['2025-26', rules], ['2026-27', rules2627]] as const) {
+    for (const [yr, r] of [['2025-26', rules], ['2026-27', rules2627]] as const) {
       const result = calculateTax([employment(50000)], settings({ taxYear: yr }), r)
       expectGBP(result.incomeTax, 7486)      // £37,430 × 20%
       expectGBP(result.class1NI, 2994.40)    // £37,430 × 8%

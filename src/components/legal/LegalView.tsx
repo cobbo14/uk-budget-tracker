@@ -260,8 +260,8 @@ function AboutPage() {
           </ul>
           <p>
             Tax rules are reviewed and updated at the start of each new tax year
-            (6 April). The calculator currently supports the 2024/25, 2025/26,
-            and 2026/27 tax years.
+            (6 April). The calculator currently supports the 2025/26 and 2026/27
+            tax years.
           </p>
           <h3 className="text-foreground font-medium pt-2">Last Reviewed</h3>
           <p>

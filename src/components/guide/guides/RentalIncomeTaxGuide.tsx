@@ -7,7 +7,7 @@ export function RentalIncomeTaxGuide() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">
-          Rental Income Tax Guide UK 2024&ndash;27
+          Rental Income Tax Guide UK 2025&ndash;27
         </h1>
         <p className="text-muted-foreground">
           How UK rental income is taxed, allowable expenses, mortgage interest restrictions

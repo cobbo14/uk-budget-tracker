@@ -114,8 +114,8 @@ export function SalarySacrificeGuide() {
             </li>
             <li>
               <strong>Electric vehicle (EV) scheme</strong> &mdash; lease a new EV through
-              your employer. The benefit-in-kind rate for electric cars is just 2% (2024/25),
-              3% (2025/26), and 4% (2026/27), making this extremely tax-efficient compared
+              your employer. The benefit-in-kind rate for electric cars is just 3% (2025/26)
+              and 4% (2026/27), making this extremely tax-efficient compared
               to a personal lease.
             </li>
             <li>
@@ -197,7 +197,7 @@ export function SalarySacrificeGuide() {
           <p>
             <strong>Related guide:</strong>{' '}
             <a href="#guide/uk-income-tax-rates" className="text-emerald-600 font-medium hover:underline">
-              UK Income Tax Rates &amp; Bands 2024&ndash;27 &rarr;
+              UK Income Tax Rates &amp; Bands 2025&ndash;27 &rarr;
             </a>
           </p>
         </CardContent>

@@ -7,12 +7,12 @@ export function DividendTaxGuide() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">
-          Dividend Tax Guide UK 2024&ndash;27
+          Dividend Tax Guide UK 2025&ndash;27
         </h1>
         <p className="text-muted-foreground">
           How UK dividend tax works, current rates and allowances, how dividends interact
           with your income tax bands, and strategies to minimise your dividend tax bill
-          for the 2024/25, 2025/26, and 2026/27 tax years.
+          for the 2025/26 and 2026/27 tax years.
         </p>
       </div>
 
@@ -66,11 +66,11 @@ export function DividendTaxGuide() {
       {/* Rates */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Dividend Tax Rates 2024&ndash;27</CardTitle>
+          <CardTitle className="text-lg">Dividend Tax Rates 2025&ndash;27</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <Table
-            headers={['Tax band', '2024/25 & 2025/26', '2026/27', 'Equivalent income tax rate']}
+            headers={['Tax band', '2025/26', '2026/27', 'Equivalent income tax rate']}
             rows={[
               ['Basic Rate', '8.75%', '10.75%', '20%'],
               ['Higher Rate', '33.75%', '35.75%', '40%'],

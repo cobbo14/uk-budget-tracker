@@ -7,7 +7,7 @@ export function NationalInsuranceGuide() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">
-          National Insurance Rates &amp; Thresholds UK 2024&ndash;27
+          National Insurance Rates &amp; Thresholds UK 2025&ndash;27
         </h1>
         <p className="text-muted-foreground">
           A complete guide to UK National Insurance &mdash; employee, employer, and
@@ -48,7 +48,6 @@ export function NationalInsuranceGuide() {
           <Table
             headers={['Tax Year', 'Rate (PT to UEL)', 'Rate (above UEL)', 'Primary Threshold', 'Upper Earnings Limit']}
             rows={[
-              ['2024/25', '8%', '2%', '£12,570/year', '£50,270/year'],
               ['2025/26', '8%', '2%', '£12,570/year', '£50,270/year'],
               ['2026/27', '8%', '2%', '£12,570/year', '£50,270/year'],
             ]}
@@ -78,7 +77,6 @@ export function NationalInsuranceGuide() {
           <Table
             headers={['Tax Year', 'Rate', 'Secondary Threshold']}
             rows={[
-              ['2024/25', '13.8%', '£9,100/year'],
               ['2025/26', '15%', '£5,000/year'],
               ['2026/27', '15%', '£5,000/year'],
             ]}
@@ -108,7 +106,6 @@ export function NationalInsuranceGuide() {
           <Table
             headers={['Tax Year', 'Voluntary Weekly Rate', 'Small Profits Threshold']}
             rows={[
-              ['2024/25', '£3.45', '£6,725'],
               ['2025/26', '£3.50', '£6,845'],
               ['2026/27', '£3.65', '£7,105'],
             ]}
@@ -118,7 +115,6 @@ export function NationalInsuranceGuide() {
           <Table
             headers={['Tax Year', 'Lower Profits Limit', 'Upper Profits Limit', 'Main Rate', 'Additional Rate']}
             rows={[
-              ['2024/25', '£12,570', '£50,270', '6%', '2%'],
               ['2025/26', '£12,570', '£50,270', '6%', '2%'],
               ['2026/27', '£12,570', '£50,270', '6%', '2%'],
             ]}

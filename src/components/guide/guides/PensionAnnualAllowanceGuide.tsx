@@ -7,7 +7,7 @@ export function PensionAnnualAllowanceGuide() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">
-          Pension Annual Allowance Guide UK 2024&ndash;27
+          Pension Annual Allowance Guide UK 2025&ndash;27
         </h1>
         <p className="text-muted-foreground">
           Everything you need to know about the pension Annual Allowance &mdash; how much you
@@ -28,8 +28,8 @@ export function PensionAnnualAllowanceGuide() {
             <strong>Annual Allowance Tax Charge</strong>.
           </p>
           <p>
-            The standard Annual Allowance is <strong>£60,000</strong> for 2024/25, 2025/26,
-            and 2026/27. This was increased from £40,000 in April 2023.
+            The standard Annual Allowance is <strong>£60,000</strong> for 2025/26 and
+            2026/27. This was increased from £40,000 in April 2023.
           </p>
           <p>
             The allowance covers the total of your own contributions, employer contributions,
@@ -47,7 +47,6 @@ export function PensionAnnualAllowanceGuide() {
           <Table
             headers={['Tax Year', 'Standard Annual Allowance', 'Money Purchase AA', 'Minimum Tapered AA']}
             rows={[
-              ['2024/25', '£60,000', '£10,000', '£10,000'],
               ['2025/26', '£60,000', '£10,000', '£10,000'],
               ['2026/27', '£60,000', '£10,000', '£10,000'],
             ]}
@@ -194,7 +193,7 @@ export function PensionAnnualAllowanceGuide() {
           </p>
           <p>
             The deadline to elect for Scheme Pays is 31 July in the year following the tax year
-            (e.g. 31 July 2026 for 2024/25 excess).
+            (e.g. 31 July 2027 for a 2025/26 excess).
           </p>
         </CardContent>
       </Card>

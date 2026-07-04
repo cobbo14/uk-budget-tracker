@@ -7,7 +7,7 @@ export function CryptoTaxGuide() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">
-          Crypto Tax Guide UK 2024&ndash;27
+          Crypto Tax Guide UK 2025&ndash;27
         </h1>
         <p className="text-muted-foreground">
           How HMRC taxes cryptocurrency in the UK &mdash; Capital Gains Tax on disposals,
@@ -36,8 +36,8 @@ export function CryptoTaxGuide() {
             </li>
           </ul>
           <p>
-            You must report and pay tax on gains above the annual exempt amount (£3,000 for
-            2024/25 onwards). Losses can be offset against gains.
+            You must report and pay tax on gains above the £3,000 annual exempt
+            amount. Losses can be offset against gains.
           </p>
         </CardContent>
       </Card>
@@ -82,8 +82,8 @@ export function CryptoTaxGuide() {
           <Table
             headers={['Tax Band', 'CGT Rate', 'Annual Exempt Amount']}
             rows={[
-              ['Basic Rate', '10%', '£3,000 (2024/25 onwards)'],
-              ['Higher / Additional Rate', '20%', '£3,000 (2024/25 onwards)'],
+              ['Basic Rate', '18%', '£3,000'],
+              ['Higher / Additional Rate', '24%', '£3,000'],
             ]}
           />
           <p>

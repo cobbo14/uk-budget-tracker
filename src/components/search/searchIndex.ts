@@ -53,7 +53,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { id: 'carried-forward-losses', label: 'Carried-Forward Losses', description: 'Capital losses from previous years', keywords: ['losses', 'carry forward', 'capital loss'], tab: 'gains', targetSelector: '[data-search="carried-forward-losses"]', budgetingModeHidden: true },
 
   // ── Settings ──
-  { id: 'settings-tax-year', label: 'Tax Year Setting', description: 'Select tax year for calculations', keywords: ['tax year', '2024', '2025', '2026', '2027'], tab: 'settings', targetSelector: '[data-search="settings-tax-year"]' },
+  { id: 'settings-tax-year', label: 'Tax Year Setting', description: 'Select tax year for calculations', keywords: ['tax year', '2025', '2026', '2027'], tab: 'settings', targetSelector: '[data-search="settings-tax-year"]' },
   { id: 'settings-scottish', label: 'Scottish Taxpayer', description: 'Toggle Scottish income tax rates', keywords: ['scotland', 'scottish rates', 'scottish taxpayer'], tab: 'settings', targetSelector: '[data-search="settings-scottish"]' },
   { id: 'settings-pension', label: 'Pension Contributions', description: 'Employee, employer, and SIPP pension setup', keywords: ['pension', 'employee', 'employer', 'sipp', 'contribution'], tab: 'settings', targetSelector: '[data-search="settings-pension"]' },
   { id: 'settings-student-loan', label: 'Student Loan Plan', description: 'Select repayment plan (1, 2, 4, Postgrad)', keywords: ['student loan', 'plan 1', 'plan 2', 'plan 4', 'postgrad', 'repayment'], tab: 'settings', targetSelector: '[data-search="settings-student-loan"]' },

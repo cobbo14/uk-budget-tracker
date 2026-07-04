@@ -6,6 +6,7 @@ import {
   parseImportedState,
   mergeWithDefaults,
 } from './localStorage'
+import { DEFAULT_TAX_YEAR } from '@/taxRules'
 import type { AppState } from '@/types'
 
 // ─── In-memory localStorage mock ─────────────────────────────────────────────
@@ -74,7 +75,8 @@ describe('loadProfileState', () => {
     }
     storageMock.getItem.mockReturnValueOnce(JSON.stringify(legacy))
     const state = loadProfileState('default')
-    expect(state.settings.taxYear).toBe('2024-25')
+    // Retired tax year migrates to the current default
+    expect(state.settings.taxYear).toBe(DEFAULT_TAX_YEAR)
     // New fields should come from DEFAULT_STATE
     expect(state.settings.badrLifetimeUsed).toBe(0)
     expect(state.settings.partnerIncome).toBe(0)
@@ -195,13 +197,23 @@ describe('mergeWithDefaults', () => {
       incomeSources: [],
       gainSources: [],
       expenses: [],
-      settings: { taxYear: '2024-25' },
+      settings: { taxYear: '2025-26' },
     } as unknown as Partial<AppState>
     const merged = mergeWithDefaults(partial)
-    expect(merged.settings.taxYear).toBe('2024-25')
+    expect(merged.settings.taxYear).toBe('2025-26')
     expect(merged.settings.isaContributions).toEqual(DEFAULT_STATE.settings.isaContributions)
     expect(merged.settings.pensionCarryForward).toEqual(DEFAULT_STATE.settings.pensionCarryForward)
     expect(merged.ui).toEqual(DEFAULT_STATE.ui)
+  })
+
+  it('migrates retired tax years to the current default', () => {
+    const partial = {
+      incomeSources: [],
+      gainSources: [],
+      expenses: [],
+      settings: { taxYear: '2024-25' },
+    } as unknown as Partial<AppState>
+    expect(mergeWithDefaults(partial).settings.taxYear).toBe(DEFAULT_TAX_YEAR)
   })
 })
 

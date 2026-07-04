@@ -74,7 +74,7 @@ function AppContent() {
     if (activeTab === 'guide') return
     const BASE = 'UK Budget Tracker'
     const TAB_TITLES: Record<string, string> = {
-      summary: `${BASE} — Free Tax Calculator & Pension Optimiser 2024-27`,
+      summary: `${BASE} — Free Tax Calculator & Pension Optimiser 2025-27`,
       income: `Income Tax Calculator — ${BASE}`,
       expenses: `Expenses & Budgeting — ${BASE}`,
       planning: `Tax Planning & Pension Optimiser — ${BASE}`,

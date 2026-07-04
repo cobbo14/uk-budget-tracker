@@ -38,7 +38,7 @@ Client-side UK tax planning PWA. No backend, no env vars — all state lives in 
 ### Tax engine
 - `src/utils/taxCalculations.ts` — central `calculateTax()` function
 - LRU cache (max 512 entries) to avoid recalculation in planning loops
-- Tax year rules in `src/taxRules/` — currently supports 2024-25, 2025-26, 2026-27
+- Tax year rules in `src/taxRules/` — currently supports 2025-26 and 2026-27; retired years are migrated to the default in `mergeWithDefaults`
 
 ## Project structure
 

@@ -61,16 +61,16 @@ const RELATED_GUIDES: Record<string, string[]> = {
 const GUIDES: GuideEntry[] = [
   {
     slug: 'uk-income-tax-rates',
-    title: 'UK Income Tax Rates & Bands 2024–27',
+    title: 'UK Income Tax Rates & Bands 2025–27',
     description:
-      'Full rate tables for all 3 tax years, personal allowance, Scottish rates, National Insurance, and worked examples at £30k, £50k, £80k, and £100k.',
-    pageTitle: 'UK Income Tax Rates & Bands 2024/25, 2025/26, 2026/27 — UK Budget Tracker',
+      'Full rate tables for both tax years, personal allowance, Scottish rates, National Insurance, and worked examples at £30k, £50k, £80k, and £100k.',
+    pageTitle: 'UK Income Tax Rates & Bands 2025/26 & 2026/27 — UK Budget Tracker',
     icon: PoundSterling,
     component: UkIncomeTaxRates,
     faqs: [
       {
-        question: 'What is the UK personal allowance for 2024/25, 2025/26, and 2026/27?',
-        answer: 'The personal allowance is £12,570 for all three tax years. It is reduced by £1 for every £2 of income above £100,000, meaning it reaches zero at £125,140.',
+        question: 'What is the UK personal allowance for 2025/26 and 2026/27?',
+        answer: 'The personal allowance is £12,570 for both tax years. It is reduced by £1 for every £2 of income above £100,000, meaning it reaches zero at £125,140.',
       },
       {
         question: 'What are the current UK National Insurance rates?',
@@ -133,13 +133,13 @@ const GUIDES: GuideEntry[] = [
     title: 'Capital Gains Tax Guide UK',
     description:
       'CGT rates, annual exempt amount, Business Asset Disposal Relief, interaction with income tax, loss relief, and worked examples.',
-    pageTitle: 'Capital Gains Tax Guide UK 2024–27 — Rates, Reliefs & Examples — UK Budget Tracker',
+    pageTitle: 'Capital Gains Tax Guide UK 2025–27 — Rates, Reliefs & Examples — UK Budget Tracker',
     icon: BarChart3,
     component: CapitalGainsTaxGuide,
     faqs: [
       {
         question: 'What are the UK Capital Gains Tax rates?',
-        answer: 'From 2024/25, basic-rate taxpayers pay 10% on most assets and 18% on residential property. Higher-rate taxpayers pay 20% on most assets and 24% on residential property. Business Asset Disposal Relief qualifies for a 10% rate up to a £1m lifetime limit.',
+        answer: 'Since 30 October 2024, basic-rate taxpayers pay 18% and higher-rate taxpayers pay 24% on all asset types — the same rates now apply to shares and residential property. Business Asset Disposal Relief gives a reduced rate of 14% in 2025/26, rising to 18% from April 2026, up to a £1m lifetime limit.',
       },
       {
         question: 'What is the Capital Gains Tax annual exempt amount?',
@@ -155,18 +155,18 @@ const GUIDES: GuideEntry[] = [
     slug: 'student-loan-guide',
     title: 'Student Loan Repayment Guide UK',
     description:
-      'Repayment thresholds, rates, and write-off rules for Plan 1, 2, 4, 5, and Postgraduate Loans across the 2024/25–2026/27 tax years.',
+      'Repayment thresholds, rates, and write-off rules for Plan 1, 2, 4, 5, and Postgraduate Loans across the 2025/26 and 2026/27 tax years.',
     pageTitle: 'Student Loan Repayment Guide UK — Thresholds & Rates — UK Budget Tracker',
     icon: GraduationCap,
     component: StudentLoanGuide,
     faqs: [
       {
         question: 'What is the student loan repayment threshold for Plan 2?',
-        answer: 'The Plan 2 repayment threshold is £27,295 per year for 2024/25, 2025/26, and 2026/27. You repay 9% of income above this threshold.',
+        answer: 'The Plan 2 repayment threshold is £28,470 for 2025/26 and £29,385 for 2026/27. You repay 9% of income above the threshold.',
       },
       {
         question: 'When is my student loan written off?',
-        answer: 'Plan 1 loans are written off 25 years after you were first due to repay. Plan 2 and Postgraduate loans are written off after 30 years. Plan 5 loans are written off 40 years after graduation.',
+        answer: 'Plan 1 loans are written off 25 years after you were first due to repay. Plan 2 and Postgraduate loans are written off after 30 years. Plan 5 loans are written off 40 years after they first become due for repayment.',
       },
       {
         question: 'Should I overpay my student loan?',
@@ -178,13 +178,13 @@ const GUIDES: GuideEntry[] = [
     slug: 'isa-guide',
     title: 'ISA Guide UK — Types, Allowances & Rules',
     description:
-      'Cash ISA, Stocks & Shares ISA, Lifetime ISA, and IFISA explained. Allowances, tax benefits, LISA rules, and strategies for 2024–27.',
-    pageTitle: 'ISA Guide UK — Types, Allowances & Rules 2024–27 — UK Budget Tracker',
+      'Cash ISA, Stocks & Shares ISA, Lifetime ISA, and IFISA explained. Allowances, tax benefits, LISA rules, and strategies for 2025–27.',
+    pageTitle: 'ISA Guide UK — Types, Allowances & Rules 2025–27 — UK Budget Tracker',
     icon: PiggyBank,
     component: IsaGuide,
     faqs: [
       {
-        question: 'What is the ISA allowance for 2024/25, 2025/26, and 2026/27?',
+        question: 'What is the ISA allowance for 2025/26 and 2026/27?',
         answer: 'The annual ISA allowance is £20,000 per tax year. You can split this across Cash ISA, Stocks & Shares ISA, Lifetime ISA (max £4,000), and Innovative Finance ISA.',
       },
       {
@@ -199,10 +199,10 @@ const GUIDES: GuideEntry[] = [
   },
   {
     slug: 'dividend-tax-guide',
-    title: 'Dividend Tax Guide UK 2024–27',
+    title: 'Dividend Tax Guide UK 2025–27',
     description:
       'Dividend tax rates, allowances, how dividends stack on income, strategies for company directors, and worked examples.',
-    pageTitle: 'Dividend Tax Guide UK 2024–27 — Rates & Allowances — UK Budget Tracker',
+    pageTitle: 'Dividend Tax Guide UK 2025–27 — Rates & Allowances — UK Budget Tracker',
     icon: CircleDollarSign,
     component: DividendTaxGuide,
     faqs: [
@@ -340,13 +340,13 @@ const GUIDES: GuideEntry[] = [
     title: 'Pension Annual Allowance Guide UK',
     description:
       'Annual Allowance limits, tapered allowance for high earners, MPAA, carry forward rules, and the Annual Allowance Tax Charge explained.',
-    pageTitle: 'Pension Annual Allowance Guide UK 2024–27 — Limits & Taper — UK Budget Tracker',
+    pageTitle: 'Pension Annual Allowance Guide UK 2025–27 — Limits & Taper — UK Budget Tracker',
     icon: PiggyBank,
     component: PensionAnnualAllowanceGuide,
     faqs: [
       {
         question: 'What is the pension Annual Allowance?',
-        answer: 'The Annual Allowance is the maximum amount of pension savings you can make each tax year with tax relief. It is £60,000 for 2024/25, 2025/26, and 2026/27. Contributions above this limit trigger an Annual Allowance Tax Charge at your marginal rate.',
+        answer: 'The Annual Allowance is the maximum amount of pension savings you can make each tax year with tax relief. It is £60,000 for 2025/26 and 2026/27. Contributions above this limit trigger an Annual Allowance Tax Charge at your marginal rate.',
       },
       {
         question: 'How does the tapered Annual Allowance work?',
@@ -432,13 +432,13 @@ const GUIDES: GuideEntry[] = [
     title: 'National Insurance Rates Guide UK',
     description:
       'Employee, employer, and self-employed NI rates, thresholds, voluntary Class 3 contributions, Employment Allowance, and State Pension qualification.',
-    pageTitle: 'National Insurance Rates & Thresholds UK 2024–27 — UK Budget Tracker',
+    pageTitle: 'National Insurance Rates & Thresholds UK 2025–27 — UK Budget Tracker',
     icon: Shield,
     component: NationalInsuranceGuide,
     faqs: [
       {
         question: 'What are the employee National Insurance rates?',
-        answer: 'Employees pay 8% NI on earnings between £12,570 and £50,270 (Primary Threshold to Upper Earnings Limit), and 2% on earnings above £50,270. These rates apply for 2024/25, 2025/26, and 2026/27.',
+        answer: 'Employees pay 8% NI on earnings between £12,570 and £50,270 (Primary Threshold to Upper Earnings Limit), and 2% on earnings above £50,270. These rates apply for 2025/26 and 2026/27.',
       },
       {
         question: 'What NI do self-employed people pay?',
@@ -446,7 +446,7 @@ const GUIDES: GuideEntry[] = [
       },
       {
         question: 'How many NI qualifying years do I need for the full State Pension?',
-        answer: 'You need 35 qualifying years for the full new State Pension (£11,502/year in 2025/26) and a minimum of 10 qualifying years to receive any State Pension. Gaps can be filled with voluntary Class 3 contributions.',
+        answer: 'You need 35 qualifying years for the full new State Pension (£11,973/year in 2025/26, rising to £12,548 in 2026/27) and a minimum of 10 qualifying years to receive any State Pension. Gaps can be filled with voluntary Class 3 contributions.',
       },
     ],
   },
@@ -473,7 +473,7 @@ function GuideIndex() {
         <h1 className="text-2xl font-bold tracking-tight">UK Tax Guides</h1>
         <p className="text-muted-foreground">
           In-depth guides covering UK income tax, pension planning, capital gains tax,
-          student loans, ISAs, dividends, and more for the 2024/25, 2025/26, and
+          student loans, ISAs, dividends, and more for the 2025/26 and
           2026/27 tax years.
         </p>
       </div>
@@ -524,7 +524,7 @@ export function GuideView() {
       if (meta) meta.setAttribute('content', guide.description)
     } else {
       document.title = 'UK Tax Guides — Income Tax, Pension, CGT — UK Budget Tracker'
-      if (meta) meta.setAttribute('content', 'In-depth UK tax guides covering income tax rates, salary sacrifice, the £100k tax trap, and capital gains tax for 2024/25, 2025/26, and 2026/27.')
+      if (meta) meta.setAttribute('content', 'In-depth UK tax guides covering income tax rates, salary sacrifice, the £100k tax trap, and capital gains tax for 2025/26 and 2026/27.')
     }
 
     // Canonical link

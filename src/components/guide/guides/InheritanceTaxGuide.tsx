@@ -7,7 +7,7 @@ export function InheritanceTaxGuide() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">
-          Inheritance Tax Guide UK 2024&ndash;27
+          Inheritance Tax Guide UK 2025&ndash;27
         </h1>
         <p className="text-muted-foreground">
           A comprehensive guide to UK Inheritance Tax &mdash; nil-rate bands, the residence

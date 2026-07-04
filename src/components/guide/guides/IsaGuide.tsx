@@ -12,7 +12,7 @@ export function IsaGuide() {
         <p className="text-muted-foreground">
           Everything you need to know about Individual Savings Accounts (ISAs) in the UK.
           Covers Cash ISAs, Stocks &amp; Shares ISAs, Lifetime ISAs, and Innovative
-          Finance ISAs for the 2024/25, 2025/26, and 2026/27 tax years.
+          Finance ISAs for the 2025/26 and 2026/27 tax years.
         </p>
       </div>
 
@@ -146,7 +146,7 @@ export function IsaGuide() {
       {/* Key numbers */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Key ISA Numbers 2024&ndash;27</CardTitle>
+          <CardTitle className="text-lg">Key ISA Numbers 2025&ndash;27</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           <Table

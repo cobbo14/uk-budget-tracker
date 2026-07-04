@@ -29,7 +29,7 @@ export function AppShell({ activeTab, onTabChange, budgetingMode, onBudgetingMod
             <a href="https://www.gov.uk/income-tax-rates" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
               HMRC official guidance
             </a>
-            . Updated for the 2024/25, 2025/26, and 2026/27 tax years.
+            . Updated for the 2025/26 and 2026/27 tax years.
             This calculator is for estimation purposes only and does not constitute financial advice.
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">

@@ -11,8 +11,8 @@ export function MarriageAllowanceGuide() {
         </h1>
         <p className="text-muted-foreground">
           How Marriage Allowance works, who is eligible, how much you can save, how to
-          claim, and when it might not be worth it. Covers the 2024/25, 2025/26, and
-          2026/27 tax years.
+          claim, and when it might not be worth it. Covers the 2025/26 and 2026/27
+          tax years.
         </p>
       </div>
 

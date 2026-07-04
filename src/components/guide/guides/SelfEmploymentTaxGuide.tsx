@@ -12,7 +12,7 @@ export function SelfEmploymentTaxGuide() {
         <p className="text-muted-foreground">
           How self-employment tax works in the UK &mdash; trading allowance, allowable
           expenses, Class 2 and Class 4 National Insurance, payments on account, and tips
-          to reduce your tax bill. Covers 2024/25, 2025/26, and 2026/27.
+          to reduce your tax bill. Covers 2025/26 and 2026/27.
         </p>
       </div>
 
@@ -108,7 +108,7 @@ export function SelfEmploymentTaxGuide() {
             on tax year) to protect your record.
           </p>
 
-          <p className="font-medium text-foreground">Class 4 NI (all years 2024&ndash;27)</p>
+          <p className="font-medium text-foreground">Class 4 NI (2025/26 &amp; 2026/27)</p>
           <Table
             headers={['Profits band', 'Rate']}
             rows={[

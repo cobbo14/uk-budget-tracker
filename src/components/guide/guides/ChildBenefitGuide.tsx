@@ -11,8 +11,8 @@ export function ChildBenefitGuide() {
         </h1>
         <p className="text-muted-foreground">
           How Child Benefit works, current payment rates, the High Income Child Benefit
-          Charge taper, and whether you should claim or opt out. Covers the 2024/25,
-          2025/26, and 2026/27 tax years.
+          Charge taper, and whether you should claim or opt out. Covers the 2025/26
+          and 2026/27 tax years.
         </p>
       </div>
 
@@ -41,15 +41,6 @@ export function ChildBenefitGuide() {
           <CardTitle className="text-lg">Child Benefit Rates</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">2024/25</p>
-          <Table
-            headers={['Child', 'Weekly rate', 'Annual amount']}
-            rows={[
-              ['Eldest/only child', '£25.60', '£1,331.20'],
-              ['Each additional child', '£16.95', '£881.40'],
-            ]}
-          />
-
           <p className="font-medium text-foreground">2025/26</p>
           <Table
             headers={['Child', 'Weekly rate', 'Annual amount']}

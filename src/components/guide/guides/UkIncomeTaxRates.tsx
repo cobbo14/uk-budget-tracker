@@ -23,11 +23,11 @@ export function UkIncomeTaxRates() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">
-          UK Income Tax Rates &amp; Bands 2024&ndash;27
+          UK Income Tax Rates &amp; Bands 2025&ndash;27
         </h1>
         <p className="text-muted-foreground">
           A complete reference to UK income tax rates, National Insurance contributions,
-          and personal allowance for the 2024/25, 2025/26, and 2026/27 tax years. Includes
+          and personal allowance for the 2025/26 and 2026/27 tax years. Includes
           Scottish income tax rates and worked examples at common salary levels.
         </p>
       </div>
@@ -39,8 +39,8 @@ export function UkIncomeTaxRates() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            The tax-free Personal Allowance is <strong>£12,570</strong> for all three tax
-            years (2024/25, 2025/26, and 2026/27). You pay no income tax on earnings up to
+            The tax-free Personal Allowance is <strong>£12,570</strong> for both tax
+            years (2025/26 and 2026/27). You pay no income tax on earnings up to
             this amount.
           </p>
           <p>
@@ -89,7 +89,7 @@ export function UkIncomeTaxRates() {
             Parliament. The Personal Allowance remains £12,570.
           </p>
 
-          <p className="font-medium text-foreground">2024/25 &amp; 2025/26</p>
+          <p className="font-medium text-foreground">2025/26</p>
           <Table
             headers={['Band', 'Taxable income', 'Rate']}
             rows={[
@@ -164,7 +164,7 @@ export function UkIncomeTaxRates() {
             and higher dividend rates by 2 percentage points from April 2026:
           </p>
           <Table
-            headers={['Tax band', '2024/25 & 2025/26', '2026/27']}
+            headers={['Tax band', '2025/26', '2026/27']}
             rows={[
               ['Basic Rate', '8.75%', '10.75%'],
               ['Higher Rate', '33.75%', '35.75%'],

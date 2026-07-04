@@ -10,8 +10,8 @@ export function CapitalGainsTaxGuide() {
           Capital Gains Tax Guide UK
         </h1>
         <p className="text-muted-foreground">
-          A comprehensive guide to Capital Gains Tax (CGT) in the UK for the 2024/25,
-          2025/26, and 2026/27 tax years. Covers rates, the Annual Exempt Amount, Business
+          A comprehensive guide to Capital Gains Tax (CGT) in the UK for the 2025/26
+          and 2026/27 tax years. Covers rates, the Annual Exempt Amount, Business
           Asset Disposal Relief, loss relief, and how CGT interacts with your income tax
           position.
         </p>
@@ -50,7 +50,6 @@ export function CapitalGainsTaxGuide() {
           <Table
             headers={['Tax year', 'Annual Exempt Amount']}
             rows={[
-              ['2024/25', '£3,000'],
               ['2025/26', '£3,000'],
               ['2026/27', '£3,000'],
             ]}
@@ -113,7 +112,6 @@ export function CapitalGainsTaxGuide() {
           <Table
             headers={['Tax year', 'BADR rate']}
             rows={[
-              ['2024/25', '10%'],
               ['2025/26', '14%'],
               ['2026/27', '18%'],
             ]}

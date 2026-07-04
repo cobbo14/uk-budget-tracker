@@ -198,7 +198,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Free UK Tax Calculator 2024–27</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Free UK Tax Calculator 2025–27</h1>
         <div className="flex items-center gap-1 rounded-lg border p-1 text-sm">
           <button
             onClick={() => onShowMonthlyChange(true)}

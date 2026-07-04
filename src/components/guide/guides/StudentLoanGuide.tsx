@@ -11,7 +11,7 @@ export function StudentLoanGuide() {
         </h1>
         <p className="text-muted-foreground">
           A complete guide to UK student loan repayment thresholds, rates, and plans for
-          the 2024/25, 2025/26, and 2026/27 tax years. Covers Plan 1, Plan 2, Plan 4,
+          the 2025/26 and 2026/27 tax years. Covers Plan 1, Plan 2, Plan 4,
           Plan 5, and Postgraduate Loan repayments.
         </p>
       </div>
@@ -70,18 +70,6 @@ export function StudentLoanGuide() {
           <CardTitle className="text-lg">Repayment Thresholds</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">2024/25</p>
-          <Table
-            headers={['Plan', 'Annual threshold', 'Monthly threshold']}
-            rows={[
-              ['Plan 1', '£24,990', '£2,082'],
-              ['Plan 2', '£27,295', '£2,274'],
-              ['Plan 4', '£31,395', '£2,616'],
-              ['Plan 5', '£25,000', '£2,083'],
-              ['Postgraduate', '£21,000', '£1,750'],
-            ]}
-          />
-
           <p className="font-medium text-foreground">2025/26</p>
           <Table
             headers={['Plan', 'Annual threshold', 'Monthly threshold']}

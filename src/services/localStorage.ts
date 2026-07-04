@@ -1,6 +1,6 @@
 import type { AppState, Expense, Profile } from '@/types'
 import { generateId } from '@/utils/ids'
-import { DEFAULT_TAX_YEAR } from '@/taxRules'
+import { DEFAULT_TAX_YEAR, TAX_RULES } from '@/taxRules'
 
 const LEGACY_KEY = 'uk_budget_tracker_v1'
 const PROFILES_KEY = 'uk_budget_tracker_profiles'
@@ -90,12 +90,17 @@ export function saveProfiles(data: PersistedProfiles): void {
 /** Merge a partial persisted/imported state over the defaults so fields added
  *  in later versions are always present. UI state is never persisted. */
 export function mergeWithDefaults(partial: Partial<AppState>): AppState {
-  return {
+  const merged: AppState = {
     ...DEFAULT_STATE,
     ...partial,
     settings: { ...DEFAULT_STATE.settings, ...partial.settings },
     ui: DEFAULT_STATE.ui,
   }
+  // Migrate retired tax years (e.g. 2024-25) to the current default
+  if (!TAX_RULES[merged.settings.taxYear]) {
+    merged.settings = { ...merged.settings, taxYear: DEFAULT_TAX_YEAR }
+  }
+  return merged
 }
 
 export function loadProfileState(profileId: string): AppState {
