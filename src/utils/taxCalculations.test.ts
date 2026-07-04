@@ -57,16 +57,26 @@ function rental(
   return { id, name: 'Rental', type: 'rental', grossAmount, rentalExpenses, mortgageInterestAnnual }
 }
 
+function rentARoom(grossAmount: number, id = '1'): IncomeSource {
+  return { id, name: 'Lodger', type: 'rental', grossAmount, usesRentARoom: true }
+}
+
 function dividend(grossAmount: number, fromISA = false, id = '1'): IncomeSource {
   return { id, name: 'Dividends', type: 'dividend', grossAmount, fromISA }
 }
 
-function bond(grossAmount: number, yearsHeld = 1, id = '1'): IncomeSource {
-  return { id, name: 'Bond', type: 'bond', grossAmount, yearsHeld }
+// Legacy top-slicing worked examples assume no basic-rate credit, so the helper
+// defaults to offshore; pass 'onshore' to exercise the 20% credit.
+function bond(grossAmount: number, yearsHeld = 1, id = '1', bondType: 'onshore' | 'offshore' = 'offshore'): IncomeSource {
+  return { id, name: 'Bond', type: 'bond', grossAmount, yearsHeld, bondType }
 }
 
 function savings(grossAmount: number, id = '1'): IncomeSource {
   return { id, name: 'Savings', type: 'savings', grossAmount }
+}
+
+function pension(grossAmount: number, id = '1'): IncomeSource {
+  return { id, name: 'Pension', type: 'pension', grossAmount }
 }
 
 function gain(
@@ -1054,6 +1064,120 @@ describe('cross-year behaviour', () => {
       rules,
     )
     expectGBP(result.incomeTax, 2860)
+  })
+
+  it('applies the 2026/27 Blind Person\'s Allowance of £3,250', () => {
+    // £30,000 employment, BPA: PA = £12,570 + £3,250 = £15,820
+    // taxable = £14,180 → £2,836 income tax
+    const result = calculateTax(
+      [employment(30000)],
+      settings({ taxYear: '2026-27', hasBlindPersonsAllowance: true }),
+      rules2627,
+    )
+    expectGBP(result.incomeTax, 2836)
+  })
+
+  it('Plan 5 student loan: 9% over £25,000 in 2026/27, nothing due in 2025/26', () => {
+    // First Plan 5 repayments were collected from 6 April 2026
+    const a = calculateTax([employment(30000)], settings({ studentLoanPlan: 'plan5' }), rules)
+    const b = calculateTax([employment(30000)], settings({ studentLoanPlan: 'plan5', taxYear: '2026-27' }), rules2627)
+    expect(a.studentLoan).toBe(0)
+    expectGBP(b.studentLoan, (30000 - 25000) * 0.09) // £450
+  })
+
+  it('Rent-a-Room relief: only rent above £7,500 is taxed', () => {
+    // £40,000 salary uses the PA, so rental profit is taxed at 20% from the first £
+    const base = calculateTax([employment(40000)], settings(), rules2627)
+    const a = calculateTax([employment(40000), rentARoom(10000, '2')], settings(), rules2627)
+    const b = calculateTax([employment(40000), rentARoom(6000, '2')], settings(), rules2627)
+    expectGBP(a.incomeTax - base.incomeTax, 2500 * 0.20) // £10,000 − £7,500 taxable
+    expectGBP(b.incomeTax - base.incomeTax, 0)           // fully within relief
+  })
+
+  it('Rent-a-Room source does not affect the mortgage credit of a normal rental', () => {
+    // Normal rental: £12,000 gross, £2,000 expenses, £3,000 mortgage interest
+    // → net £10,000, credit = 20% × £3,000 = £600 (unchanged by RaR source)
+    const withRaR = calculateTax(
+      [employment(40000), rental(12000, 2000, 3000, '2'), rentARoom(6000, '3')],
+      settings(), rules2627,
+    )
+    const withoutRaR = calculateTax(
+      [employment(40000), rental(12000, 2000, 3000, '2')],
+      settings(), rules2627,
+    )
+    expectGBP(withRaR.mortgageTaxCredit, 600)
+    expectGBP(withRaR.incomeTax, withoutRaR.incomeTax) // £6k lodger income fully relieved
+  })
+
+  it('onshore bond: 20% basic-rate credit against tax on the gain', () => {
+    // £60,000 salary (higher rate, PSA £500) + £20,000 onshore gain, 1 year held.
+    // Taxed gain £19,500 at 40% = £7,800; credit 20% × £19,500 = £3,900 → net £3,900.
+    const base = calculateTax([employment(60000)], settings({ taxYear: '2026-27' }), rules2627)
+    const onshore = calculateTax(
+      [employment(60000), bond(20000, 1, '2', 'onshore')],
+      settings({ taxYear: '2026-27' }), rules2627,
+    )
+    const offshore = calculateTax(
+      [employment(60000), bond(20000, 1, '2', 'offshore')],
+      settings({ taxYear: '2026-27' }), rules2627,
+    )
+    expectGBP(onshore.bondBasicRateCredit, 3900)
+    expectGBP(onshore.incomeTax - base.incomeTax, 7800 - 3900)
+    expectGBP(offshore.bondBasicRateCredit, 0)
+    expectGBP(offshore.incomeTax - base.incomeTax, 7800)
+  })
+
+  it('onshore bond: credit is non-refundable — basic-rate taxpayer owes nothing extra', () => {
+    // £30,000 salary + £5,000 onshore gain fully in basic band (PSA £1,000 covers first slice).
+    // Taxed gain £4,000 at 20% = £800; credit capped at £800 → £0 extra tax, never negative.
+    const base = calculateTax([employment(30000)], settings({ taxYear: '2026-27' }), rules2627)
+    const r = calculateTax(
+      [employment(30000), bond(5000, 1, '2', 'onshore')],
+      settings({ taxYear: '2026-27' }), rules2627,
+    )
+    expectGBP(r.incomeTax - base.incomeTax, 0)
+    expectGBP(r.bondBasicRateCredit, 800)
+  })
+
+  it('pension income: taxed as non-savings income with no National Insurance', () => {
+    const r = calculateTax([pension(20000)], settings({ taxYear: '2026-27' }), rules2627)
+    expectGBP(r.incomeTax, (20000 - 12570) * 0.20) // £1,486
+    expect(r.nationalInsurance).toBe(0)
+    expectGBP(r.pensionIncomeGross, 20000)
+    expectGBP(r.grossIncome, 20000)
+  })
+
+  it('pension income stacks with employment for income tax but not NI', () => {
+    // £40,000 salary + £20,000 pension = £60,000: IT as one income, NI on salary only
+    const r = calculateTax([employment(40000), pension(20000, '2')], settings({ taxYear: '2026-27' }), rules2627)
+    expectGBP(r.incomeTax, 37700 * 0.20 + 9730 * 0.40)       // £11,432 — same as £60k salary
+    expectGBP(r.nationalInsurance, (40000 - 12570) * 0.08)   // £2,194.40 — salary only
+  })
+
+  it('pension income is unearned for student loans (counts only above £2,000)', () => {
+    // Plan 2, 2026/27 threshold £29,385
+    const small = calculateTax(
+      [employment(35000), pension(1500, '2')],
+      settings({ taxYear: '2026-27', studentLoanPlan: 'plan2' }), rules2627,
+    )
+    const large = calculateTax(
+      [employment(35000), pension(3000, '2')],
+      settings({ taxYear: '2026-27', studentLoanPlan: 'plan2' }), rules2627,
+    )
+    expectGBP(small.studentLoan, (35000 - 29385) * 0.09)        // pension ≤ £2k ignored
+    expectGBP(large.studentLoan, (38000 - 29385) * 0.09)        // pension counted in full
+  })
+
+  it('applies the 2026/27 Child Benefit rates (£27.05 / £17.90)', () => {
+    // 2 children: (£27.05 + £17.90) × 52 = £2,337.40/year
+    // Income £70,000 → £10,000 over the £60,000 threshold → 50% HICBC = £1,169
+    const result = calculateTax(
+      [employment(70000)],
+      settings({ taxYear: '2026-27', childBenefitClaiming: true, numberOfChildren: 2 }),
+      rules2627,
+    )
+    expectGBP(result.childBenefitAnnual, 2337.40)
+    expect(result.hicbc).toBe(1169)
   })
 
   // Per-year smoke tests against hand-computed examples — catches rule-file

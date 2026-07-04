@@ -35,26 +35,29 @@ const rules: TaxRules = {
   dividendHigherRate: 0.3575,
   dividendAdditionalRate: 0.3935,
   propertyAllowance: 1000,
+  rentARoomRelief: 7500,
   studentLoan: {
     plan1Threshold: 26900,   // up from £26,065
     plan2Threshold: 29385,   // up from £28,470
     plan4Threshold: 33795,   // up from £32,745
+    plan5Threshold: 25000,   // first Plan 5 repayments from 6 Apr 2026 (frozen until 2027)
     postgradThreshold: 21000,
     plan1Rate: 0.09,
     plan2Rate: 0.09,
     plan4Rate: 0.09,
+    plan5Rate: 0.09,
     postgradRate: 0.06,
   },
   cgtAnnualExemptAmount: 3000,
   cgtBasicRate: 0.18,
   cgtHigherRate: 0.24,
-  // Child Benefit (2026/27 rates not yet confirmed — using 2025/26 as placeholder)
-  childBenefitEldestWeekly: 26.05,
-  childBenefitAdditionalWeekly: 17.25,
+  // Child Benefit (2026/27 confirmed rates — 3.8% CPI uprating from 6 Apr 2026)
+  childBenefitEldestWeekly: 27.05,
+  childBenefitAdditionalWeekly: 17.90,
   hicbcThreshold: 60000,
   hicbcTaperEnd: 80000,
-  // Blind Person's Allowance (2026/27 rate not yet confirmed — using 2025/26 as placeholder)
-  blindPersonsAllowance: 3130,
+  // Blind Person's Allowance (2026/27 confirmed: up from £3,130)
+  blindPersonsAllowance: 3250,
   // Pension Annual Allowance
   pensionAnnualAllowance: 60000,
   pensionAnnualAllowanceMinimum: 10000,

@@ -66,6 +66,11 @@ export function calculateTax(
   const bondSources = incomeSources.filter(s => s.type === 'bond')
   const savingsSources = incomeSources.filter(s => s.type === 'savings' && !s.fromISA)
   const savingsGross = savingsSources.reduce((sum, s) => sum + s.grossAmount, 0)
+  // Pension income (state pension, DB pensions, annuities, taxable drawdown):
+  // taxable non-savings income; no NI; not relevant earnings for pension relief;
+  // unearned income for student loan purposes.
+  const pensionIncomeSources = incomeSources.filter(s => s.type === 'pension')
+  const pensionIncomeGross = pensionIncomeSources.reduce((sum, s) => sum + s.grossAmount, 0)
 
   const bonusTotal = employmentSources.reduce((sum, s) => sum + (s.bonus ?? 0), 0)
   const employmentGross = employmentSources.reduce((sum, s) => sum + s.grossAmount + (s.bonus ?? 0), 0)
@@ -102,23 +107,32 @@ export function calculateTax(
   const selfEmploymentProfit = baseSelfEmploymentProfit + (settings.transitionalProfitSpread ?? 0)
 
   const rentalGross = rentalSources.reduce((sum, s) => sum + s.grossAmount, 0)
-  const rentalAllowableExpenses = rentalSources.reduce(
+  // Rent-a-Room relief (lodger in own home): taxable = gross − £7,500 per source,
+  // forfeiting actual expenses and the mortgage-interest credit for that source.
+  const rentARoomSources = rentalSources.filter(s => s.usesRentARoom === true)
+  const normalRentalSources = rentalSources.filter(s => s.usesRentARoom !== true)
+  const rentARoomNet = rentARoomSources.reduce(
+    (sum, s) => sum + Math.max(0, s.grossAmount - rules.rentARoomRelief),
+    0,
+  )
+  const normalRentalGross = normalRentalSources.reduce((sum, s) => sum + s.grossAmount, 0)
+  const rentalAllowableExpenses = normalRentalSources.reduce(
     (sum, s) => sum + (s.rentalExpenses ?? 0),
     0,
   )
-  const mortgageInterestTotal = rentalSources.reduce(
+  const mortgageInterestTotal = normalRentalSources.reduce(
     (sum, s) => sum + (s.mortgageInterestAnnual ?? 0),
     0,
   )
   // Property allowance is an alternative to claiming actual expenses AND the 20%
   // finance-cost credit — claiming it forfeits both. Apply it only when it beats
   // actual expenses and no mortgage interest is claimed.
-  const usesPropertyAllowance = rentalGross > 0 && mortgageInterestTotal === 0
+  const usesPropertyAllowance = normalRentalGross > 0 && mortgageInterestTotal === 0
     && rules.propertyAllowance > rentalAllowableExpenses
-  const rentalNetBeforeMortgage = Math.max(
+  const rentalNetBeforeMortgage = rentARoomNet + Math.max(
     0,
-    rentalGross - (usesPropertyAllowance
-      ? Math.min(rules.propertyAllowance, rentalGross)
+    normalRentalGross - (usesPropertyAllowance
+      ? Math.min(rules.propertyAllowance, normalRentalGross)
       : rentalAllowableExpenses),
   )
 
@@ -156,7 +170,7 @@ export function calculateTax(
   // Layer 1: non-savings income (employment + self-employment + rental) — Scottish or
   // rUK bands. Layer 2: savings income (interest + onshore bond gains, which are
   // legally savings income) — always rUK bands. Layer 3: dividends — rUK bands.
-  const nonSavingsGross = effectiveEmploymentGrossForIT + selfEmploymentProfit + rentalNetBeforeMortgage
+  const nonSavingsGross = effectiveEmploymentGrossForIT + selfEmploymentProfit + rentalNetBeforeMortgage + pensionIncomeGross
   const savingsLayerGross = savingsGross + bondIncome
 
   // Net-pay pension deduction reduces non-savings income first, spilling into savings
@@ -280,6 +294,9 @@ export function calculateTax(
   // Top-slicing: tax on full bond gain vs tax on a single annual slice × years.
   // Bond gains sit at the top of the savings layer (above interest), on rUK bands.
   let bondTopSlicingRelief = 0
+  // Onshore bonds: basic-rate tax is treated as already paid within the fund — a
+  // non-refundable 20% credit against the tax charged on the onshore gain portion.
+  let bondBasicRateCredit = 0
   // Portion of the taxed savings amount attributable to bond gains (PA, starting
   // rate and PSA are allocated to interest first, so bonds form the top slice)
   const bondTaxablePortion = Math.min(bondIncome, savingsAfterAllowance)
@@ -289,9 +306,11 @@ export function calculateTax(
     const scale = bondTaxablePortion / bondIncome  // fraction of bond gains actually taxed
 
     let reliefSum = 0
+    let onshoreTaxedGain = 0
     for (const s of bondSources) {
       const years = Math.max(1, s.yearsHeld ?? 1)
       const taxedGain = s.grossAmount * scale
+      if (s.bondType !== 'offshore') onshoreTaxedGain += taxedGain
       const slice = taxedGain / years
       // Per HMRC IPTM3820: base for this bond includes all OTHER bonds' gains
       const base = baseOffset + (bondTaxablePortion - taxedGain)
@@ -302,6 +321,14 @@ export function calculateTax(
     // Relief cannot exceed the tax actually charged on the bond portion
     const taxOnBondPortion = applyBands(englandAdjustedBands, bondTaxablePortion, baseOffset)
     bondTopSlicingRelief = Math.min(reliefSum, taxOnBondPortion)
+    // Onshore credit: 20% of the taxed onshore gain, capped (non-refundable) at the
+    // tax still charged on the onshore share after top-slicing relief. Pragmatic
+    // proration of HMRC's ordering when onshore and offshore bonds are mixed.
+    const onshoreShare = bondTaxablePortion > 0 ? onshoreTaxedGain / bondTaxablePortion : 0
+    bondBasicRateCredit = Math.min(
+      0.20 * onshoreTaxedGain,
+      Math.max(0, (taxOnBondPortion - bondTopSlicingRelief) * onshoreShare),
+    )
   }
 
   // --- EIS / SEIS / VCT Investment Relief ---
@@ -319,7 +346,7 @@ export function calculateTax(
     Math.min(settings.vctInvestment ?? 0, VCT_INVESTMENT_LIMIT) * VCT_RELIEF_RATE,
     Math.max(0, incomeTax - seisRelief - eisRelief),
   )
-  const incomeTaxAfterRelief = Math.max(0, incomeTax - seisRelief - eisRelief - vctRelief - bondTopSlicingRelief)
+  const incomeTaxAfterRelief = Math.max(0, incomeTax - seisRelief - eisRelief - vctRelief - bondTopSlicingRelief - bondBasicRateCredit)
 
   // --- Dividend Tax ---
   // Dividends are taxed after all other income, using remaining band space on
@@ -410,7 +437,7 @@ export function calculateTax(
   let studentLoan = 0
   const sl = rules.studentLoan
   const earnedForSL = Math.max(0, effectiveEmploymentGross + selfEmploymentProfit - pensionDeduction)
-  const unearnedForSL = dividendGross + savingsGross + bondIncome + rentalNetBeforeMortgage
+  const unearnedForSL = dividendGross + savingsGross + bondIncome + rentalNetBeforeMortgage + pensionIncomeGross
   const incomeForSL = earnedForSL + (unearnedForSL > 2000 ? unearnedForSL : 0)
   if (settings.studentLoanPlan === 'plan1' && incomeForSL > sl.plan1Threshold) {
     studentLoan = (incomeForSL - sl.plan1Threshold) * sl.plan1Rate
@@ -418,6 +445,8 @@ export function calculateTax(
     studentLoan = (incomeForSL - sl.plan2Threshold) * sl.plan2Rate
   } else if (settings.studentLoanPlan === 'plan4' && incomeForSL > sl.plan4Threshold) {
     studentLoan = (incomeForSL - sl.plan4Threshold) * sl.plan4Rate
+  } else if (settings.studentLoanPlan === 'plan5' && incomeForSL > sl.plan5Threshold) {
+    studentLoan = (incomeForSL - sl.plan5Threshold) * sl.plan5Rate
   } else if (settings.studentLoanPlan === 'postgrad' && incomeForSL > sl.postgradThreshold) {
     studentLoan = (incomeForSL - sl.postgradThreshold) * sl.postgradRate
   }
@@ -549,7 +578,7 @@ export function calculateTax(
   // --- Totals ---
   // Child Benefit received is included in grossIncome (it's actual money in);
   // HICBC is included in totalTax so netIncome reflects the true financial position.
-  const grossIncome = employmentGross + selfEmploymentGross + rentalGross + dividendGross + bondIncome + savingsGross + childBenefitAnnual
+  const grossIncome = employmentGross + selfEmploymentGross + rentalGross + dividendGross + bondIncome + savingsGross + pensionIncomeGross + childBenefitAnnual
   const totalTax = Math.max(
     0,
     incomeTaxAfterRelief + nationalInsurance + dividendTax - mortgageTaxCredit
@@ -621,7 +650,9 @@ export function calculateTax(
     badrTax,
     bondIncome,
     bondTopSlicingRelief,
+    bondBasicRateCredit,
     savingsIncome: savingsGross,
+    pensionIncomeGross,
     savingsTax,
     savingsAllowanceApplied,
     startingSavingsRateApplied,

@@ -59,8 +59,9 @@ export const IncomeAndTaxCharts = memo(function IncomeAndTaxCharts({ showMonthly
     { name: 'Employment', value: v(t.employmentGross) },
     { name: 'Self-Employment', value: v(t.selfEmploymentGross) },
     { name: 'Rental', value: v(t.rentalGross) },
+    { name: 'Pension', value: v(t.pensionIncomeGross) },
     { name: 'Dividends', value: v(t.dividendGross) },
-  ].filter(d => d.value > 0), [v, t.employmentGross, t.selfEmploymentGross, t.rentalGross, t.dividendGross])
+  ].filter(d => d.value > 0), [v, t.employmentGross, t.selfEmploymentGross, t.rentalGross, t.pensionIncomeGross, t.dividendGross])
 
   const taxData = useMemo<ChartEntry[]>(() => [
     { name: 'Income Tax', value: v(t.incomeTax) },

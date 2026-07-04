@@ -139,6 +139,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
     const rent = incomeSources.filter(s => s.type === 'rental')
     const div = incomeSources.filter(s => s.type === 'dividend' && !s.fromISA)
     const sav = incomeSources.filter(s => s.type === 'savings')
+    const pen = incomeSources.filter(s => s.type === 'pension')
 
     const ssItems = emp.flatMap(s =>
       (s.salarySacrificeItems ?? []).map(i => ({
@@ -172,7 +173,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
     const taperReduction = Math.max(0, Math.min(rules.personalAllowance, Math.floor(Math.max(0, t.adjustedNetIncome - rules.personalAllowanceTaperThreshold) / 2)))
 
     // IT breakdown
-    const grossIT = t.incomeTax + t.seisRelief + t.eisRelief + t.vctRelief + t.bondTopSlicingRelief
+    const grossIT = t.incomeTax + t.seisRelief + t.eisRelief + t.vctRelief + t.bondTopSlicingRelief + t.bondBasicRateCredit
     const nonSavingsIT = grossIT - t.savingsTax
 
     // Student loan info
@@ -180,11 +181,12 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
     const slInfo = settings.studentLoanPlan === 'plan1' ? { name: 'Plan 1', threshold: sl.plan1Threshold, rate: sl.plan1Rate }
       : settings.studentLoanPlan === 'plan2' ? { name: 'Plan 2', threshold: sl.plan2Threshold, rate: sl.plan2Rate }
       : settings.studentLoanPlan === 'plan4' ? { name: 'Plan 4', threshold: sl.plan4Threshold, rate: sl.plan4Rate }
+      : settings.studentLoanPlan === 'plan5' ? { name: 'Plan 5', threshold: sl.plan5Threshold, rate: sl.plan5Rate }
       : settings.studentLoanPlan === 'postgrad' ? { name: 'Postgrad', threshold: sl.postgradThreshold, rate: sl.postgradRate }
       : null
 
     return {
-      emp, se, rent, div, sav, ssItems, bikItems, expItems,
+      emp, se, rent, div, sav, pen, ssItems, bikItems, expItems,
       ni4Lower, ni4Upper,
       sipp, employeePension, taperReduction,
       nonSavingsIT, grossIT, slInfo,
@@ -336,6 +338,11 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
                   )}
                 </>
               )}
+              {t.pensionIncomeGross > 0 && (
+                <Row label="Pension income" value={formatCurrency(v(t.pensionIncomeGross))} showBonusCol={showBonusCol}
+                  tooltip={srcTip(td.pen)}
+                />
+              )}
               {t.dividendGross > 0 && (
                 <Row label="Dividend income" value={formatCurrency(v(t.dividendGross))} showBonusCol={showBonusCol}
                   tooltip={srcTip(td.div)}
@@ -380,10 +387,11 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               <Separator className="my-2" />
               <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">Tax & National Insurance</p>
               <Row label="Income Tax" value={showBonusCol ? formatCurrency(v(t.incomeTax - (bonusMarginal?.incomeTax ?? 0))) : formatCurrency(v(t.incomeTax))} highlight="red" showBonusCol={showBonusCol} bonusValue={bonusMarginal?.incomeTax ? formatCurrency(bonusMarginal.incomeTax) : undefined}
-                tooltip={(t.savingsTax > 0 || t.bondTopSlicingRelief > 0 || t.seisRelief + t.eisRelief + t.vctRelief > 0) ? <TooltipBreakdown items={[
+                tooltip={(t.savingsTax > 0 || t.bondTopSlicingRelief > 0 || t.bondBasicRateCredit > 0 || t.seisRelief + t.eisRelief + t.vctRelief > 0) ? <TooltipBreakdown items={[
                   { label: 'Non-savings income tax', value: formatCurrency(v(td.nonSavingsIT)) },
                   ...(t.savingsTax > 0 ? [{ label: 'Savings income tax', value: formatCurrency(v(t.savingsTax)) }] : []),
                   ...(t.bondTopSlicingRelief > 0 ? [{ label: 'Top-slicing relief', value: `−${formatCurrency(v(t.bondTopSlicingRelief))}` }] : []),
+                  ...(t.bondBasicRateCredit > 0 ? [{ label: 'Onshore bond basic-rate credit', value: `−${formatCurrency(v(t.bondBasicRateCredit))}` }] : []),
                   ...(t.seisRelief > 0 ? [{ label: 'SEIS relief', value: `−${formatCurrency(v(t.seisRelief))}` }] : []),
                   ...(t.eisRelief > 0 ? [{ label: 'EIS relief', value: `−${formatCurrency(v(t.eisRelief))}` }] : []),
                   ...(t.vctRelief > 0 ? [{ label: 'VCT relief', value: `−${formatCurrency(v(t.vctRelief))}` }] : []),

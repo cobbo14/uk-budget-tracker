@@ -44,12 +44,14 @@ interface FormState {
   allowableExpenses: string
   mortgageInterestAnnual: string
   rentalExpenses: string
+  usesRentARoom: boolean
   usesTradingAllowance: boolean
   isProjection: boolean
   ytdAmount: string
   ytdMonths: string
   fromISA: boolean
   yearsHeld: string
+  bondType: 'onshore' | 'offshore'
   salarySacrificeItems: SalarySacrificeFormItem[]
   benefitsInKindItems: BenefitInKindFormItem[]
   employerPensionAmount: string
@@ -68,8 +70,10 @@ const DEFAULT_FORM: FormState = {
   ytdMonths: '',
   mortgageInterestAnnual: '',
   rentalExpenses: '',
+  usesRentARoom: false,
   fromISA: false,
   yearsHeld: '',
+  bondType: 'onshore',
   salarySacrificeItems: [],
   benefitsInKindItems: [],
   employerPensionAmount: '',
@@ -109,6 +113,7 @@ const INCOME_TYPE_LABELS: Record<IncomeType, string> = {
   rental: 'Rental Income',
   bond: 'Bond Gain — Investment Bond',
   savings: 'Savings / Interest',
+  pension: 'Pension Income',
 }
 
 function getElapsedTaxMonths(taxYear: string): number {
@@ -121,7 +126,7 @@ function getElapsedTaxMonths(taxYear: string): number {
 }
 
 export function IncomeFormDialog() {
-  const { state, dispatch, getIncomeById } = useBudget()
+  const { state, dispatch, getIncomeById, rules } = useBudget()
   const employeeMode = useEmployeeMode()
   const { incomeDialogMode, editingIncomeId } = state.ui
   const open = incomeDialogMode !== 'none'
@@ -153,8 +158,10 @@ export function IncomeFormDialog() {
           ytdMonths: source.ytdMonths != null ? String(source.ytdMonths) : '',
           mortgageInterestAnnual: source.mortgageInterestAnnual != null ? String(source.mortgageInterestAnnual) : '',
           rentalExpenses: source.rentalExpenses != null ? String(source.rentalExpenses) : '',
+          usesRentARoom: source.usesRentARoom ?? false,
           fromISA: source.fromISA ?? false,
           yearsHeld: source.yearsHeld != null ? String(source.yearsHeld) : '',
+          bondType: source.bondType ?? 'onshore',
           salarySacrificeItems: (source.salarySacrificeItems ?? []).map(i => ({
             id: i.id,
             type: i.type,
@@ -203,7 +210,7 @@ export function IncomeFormDialog() {
       const exp = parseFloat(form.allowableExpenses)
       if (isNaN(exp) || exp < 0) errs.allowableExpenses = 'Enter a valid amount'
     }
-    if (form.type === 'rental') {
+    if (form.type === 'rental' && !form.usesRentARoom) {
       if (form.mortgageInterestAnnual) {
         const mi = parseFloat(form.mortgageInterestAnnual)
         if (isNaN(mi) || mi < 0) errs.mortgageInterestAnnual = 'Enter a valid amount'
@@ -263,12 +270,14 @@ export function IncomeFormDialog() {
       isProjection: isSEProjection || undefined,
       ytdAmount: isSEProjection ? ytdAmountNum : undefined,
       ytdMonths: isSEProjection ? ytdMonthsNum : undefined,
-      mortgageInterestAnnual: form.type === 'rental' && form.mortgageInterestAnnual
+      mortgageInterestAnnual: form.type === 'rental' && !form.usesRentARoom && form.mortgageInterestAnnual
         ? parseFloat(form.mortgageInterestAnnual) : undefined,
-      rentalExpenses: form.type === 'rental' && form.rentalExpenses
+      rentalExpenses: form.type === 'rental' && !form.usesRentARoom && form.rentalExpenses
         ? parseFloat(form.rentalExpenses) : undefined,
+      usesRentARoom: form.type === 'rental' && form.usesRentARoom ? true : undefined,
       fromISA: form.type === 'dividend' || form.type === 'savings' ? form.fromISA : undefined,
       yearsHeld: form.type === 'bond' && form.yearsHeld ? parseInt(form.yearsHeld) || undefined : undefined,
+      bondType: form.type === 'bond' ? form.bondType : undefined,
       salarySacrificeItems: form.type === 'employment' && form.salarySacrificeItems.length > 0
         ? form.salarySacrificeItems.map(i => ({
             id: i.id,
@@ -377,9 +386,14 @@ export function IncomeFormDialog() {
           ) : (
             <div className="grid gap-1.5">
               <Label htmlFor="income-amount">
-                {form.type === 'dividend' ? 'Annual Dividend Income (£)' : 'Annual Gross Income (£)'}
+                {form.type === 'dividend' ? 'Annual Dividend Income (£)'
+                  : form.type === 'pension' ? 'Annual Taxable Pension Income (£)'
+                  : 'Annual Gross Income (£)'}
                 {form.type === 'bond' && (
                   <HelpTooltip content="Investment bond gains (e.g. from insurance bonds). Top-slicing relief divides the gain by years held to reduce the effective tax rate." />
+                )}
+                {form.type === 'pension' && (
+                  <HelpTooltip content="State pension, defined benefit pensions, annuities and taxable drawdown withdrawals. Taxed as income — no National Insurance is due on pension income." />
                 )}
               </Label>
               <Input
@@ -393,6 +407,18 @@ export function IncomeFormDialog() {
                 aria-describedby={errors.grossAmount ? "income-amount-error" : undefined}
               />
               {errors.grossAmount && <p id="income-amount-error" role="alert" className="text-xs text-destructive">{errors.grossAmount}</p>}
+              {form.type === 'pension' && (
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => set('grossAmount', String(rules.statePensionFullAnnual))}
+                  >
+                    Use full State Pension ({formatCurrency(rules.statePensionFullAnnual)})
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -761,8 +787,30 @@ export function IncomeFormDialog() {
             </div>
           )}
 
-          {/* Rental: mortgage interest + expenses */}
+          {/* Rental: Rent-a-Room relief toggle */}
           {form.type === 'rental' && (
+            <div className="grid gap-1.5">
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="income-rent-a-room"
+                  checked={form.usesRentARoom}
+                  onCheckedChange={v => set('usesRentARoom', v)}
+                />
+                <Label htmlFor="income-rent-a-room">
+                  Rent-a-Room relief (lodger in your own home)
+                  <HelpTooltip content="First £7,500 of gross rent is tax-free. Replaces allowable expenses and the mortgage-interest credit — best when your expenses are under £7,500. Halved to £3,750 if someone else also receives income from the same property." />
+                </Label>
+              </div>
+              {form.usesRentARoom && (
+                <p className="text-xs text-muted-foreground">
+                  Only rent above £7,500/year is taxed. Expenses and mortgage interest cannot also be claimed for this source.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Rental: mortgage interest + expenses */}
+          {form.type === 'rental' && !form.usesRentARoom && (
             <>
               <div className="grid gap-1.5">
                 <Label htmlFor="income-mortgage">Annual Mortgage Interest (£, optional)</Label>
@@ -805,6 +853,28 @@ export function IncomeFormDialog() {
                 onCheckedChange={v => set('fromISA', v)}
               />
               <Label htmlFor="income-isa">From ISA (tax-free, excluded from calculations)</Label>
+            </div>
+          )}
+
+          {/* Bond: onshore / offshore */}
+          {form.type === 'bond' && (
+            <div className="grid gap-1.5">
+              <Label>
+                Bond type
+                <HelpTooltip content="Onshore UK insurance bonds: basic-rate tax is treated as already paid inside the fund, so a 20% credit applies. Offshore bonds have no credit — the full gain is taxable." />
+              </Label>
+              <Select
+                value={form.bondType}
+                onValueChange={v => set('bondType', v as 'onshore' | 'offshore')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="onshore">Onshore (UK bond — 20% credit)</SelectItem>
+                  <SelectItem value="offshore">Offshore (no credit)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
 

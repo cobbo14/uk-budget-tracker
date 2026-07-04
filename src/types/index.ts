@@ -1,4 +1,4 @@
-export type IncomeType = 'employment' | 'self-employment' | 'dividend' | 'rental' | 'bond' | 'savings'
+export type IncomeType = 'employment' | 'self-employment' | 'dividend' | 'rental' | 'bond' | 'savings' | 'pension'
 
 export type SalarySacrificeType = 'pension' | 'cycleToWork' | 'electricVehicle' | 'other'
 
@@ -31,7 +31,7 @@ export interface CustomExpenseCategory {
 
 export type ExpenseFrequency = 'weekly' | 'monthly' | 'annual'
 
-export type StudentLoanPlan = 'none' | 'plan1' | 'plan2' | 'plan4' | 'postgrad'
+export type StudentLoanPlan = 'none' | 'plan1' | 'plan2' | 'plan4' | 'plan5' | 'postgrad'
 
 export interface ISAContributions {
   cashISA: number
@@ -55,10 +55,16 @@ export interface IncomeSource {
   // Rental
   mortgageInterestAnnual?: number
   rentalExpenses?: number
+  // Rental: Rent-a-Room relief (lodger in your own home) — replaces expenses
+  // and the mortgage-interest credit for this source
+  usesRentARoom?: boolean
   // Dividend / savings: income held inside an ISA (excluded from all tax)
   fromISA?: boolean
   // Bond gains: complete years held (for top-slicing relief)
   yearsHeld?: number
+  // Bond gains: onshore UK bonds carry a non-refundable 20% basic-rate credit
+  // (tax paid within the fund); offshore bonds do not. Defaults to onshore.
+  bondType?: 'onshore' | 'offshore'
   // Employment: one-off bonus (annual, on top of base salary)
   bonus?: number
   // Employment: salary sacrifice
@@ -307,8 +313,10 @@ export interface TaxSummary {
   // Bond income top-slicing
   bondIncome: number
   bondTopSlicingRelief: number
+  bondBasicRateCredit: number
   // Personal Savings Allowance
   savingsIncome: number
+  pensionIncomeGross: number
   savingsTax: number
   savingsAllowanceApplied: number
   // Starting rate for savings (0% on up to £5,000, eroded by non-savings income)

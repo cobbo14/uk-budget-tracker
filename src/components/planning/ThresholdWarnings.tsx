@@ -5,11 +5,11 @@ import { getThresholdAlerts } from '@/utils/planningUtils'
 import { cn } from '@/lib/utils'
 
 export function ThresholdWarnings() {
-  const { taxSummary, rules } = useBudget()
+  const { taxSummary, rules, settings } = useBudget()
 
   if (taxSummary.grossIncome === 0) return null
 
-  const alerts = getThresholdAlerts(taxSummary, rules)
+  const alerts = getThresholdAlerts(taxSummary, rules, settings)
   // Only show thresholds that are relevant (within £50k below or any amount over)
   const relevant = alerts.filter(a => a.gap <= 50000)
 

@@ -36,14 +36,18 @@ const rules: TaxRules = {
   dividendHigherRate: 0.3375,
   dividendAdditionalRate: 0.3935,
   propertyAllowance: 1000,
+  rentARoomRelief: 7500,
   studentLoan: {
     plan1Threshold: 26065,
     plan2Threshold: 28470,
     plan4Threshold: 32745,
+    // Plan 5 repayments only began 6 Apr 2026 — no repayments due in 2025/26
+    plan5Threshold: Infinity,
     postgradThreshold: 21000,
     plan1Rate: 0.09,
     plan2Rate: 0.09,
     plan4Rate: 0.09,
+    plan5Rate: 0.09,
     postgradRate: 0.06,
   },
   cgtAnnualExemptAmount: 3000,

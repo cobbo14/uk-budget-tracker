@@ -15,6 +15,7 @@ const TYPE_LABELS: Record<IncomeSource['type'], string> = {
   rental: 'Rental',
   bond: 'Bond',
   savings: 'Savings Interest',
+  pension: 'Pension',
 }
 
 interface IncomeCardProps {
@@ -22,7 +23,7 @@ interface IncomeCardProps {
 }
 
 export function IncomeCard({ source }: IncomeCardProps) {
-  const { dispatch } = useBudget()
+  const { dispatch, rules } = useBudget()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const seDeduction = source.usesTradingAllowance
@@ -31,7 +32,9 @@ export function IncomeCard({ source }: IncomeCardProps) {
   const netGross = source.type === 'self-employment'
     ? source.grossAmount - seDeduction
     : source.type === 'rental'
-      ? source.grossAmount - (source.rentalExpenses ?? 0)
+      ? source.usesRentARoom
+        ? Math.max(0, source.grossAmount - rules.rentARoomRelief)
+        : source.grossAmount - (source.rentalExpenses ?? 0)
       : source.grossAmount
 
   const totalSacrifice = (source.salarySacrificeItems ?? []).reduce((sum, i) =>
@@ -48,6 +51,10 @@ export function IncomeCard({ source }: IncomeCardProps) {
           <span className="font-medium truncate">{source.name}</span>
           <Badge variant="secondary" className="shrink-0">{TYPE_LABELS[source.type]}</Badge>
           {source.fromISA && <Badge variant="outline" className="shrink-0 text-emerald-600 border-emerald-300">ISA</Badge>}
+          {source.usesRentARoom && <Badge variant="outline" className="shrink-0 text-emerald-600 border-emerald-300">Rent-a-Room</Badge>}
+          {source.type === 'bond' && (
+            <Badge variant="outline" className="shrink-0">{source.bondType === 'offshore' ? 'Offshore' : 'Onshore'}</Badge>
+          )}
           {source.isProjection && <Badge variant="outline" className="shrink-0 text-blue-600 border-blue-300">Projected</Badge>}
         </div>
         <div className="mt-1 text-sm text-muted-foreground flex flex-wrap gap-x-1.5">
@@ -67,6 +74,7 @@ export function IncomeCard({ source }: IncomeCardProps) {
           )}
           {source.type === 'rental' && (
             <>
+              {source.usesRentARoom && <span>· Taxable after relief: {formatCurrency(netGross)}</span>}
               {source.rentalExpenses != null && source.rentalExpenses > 0 && <span>· Expenses: {formatCurrency(source.rentalExpenses)}</span>}
               {source.mortgageInterestAnnual != null && source.mortgageInterestAnnual > 0 && <span>· Mortgage interest: {formatCurrency(source.mortgageInterestAnnual)}</span>}
             </>

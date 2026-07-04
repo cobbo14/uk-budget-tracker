@@ -40,6 +40,31 @@ export function ReduceTaxAbove100k() {
         </CardContent>
       </Card>
 
+      {/* Childcare cliff edge */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Parents: The £100k Childcare Cliff Edge</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            For parents of young children the £100,000 threshold is even harsher &mdash; it is
+            a <strong>cliff edge, not a taper</strong>. The moment adjusted net income of either
+            parent exceeds £100,000, the household loses:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Tax-Free Childcare</strong> &mdash; worth up to £2,000 per child per year (£4,000 for a disabled child)</li>
+            <li><strong>30 free hours</strong> of childcare per week for 3&ndash;4 year olds (the universal 15 hours remain)</li>
+          </ul>
+          <p>
+            Earning £1 over £100,000 can therefore cost a family with two young children
+            <strong> thousands of pounds</strong> &mdash; an effective marginal rate far above
+            100%. A pension contribution that brings adjusted net income back below £100,000
+            restores full eligibility. The Planning tab shows a threshold warning with the
+            contribution needed.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Marginal rate table */}
       <Card>
         <CardHeader>

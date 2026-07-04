@@ -32,6 +32,8 @@ export function generateCSV(state: AppState, taxSummary: TaxSummary, rules?: Tax
     let net = src.grossAmount
     if (src.type === 'self-employment') {
       net = Math.max(0, src.grossAmount - (src.usesTradingAllowance ? Math.min(1000, src.grossAmount) : (src.allowableExpenses ?? 0)))
+    } else if (src.type === 'rental' && src.usesRentARoom) {
+      net = Math.max(0, src.grossAmount - taxRules.rentARoomRelief)
     } else if (src.type === 'rental') {
       // Property allowance applies only when it beats actual expenses and no
       // mortgage interest is claimed (mirrors the tax engine)

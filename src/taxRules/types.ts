@@ -33,15 +33,18 @@ export interface TaxRules {
   dividendAdditionalRate: number
   // Rental
   propertyAllowance: number
+  rentARoomRelief: number // £7,500 (frozen since 2016); halved if income shared
   // Student Loans
   studentLoan: {
     plan1Threshold: number
     plan2Threshold: number
     plan4Threshold: number
+    plan5Threshold: number
     postgradThreshold: number
     plan1Rate: number
     plan2Rate: number
     plan4Rate: number
+    plan5Rate: number
     postgradRate: number
   }
   // Capital Gains Tax

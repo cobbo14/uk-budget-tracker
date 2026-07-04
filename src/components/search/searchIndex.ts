@@ -25,6 +25,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { id: 'income-rental', label: 'Rental Income', description: 'Property and landlord income', keywords: ['property', 'landlord', 'rent', 'rental'], tab: 'income' },
   { id: 'income-dividends', label: 'Dividend Income', description: 'Dividends from shares or a company', keywords: ['dividends', 'shares', 'company director'], tab: 'income' },
   { id: 'income-savings', label: 'Savings / Bond Interest', description: 'Interest from savings or bonds', keywords: ['interest', 'bonds', 'savings', 'bank'], tab: 'income' },
+  { id: 'income-pension', label: 'Pension Income', description: 'State pension, DB pensions, annuities, drawdown', keywords: ['pension income', 'state pension', 'annuity', 'drawdown', 'retirement income'], tab: 'income' },
   { id: 'add-income', label: 'Add Income Source', description: 'Add a new income source', keywords: ['add', 'new income', 'create'], tab: 'income', targetSelector: '[data-tour="add-income-btn"]' },
 
   // ── Expenses ──
@@ -56,7 +57,7 @@ export const SEARCH_INDEX: SearchItem[] = [
   { id: 'settings-tax-year', label: 'Tax Year Setting', description: 'Select tax year for calculations', keywords: ['tax year', '2025', '2026', '2027'], tab: 'settings', targetSelector: '[data-search="settings-tax-year"]' },
   { id: 'settings-scottish', label: 'Scottish Taxpayer', description: 'Toggle Scottish income tax rates', keywords: ['scotland', 'scottish rates', 'scottish taxpayer'], tab: 'settings', targetSelector: '[data-search="settings-scottish"]' },
   { id: 'settings-pension', label: 'Pension Contributions', description: 'Employee, employer, and SIPP pension setup', keywords: ['pension', 'employee', 'employer', 'sipp', 'contribution'], tab: 'settings', targetSelector: '[data-search="settings-pension"]' },
-  { id: 'settings-student-loan', label: 'Student Loan Plan', description: 'Select repayment plan (1, 2, 4, Postgrad)', keywords: ['student loan', 'plan 1', 'plan 2', 'plan 4', 'postgrad', 'repayment'], tab: 'settings', targetSelector: '[data-search="settings-student-loan"]' },
+  { id: 'settings-student-loan', label: 'Student Loan Plan', description: 'Select repayment plan (1, 2, 4, 5, Postgrad)', keywords: ['student loan', 'plan 1', 'plan 2', 'plan 4', 'plan 5', 'postgrad', 'repayment'], tab: 'settings', targetSelector: '[data-search="settings-student-loan"]' },
   { id: 'settings-gift-aid', label: 'Gift Aid Donations', description: 'Annual Gift Aid donations', keywords: ['gift aid', 'charity', 'donations'], tab: 'settings', targetSelector: '[data-search="settings-gift-aid"]' },
   { id: 'settings-marriage', label: 'Marriage Allowance', description: 'Transfer or receive personal allowance', keywords: ['marriage', 'civil partner', 'spouse', 'transfer allowance'], tab: 'settings', targetSelector: '[data-search="settings-marriage"]' },
   { id: 'settings-child-benefit', label: 'Child Benefit / HICBC', description: 'Child Benefit claiming and HICBC', keywords: ['child benefit', 'hicbc', 'children', 'high income'], tab: 'settings', targetSelector: '[data-search="settings-child-benefit"]' },

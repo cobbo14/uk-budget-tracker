@@ -22,6 +22,7 @@ const STUDENT_LOAN_LABELS: Record<StudentLoanPlan, string> = {
   plan1: 'Plan 1 (pre-2012)',
   plan2: 'Plan 2 (post-2012)',
   plan4: 'Plan 4 (Scotland)',
+  plan5: 'Plan 5 (England/Wales, started uni Sept 2023+)',
   postgrad: 'Postgraduate Loan',
 }
 
@@ -328,6 +329,9 @@ export function SettingsView() {
               {settings.studentLoanPlan === 'plan1' && `Repay 9% above £${rules.studentLoan.plan1Threshold.toLocaleString()}/year`}
               {settings.studentLoanPlan === 'plan2' && `Repay 9% above £${rules.studentLoan.plan2Threshold.toLocaleString()}/year`}
               {settings.studentLoanPlan === 'plan4' && `Repay 9% above £${rules.studentLoan.plan4Threshold.toLocaleString()}/year`}
+              {settings.studentLoanPlan === 'plan5' && (Number.isFinite(rules.studentLoan.plan5Threshold)
+                ? `Repay 9% above £${rules.studentLoan.plan5Threshold.toLocaleString()}/year`
+                : 'No repayments due this year — Plan 5 repayments began 6 April 2026')}
               {settings.studentLoanPlan === 'postgrad' && `Repay 6% above £${rules.studentLoan.postgradThreshold.toLocaleString()}/year`}
             </p>
           )}

@@ -21,6 +21,7 @@ export interface ThresholdAlert {
 export function getThresholdAlerts(
   t: TaxSummary,
   rules: TaxRules,
+  settings?: AppSettings,
 ): ThresholdAlert[] {
   // adjustedNetIncome now follows the HMRC definition: all income less gross
   // relief-at-source pension and grossed-up Gift Aid (dividends/savings included)
@@ -45,6 +46,16 @@ export function getThresholdAlerts(
         threshold: taperStart + rules.personalAllowance,
       },
     )
+  }
+
+  // Childcare cliff edge: Tax-Free Childcare and 30 free hours are lost entirely
+  // (not tapered) once adjusted net income exceeds £100,000
+  if ((settings?.numberOfChildren ?? 0) > 0) {
+    thresholds.push({
+      name: 'Childcare Support — £100k Cliff Edge',
+      description: 'Tax-Free Childcare (up to £2,000 per child per year) and 30 free hours are lost entirely if adjusted net income exceeds £100,000 — a cliff edge, not a taper. A pension contribution can restore eligibility.',
+      threshold: taperStart,
+    })
   }
 
   // Only show HICBC threshold if the user is claiming Child Benefit
