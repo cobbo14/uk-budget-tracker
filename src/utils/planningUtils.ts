@@ -172,10 +172,10 @@ export function getPensionScenarios(
     }
   }
 
-  // Add AA limit candidate — max employee contribution before breaching annual allowance
-  const employerPension = settings.employerPensionContributionType === 'percentage'
-    ? pensionEligibleIncome * ((settings.employerPensionContributionValue ?? 0) / 100)
-    : (settings.employerPensionContributionValue ?? 0)
+  // Add AA limit candidate — max employee contribution before breaching annual
+  // allowance. Employer funding comes from the engine so every contribution
+  // basis (flat / percentage / qualifying earnings) is resolved consistently.
+  const employerPension = baseSummary.employerPensionFunding
   const carryForward = settings.pensionCarryForward ?? { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 }
   const totalCarryForward = (carryForward.threeYearsAgo ?? 0) + (carryForward.twoYearsAgo ?? 0) + (carryForward.oneYearAgo ?? 0)
   const aaEmployeeLimit = Math.max(0, baseSummary.effectiveAnnualAllowance + totalCarryForward - employerPension)

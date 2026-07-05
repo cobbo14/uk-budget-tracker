@@ -64,6 +64,10 @@ const rules: TaxRules = {
   hicbcTaperEnd: 80000,
   // Blind Person's Allowance (2026/27 confirmed: up from £3,130)
   blindPersonsAllowance: 3250,
+  // Auto-enrolment qualifying earnings band (2026/27: frozen at 2025/26 levels
+  // per the DWP December 2025 review)
+  qualifyingEarningsLower: 6240,
+  qualifyingEarningsUpper: 50270,
   // Pension Annual Allowance
   pensionAnnualAllowance: 60000,
   pensionAnnualAllowanceMinimum: 10000,

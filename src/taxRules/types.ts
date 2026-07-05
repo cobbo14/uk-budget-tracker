@@ -58,6 +58,9 @@ export interface TaxRules {
   hicbcTaperEnd: number    // income where full benefit is clawed back (£80,000)
   // Blind Person's Allowance
   blindPersonsAllowance: number
+  // Auto-enrolment qualifying earnings band (per employment)
+  qualifyingEarningsLower: number         // £6,240
+  qualifyingEarningsUpper: number         // £50,270
   // Pension Annual Allowance
   pensionAnnualAllowance: number          // standard AA (£60,000)
   pensionAnnualAllowanceMinimum: number   // minimum after taper (£10,000)

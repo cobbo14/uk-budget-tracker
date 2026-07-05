@@ -110,7 +110,9 @@ export function mergeWithDefaults(partial: Partial<AppState>): AppState {
       ? s.grossAmount * (s.employerPensionAmount / 100)
       : s.employerPensionAmount)
   }, 0)
-  if (perSourceEmployer > 0) {
+  // Legacy data predates the 'qualifying' basis, so only fold when the global
+  // setting is flat or percentage — never overwrite a qualifying-earnings setup
+  if (perSourceEmployer > 0 && merged.settings.employerPensionContributionType !== 'qualifying') {
     let globalFlat: number
     if (merged.settings.employerPensionContributionType === 'percentage'
         && merged.settings.employerPensionContributionValue > 0) {

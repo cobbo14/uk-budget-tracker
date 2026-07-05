@@ -288,6 +288,41 @@ describe('pension contributions £90k–£150k', () => {
     expect(withCF.annualAllowanceCharge).toBe(0)
   })
 
+  it('employer contributions on qualifying earnings use the £6,240–£50,270 band per job', () => {
+    const qualifying = (value: number) => ({
+      ...baseSettings,
+      employerPensionContributionType: 'qualifying' as const,
+      employerPensionContributionValue: value,
+    })
+    // £95,000 salary: qualifying earnings capped at £50,270 − £6,240 = £44,030
+    const single = calculateTax([job(95000)], qualifying(3), rules2627)
+    expect(single.employerPensionFunding).toBeCloseTo(44030 * 0.03, 2) // £1,320.90
+    expect(single.totalPensionFunding).toBeCloseTo(1320.90, 2)
+    // Employer contributions never change the employee's own tax
+    const base = calculateTax([job(95000)], baseSettings, rules2627)
+    expect(single.incomeTax).toBeCloseTo(base.incomeTax, 2)
+    expect(single.nationalInsurance).toBeCloseTo(base.nationalInsurance, 2)
+
+    // Two jobs get a band each: £44,030 + (£30,000 − £6,240) = £67,790
+    const twoJobs = calculateTax(
+      [job(95000), { id: '2', name: 'Second job', type: 'employment', grossAmount: 30000 }],
+      qualifying(3), rules2627,
+    )
+    expect(twoJobs.employerPensionFunding).toBeCloseTo(67790 * 0.03, 2) // £2,033.70
+
+    // A job paying under £6,240 has no qualifying earnings
+    const tinyJob = calculateTax(
+      [job(95000), { id: '2', name: 'Side job', type: 'employment', grossAmount: 5000 }],
+      qualifying(3), rules2627,
+    )
+    expect(tinyJob.employerPensionFunding).toBeCloseTo(44030 * 0.03, 2)
+
+    // Salary sacrifice reduces qualifying pay: £95,000 − £50,000 = £45,000
+    // → £45,000 − £6,240 = £38,760
+    const sacrificed = calculateTax([sacrificeJob(95000, 50000)], qualifying(3), rules2627)
+    expect(sacrificed.employerPensionFunding).toBeCloseTo(38760 * 0.03, 2) // £1,162.80
+  })
+
   it('caps a percentage net-pay contribution at 100% of relevant earnings', () => {
     const r = calculateTax(
       [job(110000)],

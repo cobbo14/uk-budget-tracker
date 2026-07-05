@@ -518,6 +518,14 @@ export function calculateTax(
   let employerPension = 0
   if (settings.employerPensionContributionType === 'percentage') {
     employerPension = pensionEligibleIncome * ((settings.employerPensionContributionValue ?? 0) / 100)
+  } else if (settings.employerPensionContributionType === 'qualifying') {
+    // Auto-enrolment basis: percentage of each job's qualifying earnings —
+    // the band between £6,240 and £50,270 of post-sacrifice pay
+    const qualifyingEarnings = employmentSources.reduce((sum, s) => {
+      const pay = Math.max(0, s.grossAmount + (s.bonus ?? 0) - sourceSalarySacrifice(s))
+      return sum + Math.max(0, Math.min(pay, rules.qualifyingEarningsUpper) - rules.qualifyingEarningsLower)
+    }, 0)
+    employerPension = qualifyingEarnings * ((settings.employerPensionContributionValue ?? 0) / 100)
   } else {
     employerPension = settings.employerPensionContributionValue ?? 0
   }

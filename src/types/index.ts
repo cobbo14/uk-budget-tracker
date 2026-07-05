@@ -179,7 +179,9 @@ export interface AppSettings {
   pensionContributionType: 'none' | 'percentage' | 'flat'
   pensionContributionValue: number
   // Employer pension contributions (not salary sacrifice — recorded separately)
-  employerPensionContributionType: 'flat' | 'percentage'
+  // 'qualifying' = percentage of auto-enrolment qualifying earnings
+  // (the £6,240–£50,270 band of each job's pay)
+  employerPensionContributionType: 'flat' | 'percentage' | 'qualifying'
   employerPensionContributionValue: number
   // SIPP (Self-Invested Personal Pension) — annual contribution in £
   sippContribution: number

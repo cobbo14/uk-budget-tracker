@@ -319,25 +319,50 @@ export function SettingsView() {
                 <SelectContent>
                   <SelectItem value="flat">Fixed annual amount (£)</SelectItem>
                   <SelectItem value="percentage">Percentage of salary</SelectItem>
+                  <SelectItem value="qualifying">Percentage of qualifying earnings</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
               <Label htmlFor="employer-pension">
-                {(settings.employerPensionContributionType ?? 'flat') === 'percentage'
-                  ? 'Employer Contribution (%)'
-                  : 'Annual Employer Contribution (£)'}
+                {(settings.employerPensionContributionType ?? 'flat') === 'flat'
+                  ? 'Annual Employer Contribution (£)'
+                  : (settings.employerPensionContributionType === 'qualifying'
+                      ? 'Employer Contribution (% of qualifying earnings)'
+                      : 'Employer Contribution (%)')}
               </Label>
               <Input
                 id="employer-pension"
                 type="number"
                 min="0"
-                max={(settings.employerPensionContributionType ?? 'flat') === 'percentage' ? 100 : undefined}
-                step={(settings.employerPensionContributionType ?? 'flat') === 'percentage' ? '0.5' : '100'}
-                placeholder={(settings.employerPensionContributionType ?? 'flat') === 'percentage' ? '5' : '0'}
+                max={(settings.employerPensionContributionType ?? 'flat') !== 'flat' ? 100 : undefined}
+                step={(settings.employerPensionContributionType ?? 'flat') !== 'flat' ? '0.5' : '100'}
+                placeholder={settings.employerPensionContributionType === 'qualifying' ? '3'
+                  : settings.employerPensionContributionType === 'percentage' ? '5' : '0'}
                 value={settings.employerPensionContributionValue || ''}
                 onChange={e => update({ employerPensionContributionValue: parseFloat(e.target.value) || 0 })}
               />
+              {settings.employerPensionContributionType === 'qualifying' && (() => {
+                const qualifyingEarnings = employmentSources.reduce((sum, s) => {
+                  const sacrifice = (s.salarySacrificeItems ?? []).reduce((a, i) =>
+                    a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
+                  const pay = Math.max(0, s.grossAmount + (s.bonus ?? 0) - sacrifice)
+                  return sum + Math.max(0, Math.min(pay, rules.qualifyingEarningsUpper) - rules.qualifyingEarningsLower)
+                }, 0)
+                const resolved = qualifyingEarnings * ((settings.employerPensionContributionValue || 0) / 100)
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    Qualifying earnings are the band of pay between
+                    £{rules.qualifyingEarningsLower.toLocaleString()} and
+                    £{rules.qualifyingEarningsUpper.toLocaleString()} for each job (the auto-enrolment
+                    basis — the minimum employer rate is 3%).
+                    {qualifyingEarnings > 0 && (settings.employerPensionContributionValue || 0) > 0 && (
+                      <> Yours: £{Math.round(qualifyingEarnings).toLocaleString()} →
+                      £{Math.round(resolved).toLocaleString()}/yr employer contribution.</>
+                    )}
+                  </p>
+                )
+              })()}
               <p className="text-xs text-muted-foreground">
                 Employer contributions from all jobs are combined here. They count toward the Annual
                 Allowance but do not reduce your taxable income.
