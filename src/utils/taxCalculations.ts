@@ -147,7 +147,8 @@ export function calculateTax(
   let pensionDeduction = 0
   const pensionEligibleIncome = effectiveEmploymentGross + selfEmploymentProfit
   if (settings.pensionContributionType === 'percentage') {
-    pensionDeduction = pensionEligibleIncome * (settings.pensionContributionValue / 100)
+    // Net-pay contributions cannot exceed relevant earnings (cap percentage at 100%)
+    pensionDeduction = Math.min(pensionEligibleIncome * (settings.pensionContributionValue / 100), pensionEligibleIncome)
   } else if (settings.pensionContributionType === 'flat') {
     pensionDeduction = Math.min(settings.pensionContributionValue, pensionEligibleIncome)
   }

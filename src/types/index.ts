@@ -71,7 +71,9 @@ export interface IncomeSource {
   salarySacrificeItems?: SalarySacrificeItem[]
   // Employment: benefits in kind (P11D)
   benefitsInKind?: BenefitInKindItem[]
-  // Employment: employer pension contribution (per-source, alternative to global setting)
+  // Employment: employer pension contribution (per-source)
+  // DEPRECATED — folded into the global employer setting by mergeWithDefaults;
+  // kept so old exports still calculate correctly before migration runs
   employerPensionAmount?: number
   employerPensionAmountType?: 'flat' | 'percentage'
 }

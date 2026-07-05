@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useBudget } from '@/hooks/useBudget'
 import { generateId } from '@/utils/ids'
-import type { IncomeSource, IncomeType, SalarySacrificeType, BenefitInKindType } from '@/types'
+import type { IncomeSource, IncomeType, SalarySacrificeType, SalarySacrificeItem, BenefitInKindType } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 import { formatCurrency } from '@/utils/formatting'
 import { Plus, X } from 'lucide-react'
@@ -53,9 +53,10 @@ interface FormState {
   yearsHeld: string
   bondType: 'onshore' | 'offshore'
   salarySacrificeItems: SalarySacrificeFormItem[]
+  // Pension-type sacrifice items are managed in Settings → Pension Contributions;
+  // they are held aside during an edit and merged back on save
+  heldPensionSacrifice: SalarySacrificeItem[]
   benefitsInKindItems: BenefitInKindFormItem[]
-  employerPensionAmount: string
-  employerPensionAmountType: 'flat' | 'percentage'
 }
 
 const DEFAULT_FORM: FormState = {
@@ -75,9 +76,8 @@ const DEFAULT_FORM: FormState = {
   yearsHeld: '',
   bondType: 'onshore',
   salarySacrificeItems: [],
+  heldPensionSacrifice: [],
   benefitsInKindItems: [],
-  employerPensionAmount: '',
-  employerPensionAmountType: 'flat',
 }
 
 const SACRIFICE_TYPE_LABELS: Record<SalarySacrificeType, string> = {
@@ -162,13 +162,14 @@ export function IncomeFormDialog() {
           fromISA: source.fromISA ?? false,
           yearsHeld: source.yearsHeld != null ? String(source.yearsHeld) : '',
           bondType: source.bondType ?? 'onshore',
-          salarySacrificeItems: (source.salarySacrificeItems ?? []).map(i => ({
+          salarySacrificeItems: (source.salarySacrificeItems ?? []).filter(i => i.type !== 'pension').map(i => ({
             id: i.id,
             type: i.type,
             name: i.name,
             annualAmount: String(i.annualAmount),
             amountType: i.amountType ?? 'flat',
           })),
+          heldPensionSacrifice: (source.salarySacrificeItems ?? []).filter(i => i.type === 'pension'),
           benefitsInKindItems: (source.benefitsInKind ?? []).map(i => ({
             id: i.id,
             type: i.type,
@@ -176,8 +177,6 @@ export function IncomeFormDialog() {
             annualValue: String(i.annualValue),
             bikRate: i.bikRate != null ? String(i.bikRate) : '',
           })),
-          employerPensionAmount: source.employerPensionAmount != null && source.employerPensionAmount > 0 ? String(source.employerPensionAmount) : '',
-          employerPensionAmountType: source.employerPensionAmountType ?? 'flat',
         })
       }
     } else {
@@ -224,12 +223,13 @@ export function IncomeFormDialog() {
       const b = parseFloat(form.bonus)
       if (isNaN(b) || b < 0) errs.bonus = 'Enter a valid bonus amount'
     }
-    if (form.type === 'employment' && form.salarySacrificeItems.length > 0) {
+    if (form.type === 'employment' && (form.salarySacrificeItems.length > 0 || form.heldPensionSacrifice.length > 0)) {
       const gross = parseFloat(form.grossAmount) || 0
       const totalSacrifice = form.salarySacrificeItems.reduce((sum, i) => {
         const val = parseFloat(i.annualAmount) || 0
         return sum + (i.amountType === 'percentage' ? gross * (val / 100) : val)
-      }, 0)
+      }, 0) + form.heldPensionSacrifice.reduce((sum, i) =>
+        sum + (i.amountType === 'percentage' ? gross * (i.annualAmount / 100) : i.annualAmount), 0)
       if (totalSacrifice > gross) errs.grossAmount = 'Total salary sacrifice cannot exceed gross amount'
     }
     if (form.type === 'employment' && form.benefitsInKindItems.length > 0) {
@@ -278,14 +278,18 @@ export function IncomeFormDialog() {
       fromISA: form.type === 'dividend' || form.type === 'savings' ? form.fromISA : undefined,
       yearsHeld: form.type === 'bond' && form.yearsHeld ? parseInt(form.yearsHeld) || undefined : undefined,
       bondType: form.type === 'bond' ? form.bondType : undefined,
-      salarySacrificeItems: form.type === 'employment' && form.salarySacrificeItems.length > 0
-        ? form.salarySacrificeItems.map(i => ({
-            id: i.id,
-            type: i.type,
-            name: i.name.trim() || (SACRIFICE_TYPE_DEFAULT_NAMES[i.type] ?? i.type),
-            annualAmount: parseFloat(i.annualAmount) || 0,
-            amountType: i.amountType,
-          }))
+      salarySacrificeItems: form.type === 'employment' && (form.salarySacrificeItems.length > 0 || form.heldPensionSacrifice.length > 0)
+        ? [
+            // Pension sacrifice items are managed in Settings — pass through untouched
+            ...form.heldPensionSacrifice,
+            ...form.salarySacrificeItems.map(i => ({
+              id: i.id,
+              type: i.type,
+              name: i.name.trim() || (SACRIFICE_TYPE_DEFAULT_NAMES[i.type] ?? i.type),
+              annualAmount: parseFloat(i.annualAmount) || 0,
+              amountType: i.amountType,
+            })),
+          ]
         : undefined,
       benefitsInKind: form.type === 'employment' && form.benefitsInKindItems.length > 0
         ? form.benefitsInKindItems.map(i => ({
@@ -296,10 +300,6 @@ export function IncomeFormDialog() {
             bikRate: i.type === 'companyCar' && i.bikRate ? parseFloat(i.bikRate) || undefined : undefined,
           }))
         : undefined,
-      employerPensionAmount: form.type === 'employment' && form.employerPensionAmount
-        ? parseFloat(form.employerPensionAmount) || undefined : undefined,
-      employerPensionAmountType: form.type === 'employment' && form.employerPensionAmount
-        ? form.employerPensionAmountType : undefined,
     }
     dispatch({ type: isEdit ? UPDATE_INCOME : ADD_INCOME, payload: source })
     handleClose()
@@ -469,7 +469,7 @@ export function IncomeFormDialog() {
               <div className="flex items-center justify-between">
                 <Label>
                   Salary Sacrifice Benefits
-                  <HelpTooltip content="Salary sacrifice reduces your gross salary before tax and NI, saving both Income Tax and National Insurance. This is different from a personal pension contribution (entered in Settings), which only saves Income Tax. Don't enter the same pension in both places." />
+                  <HelpTooltip content="Non-pension salary sacrifice benefits (cycle to work, electric vehicle, etc). They reduce your gross salary before tax and NI. Pension salary sacrifice is entered in Settings → Pension Contributions." />
                 </Label>
                 <Button
                   type="button"
@@ -488,6 +488,16 @@ export function IncomeFormDialog() {
               {form.salarySacrificeItems.length === 0 && (
                 <p className="text-xs text-muted-foreground">
                   Reduces taxable salary and saves both Income Tax and NI.
+                  Pension salary sacrifice and employer contributions are managed in Settings → Pension Contributions.
+                </p>
+              )}
+              {form.heldPensionSacrifice.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Plus pension salary sacrifice of £{form.heldPensionSacrifice.reduce((sum, i) =>
+                    sum + (i.amountType === 'percentage'
+                      ? (parseFloat(form.grossAmount) || 0) * (i.annualAmount / 100)
+                      : i.annualAmount), 0).toLocaleString('en-GB', { maximumFractionDigits: 0 })}/yr
+                  — managed in Settings → Pension Contributions.
                 </p>
               )}
               {form.salarySacrificeItems.map((item, idx) => (
@@ -513,9 +523,11 @@ export function IncomeFormDialog() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {(Object.keys(SACRIFICE_TYPE_LABELS) as SalarySacrificeType[]).map(t => (
-                            <SelectItem key={t} value={t}>{SACRIFICE_TYPE_LABELS[t]}</SelectItem>
-                          ))}
+                          {(Object.keys(SACRIFICE_TYPE_LABELS) as SalarySacrificeType[])
+                            .filter(t => t !== 'pension')
+                            .map(t => (
+                              <SelectItem key={t} value={t}>{SACRIFICE_TYPE_LABELS[t]}</SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -578,44 +590,6 @@ export function IncomeFormDialog() {
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Employment: employer pension contribution */}
-          {form.type === 'employment' && (
-            <div className="grid gap-2">
-              <Label>
-                Employer Pension Contribution
-                <HelpTooltip content="Your employer's own pension contribution (not salary sacrifice). This counts toward the Annual Allowance but does not reduce your taxable income or NI. If entered here, don't also enter it in Settings." />
-              </Label>
-              <div className="grid gap-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">
-                    {form.employerPensionAmountType === 'percentage' ? 'Percentage of gross (%)' : 'Annual amount (£)'}
-                  </Label>
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
-                    onClick={() => setForm(f => ({ ...f, employerPensionAmountType: f.employerPensionAmountType === 'percentage' ? 'flat' : 'percentage', employerPensionAmount: '' }))}
-                  >
-                    Switch to {form.employerPensionAmountType === 'percentage' ? '£' : '%'}
-                  </button>
-                </div>
-                <Input
-                  type="number"
-                  min="0"
-                  max={form.employerPensionAmountType === 'percentage' ? '100' : undefined}
-                  step={form.employerPensionAmountType === 'percentage' ? '0.5' : '100'}
-                  placeholder="0"
-                  value={form.employerPensionAmount}
-                  onChange={e => set('employerPensionAmount', e.target.value)}
-                />
-                {form.employerPensionAmountType === 'percentage' && (parseFloat(form.employerPensionAmount) || 0) > 0 && (parseFloat(form.grossAmount) || 0) > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    = £{((parseFloat(form.grossAmount) || 0) * (parseFloat(form.employerPensionAmount) || 0) / 100).toLocaleString('en-GB', { maximumFractionDigits: 0 })}/yr
-                  </p>
-                )}
-              </div>
             </div>
           )}
 

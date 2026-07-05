@@ -52,7 +52,7 @@ export const TOUR_STEPS: TourStep[] = [
     scrollToTarget: true,
     title: 'Adding Income',
     description:
-      'Click "Add Income" to record a new source. The form adapts based on the income type — for example, self-employment income lets you enter allowable expenses, and employment income supports salary sacrifice (pension, cycle-to-work, EV) and benefits in kind.',
+      'Click "Add Income" to record a new source. The form adapts based on the income type — for example, self-employment income lets you enter allowable expenses, and employment income supports salary sacrifice benefits (cycle-to-work, EV) and benefits in kind. Pension contributions are entered in Settings.',
   },
   {
     id: 'tab-expenses',

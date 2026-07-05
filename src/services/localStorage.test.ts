@@ -215,6 +215,61 @@ describe('mergeWithDefaults', () => {
     } as unknown as Partial<AppState>
     expect(mergeWithDefaults(partial).settings.taxYear).toBe(DEFAULT_TAX_YEAR)
   })
+
+  describe('per-source employer pension migration', () => {
+    const employment = (over: Record<string, unknown> = {}) => ({
+      id: '1', name: 'Job', type: 'employment', grossAmount: 60000, ...over,
+    })
+
+    it('folds a flat per-source employer contribution into a flat global', () => {
+      const merged = mergeWithDefaults({
+        incomeSources: [employment({ employerPensionAmount: 3000, employerPensionAmountType: 'flat' })],
+        settings: { employerPensionContributionType: 'flat', employerPensionContributionValue: 2000 },
+      } as unknown as Partial<AppState>)
+      expect(merged.settings.employerPensionContributionType).toBe('flat')
+      expect(merged.settings.employerPensionContributionValue).toBe(5000)
+      expect(merged.incomeSources[0].employerPensionAmount).toBeUndefined()
+      expect(merged.incomeSources[0].employerPensionAmountType).toBeUndefined()
+    })
+
+    it('resolves a percentage per-source contribution against that source gross', () => {
+      const merged = mergeWithDefaults({
+        incomeSources: [employment({ employerPensionAmount: 5, employerPensionAmountType: 'percentage' })],
+        settings: {},
+      } as unknown as Partial<AppState>)
+      expect(merged.settings.employerPensionContributionType).toBe('flat')
+      expect(merged.settings.employerPensionContributionValue).toBe(3000) // 5% × £60,000
+    })
+
+    it('converts a percentage global to flat before folding', () => {
+      // Global 3% of £60,000 eligible = £1,800, plus per-source £1,000 → £2,800
+      const merged = mergeWithDefaults({
+        incomeSources: [employment({ employerPensionAmount: 1000, employerPensionAmountType: 'flat' })],
+        settings: { employerPensionContributionType: 'percentage', employerPensionContributionValue: 3 },
+      } as unknown as Partial<AppState>)
+      expect(merged.settings.employerPensionContributionType).toBe('flat')
+      expect(merged.settings.employerPensionContributionValue).toBe(2800)
+    })
+
+    it('is idempotent — a second merge changes nothing', () => {
+      const first = mergeWithDefaults({
+        incomeSources: [employment({ employerPensionAmount: 3000, employerPensionAmountType: 'flat' })],
+        settings: { employerPensionContributionType: 'flat', employerPensionContributionValue: 2000 },
+      } as unknown as Partial<AppState>)
+      const second = mergeWithDefaults(first)
+      expect(second.settings.employerPensionContributionValue).toBe(5000)
+      expect(second.incomeSources).toEqual(first.incomeSources)
+    })
+
+    it('does not touch profiles without per-source employer contributions', () => {
+      const merged = mergeWithDefaults({
+        incomeSources: [employment()],
+        settings: { employerPensionContributionType: 'percentage', employerPensionContributionValue: 3 },
+      } as unknown as Partial<AppState>)
+      expect(merged.settings.employerPensionContributionType).toBe('percentage')
+      expect(merged.settings.employerPensionContributionValue).toBe(3)
+    })
+  })
 })
 
 describe('parseImportedState — settings type checks', () => {

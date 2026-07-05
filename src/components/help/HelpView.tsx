@@ -273,7 +273,8 @@ export function HelpView() {
       <Section icon={Settings} title="Settings &amp; Configuration" tabHash="settings">
         <p>
           Configure your personal tax details: tax year, Scottish taxpayer
-          status, pension contributions (employee, employer, and SIPP), student
+          status, all pension contributions (salary sacrifice, workplace net pay,
+          SIPP, and employer), student
           loan plan, Gift Aid donations, Marriage Allowance, Child Benefit, and
           more. All settings feed directly into the tax calculations across
           every tab.
@@ -464,8 +465,10 @@ export function HelpView() {
             does not recompute allowances within the relief.
           </li>
           <li>
-            Workplace pension contributions are assumed to be net pay (deducted before
-            tax); SIPP contributions are assumed to be relief at source.
+            All pension contributions are entered in Settings → Pension Contributions.
+            Workplace contributions are treated as net pay (deducted before tax, no NI
+            saving); SIPP contributions as relief at source; salary sacrifice reduces
+            both Income Tax and NI on the selected job.
           </li>
         </ul>
       </Section>

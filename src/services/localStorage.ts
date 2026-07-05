@@ -100,6 +100,53 @@ export function mergeWithDefaults(partial: Partial<AppState>): AppState {
   if (!TAX_RULES[merged.settings.taxYear]) {
     merged.settings = { ...merged.settings, taxYear: DEFAULT_TAX_YEAR }
   }
+  // Migrate per-source employer pension contributions into the global setting.
+  // They have no per-source tax meaning (the engine sums them with the global
+  // amount for Annual Allowance funding only), and the input now lives solely
+  // in Settings → Pension Contributions.
+  const perSourceEmployer = merged.incomeSources.reduce((sum, s) => {
+    if (!s.employerPensionAmount) return sum
+    return sum + (s.employerPensionAmountType === 'percentage'
+      ? s.grossAmount * (s.employerPensionAmount / 100)
+      : s.employerPensionAmount)
+  }, 0)
+  if (perSourceEmployer > 0) {
+    let globalFlat: number
+    if (merged.settings.employerPensionContributionType === 'percentage'
+        && merged.settings.employerPensionContributionValue > 0) {
+      // Resolve the global percentage against pension-eligible income
+      // (employment net of salary sacrifice + self-employment profit),
+      // mirroring the engine, then convert to a flat amount
+      const eligible = merged.incomeSources.reduce((sum, s) => {
+        if (s.type === 'employment') {
+          const sacrifice = (s.salarySacrificeItems ?? []).reduce((a, i) =>
+            a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
+          return sum + Math.max(0, s.grossAmount + (s.bonus ?? 0) - sacrifice)
+        }
+        if (s.type === 'self-employment') {
+          const expenses = s.usesTradingAllowance
+            ? Math.min(1000, s.grossAmount)
+            : (s.allowableExpenses ?? 0)
+          return sum + Math.max(0, s.grossAmount - expenses)
+        }
+        return sum
+      }, 0) + (merged.settings.transitionalProfitSpread ?? 0)
+      globalFlat = eligible * (merged.settings.employerPensionContributionValue / 100)
+    } else {
+      globalFlat = merged.settings.employerPensionContributionType === 'flat'
+        ? merged.settings.employerPensionContributionValue : 0
+    }
+    merged.settings = {
+      ...merged.settings,
+      employerPensionContributionType: 'flat',
+      employerPensionContributionValue: Math.round(globalFlat + perSourceEmployer),
+    }
+    merged.incomeSources = merged.incomeSources.map(s =>
+      s.employerPensionAmount
+        ? { ...s, employerPensionAmount: undefined, employerPensionAmountType: undefined }
+        : s,
+    )
+  }
   return merged
 }
 

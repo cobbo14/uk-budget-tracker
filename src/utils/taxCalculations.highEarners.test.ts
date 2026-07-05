@@ -173,3 +173,129 @@ describe('high earners £90k–£150k (salary + bonus)', () => {
     }
   })
 })
+
+// ─── Pension contributions in the £90k–£150k range ───────────────────────────
+
+function sacrificeJob(grossAmount: number, pensionSacrifice: number): IncomeSource {
+  return {
+    id: '1', name: 'Job', type: 'employment', grossAmount,
+    salarySacrificeItems: [
+      { id: 's1', type: 'pension', name: 'Pension', annualAmount: pensionSacrifice, amountType: 'flat' },
+    ],
+  }
+}
+
+describe('pension contributions £90k–£150k', () => {
+  it('net-pay gross £G and SIPP net £0.8G are exactly tax-equivalent', () => {
+    // Same gross funding via either route must give identical net position,
+    // personal allowance, adjusted net income and Annual Allowance funding.
+    for (let salary = 95000; salary <= 150000; salary += 5000) {
+      for (const grossContribution of [5000, 10000, 20000]) {
+        const netPay = calculateTax(
+          [job(salary)],
+          { ...baseSettings, pensionContributionType: 'flat', pensionContributionValue: grossContribution },
+          rules2627,
+        )
+        const ras = calculateTax(
+          [job(salary)],
+          { ...baseSettings, sippContribution: grossContribution * 0.8 },
+          rules2627,
+        )
+        const at = `£${salary} / £${grossContribution}`
+        expect(ras.netIncome, `netIncome ${at}`).toBeCloseTo(netPay.netIncome, 2)
+        expect(ras.effectivePersonalAllowance, `PA ${at}`).toBeCloseTo(netPay.effectivePersonalAllowance, 2)
+        expect(ras.adjustedNetIncome, `ANI ${at}`).toBeCloseTo(netPay.adjustedNetIncome, 2)
+        expect(ras.totalPensionFunding, `AA funding ${at}`).toBeCloseTo(netPay.totalPensionFunding, 2)
+      }
+    }
+  })
+
+  it('a net-pay contribution in the taper zone earns 60% relief', () => {
+    // £110,000: an extra £1,000 gross saves £400 tax + £200 via PA restoration
+    const base = calculateTax([job(110000)], baseSettings, rules2627)
+    const withPension = calculateTax(
+      [job(110000)],
+      { ...baseSettings, pensionContributionType: 'flat', pensionContributionValue: 1000 },
+      rules2627,
+    )
+    expect(base.totalTax - withPension.totalTax).toBeCloseTo(600, 2)
+  })
+
+  it('salary sacrifice in the taper zone earns 62% relief (60% IT + 2% NI)', () => {
+    const base = calculateTax([job(110000)], baseSettings, rules2627)
+    const sacrificed = calculateTax([sacrificeJob(110000, 1000)], baseSettings, rules2627)
+    expect(base.incomeTax - sacrificed.incomeTax).toBeCloseTo(600, 2)
+    expect(base.nationalInsurance - sacrificed.nationalInsurance).toBeCloseTo(20, 2)
+    expect(base.totalTax - sacrificed.totalTax).toBeCloseTo(620, 2)
+  })
+
+  it('£10,000 gross via net pay or salary sacrifice at £110k restores the full PA', () => {
+    const netPay = calculateTax(
+      [job(110000)],
+      { ...baseSettings, pensionContributionType: 'flat', pensionContributionValue: 10000 },
+      rules2627,
+    )
+    expect(netPay.effectivePersonalAllowance).toBe(12570)
+    expect(netPay.incomeTax).toBeCloseTo(37700 * 0.20 + 49730 * 0.40, 2)  // £27,432
+
+    const sacrificed = calculateTax([sacrificeJob(110000, 10000)], baseSettings, rules2627)
+    expect(sacrificed.effectivePersonalAllowance).toBe(12570)
+    expect(sacrificed.incomeTax).toBeCloseTo(27432, 2)
+    expect(sacrificed.nationalInsurance).toBeCloseTo(37700 * 0.08 + 49730 * 0.02, 2) // £4,010.60
+  })
+
+  it('SIPP band extension interacts correctly with the additional rate at £150k', () => {
+    // £16,000 SIPP → £20,000 gross. ANI £130k → PA still £0. Bands extend to
+    // £57,700 / £145,140: 57,700×20% + 87,440×40% + 4,860×45% = £48,703
+    const r = calculateTax(
+      [job(150000)],
+      { ...baseSettings, sippContribution: 16000 },
+      rules2627,
+    )
+    expect(r.effectivePersonalAllowance).toBe(0)
+    expect(r.incomeTax).toBeCloseTo(48703, 2)
+  })
+
+  it('pension contributions restore Child Benefit through the HICBC taper', () => {
+    const cb = { ...baseSettings, childBenefitClaiming: true, numberOfChildren: 2 }
+    const pension = (value: number) =>
+      ({ ...cb, pensionContributionType: 'flat' as const, pensionContributionValue: value })
+    // £95,000, CB (2 children) = £2,337.40/year
+    const none = calculateTax([job(95000)], cb, rules2627)
+    expect(none.hicbc).toBe(2337) // ANI £95k > £80k → full clawback
+    const mid = calculateTax([job(95000)], pension(20001), rules2627)
+    expect(mid.hicbc).toBe(Math.round(2337.40 * 0.74)) // ANI £74,999 → 74% charge
+    const full = calculateTax([job(95000)], pension(35001), rules2627)
+    expect(full.hicbc).toBe(0) // ANI £59,999 → below the £60k threshold
+  })
+
+  it('Annual Allowance excess is charged at the marginal rate on top of income', () => {
+    // £130,000 salary, £70,000 net-pay contribution: ANI £60k → full PA,
+    // taxable £47,430; excess £10,000 over the £60k AA → charged at 40%
+    const s = { ...baseSettings, pensionContributionType: 'flat' as const, pensionContributionValue: 70000 }
+    const r = calculateTax([job(130000)], s, rules2627)
+    expect(r.effectivePersonalAllowance).toBe(12570)
+    expect(r.incomeTax).toBeCloseTo(37700 * 0.20 + 9730 * 0.40, 2) // £11,432
+    expect(r.annualAllowanceExcess).toBe(10000)
+    expect(r.annualAllowanceCharge).toBeCloseTo(4000, 2)
+    // £10,000 carry-forward absorbs the excess entirely
+    const withCF = calculateTax(
+      [job(130000)],
+      { ...s, pensionCarryForward: { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 10000 } },
+      rules2627,
+    )
+    expect(withCF.annualAllowanceExcess).toBe(0)
+    expect(withCF.annualAllowanceCharge).toBe(0)
+  })
+
+  it('caps a percentage net-pay contribution at 100% of relevant earnings', () => {
+    const r = calculateTax(
+      [job(110000)],
+      { ...baseSettings, pensionContributionType: 'percentage', pensionContributionValue: 150 },
+      rules2627,
+    )
+    expect(r.totalDeductions).toBeCloseTo(110000, 2) // not £165,000
+    expect(r.incomeTax).toBe(0)
+    expect(r.effectivePersonalAllowance).toBe(12570)
+  })
+})

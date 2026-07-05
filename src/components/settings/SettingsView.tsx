@@ -10,11 +10,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { UPDATE_SETTINGS, HYDRATE } from '@/store/actions'
+import { UPDATE_SETTINGS, UPDATE_INCOME, HYDRATE } from '@/store/actions'
 import { getAvailableTaxYears, getTaxRules } from '@/taxRules'
 import { exportStateAsJSON, parseImportedState, mergeWithDefaults } from '@/services/localStorage'
 import { generateCSV } from '@/utils/exportUtils'
-import type { StudentLoanPlan, AppSettings } from '@/types'
+import { generateId } from '@/utils/ids'
+import type { StudentLoanPlan, AppSettings, IncomeSource } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 
 const STUDENT_LOAN_LABELS: Record<StudentLoanPlan, string> = {
@@ -40,6 +41,27 @@ export function SettingsView() {
 
   function update(partial: Partial<AppSettings>) {
     dispatch({ type: UPDATE_SETTINGS, payload: partial })
+  }
+
+  // Salary-sacrifice pension items live on the employment source (they reduce
+  // that job's NI-able pay) but are edited from this card
+  const employmentSources = incomeSources.filter(s => s.type === 'employment')
+  const pensionSacrificeItems = (s: IncomeSource) =>
+    (s.salarySacrificeItems ?? []).filter(i => i.type === 'pension')
+
+  function updateSacrifice(source: IncomeSource, amount: number, amountType: 'flat' | 'percentage') {
+    const items = source.salarySacrificeItems ?? []
+    const pension = items.filter(i => i.type === 'pension')
+    const others = items.filter(i => i.type !== 'pension')
+    const next = amount > 0
+      ? [...others, pension.length === 1
+          ? { ...pension[0], annualAmount: amount, amountType }
+          : { id: generateId(), type: 'pension' as const, name: 'Salary Sacrifice Pension', annualAmount: amount, amountType }]
+      : others
+    dispatch({
+      type: UPDATE_INCOME,
+      payload: { ...source, salarySacrificeItems: next.length > 0 ? next : undefined },
+    })
   }
 
   const taxRuleInfo = getTaxRules(settings.taxYear)
@@ -150,24 +172,74 @@ export function SettingsView() {
         <CardHeader>
           <CardTitle className="text-base">Pension Contributions</CardTitle>
           <CardDescription>
-            Personal pension contributions (e.g. net pay workplace scheme or SIPP) and employer contributions.
-            Employee contributions here reduce your taxable income but <strong>not</strong> National Insurance.
-            If your pension is via salary sacrifice, enter it on the Income tab instead — salary sacrifice reduces both Income Tax and NI.
-            Both count toward the £{rules.pensionAnnualAllowance.toLocaleString()} Annual Allowance.
+            All pension contributions in one place — salary sacrifice, workplace (net pay), SIPP, and
+            employer. Each type is taxed differently; enter each contribution under the row that matches
+            how it is paid. Everything counts toward the
+            £{rules.pensionAnnualAllowance.toLocaleString()} Annual Allowance.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Duplicate warning: salary sacrifice pension on Income tab + pension here */}
-          {incomeSources.some(s => s.type === 'employment' && (s.salarySacrificeItems ?? []).some(i => i.type === 'pension')) && settings.pensionContributionType !== 'none' && (
-            <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
-              ⚠ You have a pension salary sacrifice on the Income tab <strong>and</strong> a pension contribution here.
-              Make sure these are separate contributions — don't enter the same pension twice.
-              Salary sacrifice (Income tab) saves NI; contributions here only save Income Tax.
-            </p>
+          {/* Salary sacrifice — per employment source */}
+          {employmentSources.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium">
+                Salary sacrifice
+                <HelpTooltip content="Deducted from gross pay before tax and NI — saves both Income Tax and National Insurance. Percentages apply to that job's base salary (bonuses excluded)." />
+              </p>
+              {employmentSources.map(source => {
+                const pension = pensionSacrificeItems(source)
+                if (pension.length > 1) {
+                  const total = pension.reduce((a, i) =>
+                    a + (i.amountType === 'percentage' ? source.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
+                  return (
+                    <p key={source.id} className="text-xs text-muted-foreground">
+                      {source.name}: £{Math.round(total).toLocaleString()}/year across {pension.length} pension
+                      sacrifice items — edit them on the Income tab.
+                    </p>
+                  )
+                }
+                const item = pension[0]
+                const amountType = item?.amountType ?? 'percentage'
+                return (
+                  <div key={source.id} className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
+                    <Label htmlFor={`sacrifice-${source.id}`}>
+                      {employmentSources.length > 1 ? source.name : 'Your salary sacrifice'}
+                      {amountType === 'percentage' ? ' (%)' : ' (£/year)'}
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id={`sacrifice-${source.id}`}
+                        type="number"
+                        min="0"
+                        max={amountType === 'percentage' ? 100 : undefined}
+                        step={amountType === 'percentage' ? '0.5' : '100'}
+                        placeholder="0"
+                        className="flex-1"
+                        value={item?.annualAmount || ''}
+                        onChange={e => updateSacrifice(source, parseFloat(e.target.value) || 0, amountType)}
+                      />
+                      <Select
+                        value={amountType}
+                        onValueChange={v => item && updateSacrifice(source, item.annualAmount, v as 'flat' | 'percentage')}
+                      >
+                        <SelectTrigger className="w-28 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentage">% of pay</SelectItem>
+                          <SelectItem value="flat">£/year</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
-          {/* Employee contributions */}
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Employee (your) contributions</p>
+
+          {/* Employee contributions (workplace net pay) */}
+          <div className={employmentSources.length > 0 ? 'space-y-3 pt-2 border-t' : 'space-y-3'}>
+            <p className="text-sm font-medium">Workplace pension (net pay)</p>
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
               <Label>Contribution Type</Label>
               <Select
@@ -201,23 +273,40 @@ export function SettingsView() {
                   placeholder={settings.pensionContributionType === 'percentage' ? '5' : '2000'}
                 />
                 <p className="text-xs text-muted-foreground">
-                  These are treated as net pay (workplace scheme) contributions — deducted from your salary before
-                  tax, so you get full marginal-rate relief automatically through payroll. If your personal pension
-                  is relief at source instead, enter it in the SIPP field below.
+                  Net pay (workplace scheme) contributions are deducted from your salary before tax, so you
+                  get full marginal-rate relief automatically through payroll — but they do <strong>not</strong> reduce
+                  National Insurance (use salary sacrifice above for that). If your pension is relief at
+                  source, use the SIPP row below instead.
                 </p>
               </div>
             )}
           </div>
 
+          {/* SIPP contributions */}
+          <div className="space-y-3 pt-2 border-t">
+            <p className="text-sm font-medium">SIPP / personal pension (relief at source)</p>
+            <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
+              <Label htmlFor="sipp-contribution">Annual Contribution (£)</Label>
+              <Input
+                id="sipp-contribution"
+                type="number"
+                min="0"
+                step="100"
+                placeholder="0"
+                value={settings.sippContribution || ''}
+                onChange={e => update({ sippContribution: parseFloat(e.target.value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter the amount you actually pay. SIPP contributions are relief at source — your provider claims 20% basic rate tax relief automatically (e.g. you pay £800 and £1,000 goes into your pension).
+                Higher and additional rate relief is modelled by extending your basic-rate band (claim it via self-assessment or a tax code adjustment).
+                The gross amount counts toward the Annual Allowance.
+              </p>
+            </div>
+          </div>
+
           {/* Employer contributions */}
           <div className="space-y-3 pt-2 border-t">
             <p className="text-sm font-medium">Employer contributions</p>
-            {incomeSources.some(s => s.type === 'employment' && (s.employerPensionAmount ?? 0) > 0) && (settings.employerPensionContributionValue ?? 0) > 0 && (
-              <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
-                ⚠ You have employer pension contributions on the Income tab <strong>and</strong> here.
-                Make sure these aren't the same contribution entered twice — both are added together.
-              </p>
-            )}
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
               <Label>Contribution Type</Label>
               <Select
@@ -250,29 +339,8 @@ export function SettingsView() {
                 onChange={e => update({ employerPensionContributionValue: parseFloat(e.target.value) || 0 })}
               />
               <p className="text-xs text-muted-foreground">
-                Employer contributions count toward the Annual Allowance but do not reduce your taxable income.
-              </p>
-            </div>
-          </div>
-
-          {/* SIPP contributions */}
-          <div className="space-y-3 pt-2 border-t">
-            <p className="text-sm font-medium">SIPP (Self-Invested Personal Pension)</p>
-            <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
-              <Label htmlFor="sipp-contribution">Annual Contribution (£)</Label>
-              <Input
-                id="sipp-contribution"
-                type="number"
-                min="0"
-                step="100"
-                placeholder="0"
-                value={settings.sippContribution || ''}
-                onChange={e => update({ sippContribution: parseFloat(e.target.value) || 0 })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter the amount you actually pay. SIPP contributions are relief at source — your provider claims 20% basic rate tax relief automatically (e.g. you pay £800 and £1,000 goes into your pension).
-                Higher and additional rate relief is modelled by extending your basic-rate band (claim it via self-assessment or a tax code adjustment).
-                The gross amount counts toward the Annual Allowance.
+                Employer contributions from all jobs are combined here. They count toward the Annual
+                Allowance but do not reduce your taxable income.
               </p>
             </div>
           </div>
