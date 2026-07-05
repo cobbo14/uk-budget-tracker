@@ -466,9 +466,10 @@ export function HelpView() {
           </li>
           <li>
             All pension contributions are entered in Settings → Pension Contributions.
-            Workplace contributions are treated as net pay (deducted before tax, no NI
-            saving); SIPP contributions as relief at source; salary sacrifice reduces
-            both Income Tax and NI on the selected job.
+            Contributions taken from gross pay are treated as net pay arrangements
+            (deducted before tax, no NI saving); contributions from take-home pay as
+            relief at source (this includes NEST, most group personal pensions and all
+            SIPPs); salary sacrifice reduces both Income Tax and NI on the selected job.
           </li>
         </ul>
       </Section>

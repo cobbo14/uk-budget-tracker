@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Download, Upload } from 'lucide-react'
 import { useBudget } from '@/hooks/useBudget'
 import { HelpTooltip } from '@/components/ui/tooltip'
@@ -15,7 +15,8 @@ import { getAvailableTaxYears, getTaxRules } from '@/taxRules'
 import { exportStateAsJSON, parseImportedState, mergeWithDefaults } from '@/services/localStorage'
 import { generateCSV } from '@/utils/exportUtils'
 import { generateId } from '@/utils/ids'
-import { resolveSalarySacrificeItem } from '@/utils/taxCalculations'
+import { calculateTax, resolveSalarySacrificeItem } from '@/utils/taxCalculations'
+import { formatCurrency } from '@/utils/formatting'
 import type { StudentLoanPlan, AppSettings, IncomeSource } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 
@@ -59,6 +60,33 @@ export function SettingsView() {
   const pensionEligibleIncome =
     Math.max(0, taxSummary.employmentGross - taxSummary.salarySacrificeTotal) +
     Math.max(0, taxSummary.selfEmploymentGross - taxSummary.selfEmploymentAllowableExpenses)
+
+  // "Which pension type do I have?" helper panel
+  const [showTypeGuide, setShowTypeGuide] = useState(false)
+  // Per-row monthly-entry toggles, keyed by row id (storage stays annual)
+  const [monthlyEntry, setMonthlyEntry] = useState<Record<string, boolean>>({})
+  const toggleMonthly = (key: string) =>
+    setMonthlyEntry(m => ({ ...m, [key]: !m[key] }))
+
+  // Live impact of the user's own contributions: diff against a baseline with
+  // all personal contributions removed (employer kept — it never affects tax)
+  const pensionImpact = useMemo(() => {
+    if (taxSummary.totalPensionFunding <= 0) return null
+    const strippedSources = incomeSources.map(s => {
+      const items = (s.salarySacrificeItems ?? []).filter(i => i.type !== 'pension')
+      return { ...s, salarySacrificeItems: items.length > 0 ? items : undefined }
+    })
+    const baseline = calculateTax(
+      strippedSources,
+      { ...settings, pensionContributionType: 'none', pensionContributionValue: 0, sippContribution: 0 },
+      rules,
+      state.gainSources,
+    )
+    return {
+      taxSaved: Math.max(0, baseline.totalTax - taxSummary.totalTax),
+      netCost: Math.max(0, baseline.netIncome - taxSummary.netIncome),
+    }
+  }, [incomeSources, settings, rules, taxSummary, state.gainSources])
 
   function updateSacrifice(source: IncomeSource, amount: number, amountType: 'flat' | 'percentage' | 'qualifying') {
     const items = source.salarySacrificeItems ?? []
@@ -190,6 +218,79 @@ export function SettingsView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Live impact of current contributions */}
+          {taxSummary.totalPensionFunding > 0 && pensionImpact && (
+            <div className="rounded-md bg-muted/50 px-3 py-2 space-y-1">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs sm:grid-cols-4">
+                <div>
+                  <p className="text-muted-foreground">Into your pension</p>
+                  <p className="font-medium">{formatCurrency(taxSummary.totalPensionFunding)}/yr</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Tax & NI saved</p>
+                  <p className="font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(pensionImpact.taxSaved)}/yr</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Net cost to you</p>
+                  <p className="font-medium">{formatCurrency(pensionImpact.netCost)}/yr</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Annual Allowance used</p>
+                  <p className="font-medium">
+                    {Math.round((taxSummary.totalPensionFunding / Math.max(1, taxSummary.totalAnnualAllowanceAvailable)) * 100)}%
+                    <span className="font-normal text-muted-foreground"> of {formatCurrency(taxSummary.totalAnnualAllowanceAvailable)}</span>
+                  </p>
+                </div>
+              </div>
+              {taxSummary.annualAllowanceExcess > 0 && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  ⚠ {formatCurrency(taxSummary.annualAllowanceExcess)} over your Annual Allowance —
+                  estimated charge {formatCurrency(taxSummary.annualAllowanceCharge)}.{' '}
+                  <a href="#planning" className="underline underline-offset-2">Planning → Annual Allowance</a>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Quick actions & guidance */}
+          <div className="flex flex-wrap items-center gap-2">
+            {employmentSources.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => update({
+                  pensionContributionType: 'qualifying',
+                  pensionContributionValue: 5,
+                  employerPensionContributionType: 'qualifying',
+                  employerPensionContributionValue: 3,
+                })}
+              >
+                Use auto-enrolment minimums (5% + 3% employer)
+                <HelpTooltip content="The legal minimum for auto-enrolment: 8% of qualifying earnings in total, of which at least 3% comes from your employer." />
+              </Button>
+            )}
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+              onClick={() => setShowTypeGuide(v => !v)}
+            >
+              Not sure which type you have?
+            </button>
+          </div>
+          {showTypeGuide && (
+            <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Check your payslip:</p>
+              <p><strong>Salary sacrifice</strong> — your gross salary itself is shown lower than your contractual
+                salary (often called "salary exchange" or "SMART pension"). Saves Income Tax and NI.</p>
+              <p><strong>Net pay arrangement</strong> — your pension is deducted from gross pay before the tax
+                calculation, but your gross salary is unchanged. Saves Income Tax only.</p>
+              <p><strong>Relief at source</strong> — your pension comes out of take-home pay and the provider adds
+                20% on top (NEST, most group personal pensions, all SIPPs). Higher-rate relief is claimed separately.</p>
+            </div>
+          )}
+
           {/* Salary sacrifice — per employment source */}
           {employmentSources.length > 0 && (
             <div className="space-y-3">
@@ -197,6 +298,7 @@ export function SettingsView() {
                 Salary sacrifice
                 <HelpTooltip content="Deducted from gross pay before tax and NI — saves both Income Tax and National Insurance. '% of pay' applies to that job's base salary (bonuses excluded); '% of QE' applies to the job's qualifying earnings — the £6,240–£50,270 auto-enrolment band of pay including bonus." />
               </p>
+              <p className="text-xs text-muted-foreground -mt-2">Your contractual gross salary is reduced in exchange for pension contributions.</p>
               {employmentSources.map(source => {
                 const pension = pensionSacrificeItems(source)
                 if (pension.length > 1) {
@@ -211,23 +313,37 @@ export function SettingsView() {
                 }
                 const item = pension[0]
                 const amountType = item?.amountType ?? 'percentage'
+                const monthly = amountType === 'flat' && (monthlyEntry[`sacrifice-${source.id}`] ?? false)
+                const totalSacrifice = (source.salarySacrificeItems ?? []).reduce((a, i) =>
+                  a + resolveSalarySacrificeItem(i, source, rules), 0)
                 return (
                   <div key={source.id} className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
-                    <Label htmlFor={`sacrifice-${source.id}`}>
-                      {employmentSources.length > 1 ? source.name : 'Your salary sacrifice'}
-                      {amountType === 'flat' ? ' (£/year)' : amountType === 'qualifying' ? ' (% of qualifying earnings)' : ' (%)'}
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor={`sacrifice-${source.id}`}>
+                        {employmentSources.length > 1 ? source.name : 'Your salary sacrifice'}
+                        {amountType === 'flat' ? (monthly ? ' (£/month)' : ' (£/year)') : amountType === 'qualifying' ? ' (% of qualifying earnings)' : ' (%)'}
+                      </Label>
+                      {amountType === 'flat' && (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                          onClick={() => toggleMonthly(`sacrifice-${source.id}`)}
+                        >
+                          Enter {monthly ? 'yearly' : 'monthly'}
+                        </button>
+                      )}
+                    </div>
                     <div className="flex gap-2">
                       <Input
                         id={`sacrifice-${source.id}`}
                         type="number"
                         min="0"
                         max={amountType !== 'flat' ? 100 : undefined}
-                        step={amountType !== 'flat' ? '0.5' : '100'}
+                        step={amountType !== 'flat' ? '0.5' : monthly ? '10' : '100'}
                         placeholder="0"
                         className="flex-1"
-                        value={item?.annualAmount || ''}
-                        onChange={e => updateSacrifice(source, parseFloat(e.target.value) || 0, amountType)}
+                        value={item ? (monthly ? +(item.annualAmount / 12).toFixed(2) : item.annualAmount) : ''}
+                        onChange={e => updateSacrifice(source, (parseFloat(e.target.value) || 0) * (monthly ? 12 : 1), amountType)}
                       />
                       <Select
                         value={amountType}
@@ -249,6 +365,11 @@ export function SettingsView() {
                         {amountType === 'qualifying' && ' on this job\'s qualifying earnings'}
                       </p>
                     )}
+                    {totalSacrifice > source.grossAmount + (source.bonus ?? 0) && (
+                      <p className="text-xs text-destructive">
+                        ⚠ Total salary sacrifice exceeds this job's pay of {formatCurrency(source.grossAmount + (source.bonus ?? 0))}.
+                      </p>
+                    )}
                   </div>
                 )
               })}
@@ -257,7 +378,8 @@ export function SettingsView() {
 
           {/* Employee contributions (workplace net pay) */}
           <div className={employmentSources.length > 0 ? 'space-y-3 pt-2 border-t' : 'space-y-3'}>
-            <p className="text-sm font-medium">Workplace pension (net pay)</p>
+            <p className="text-sm font-medium">Taken from gross pay (net pay arrangement)</p>
+            <p className="text-xs text-muted-foreground -mt-2">Deducted from your pay before the tax calculation — your gross salary itself is unchanged.</p>
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
               <Label>Contribution Type</Label>
               <Select
@@ -276,43 +398,73 @@ export function SettingsView() {
               </Select>
             </div>
 
-            {settings.pensionContributionType !== 'none' && (
+            {settings.pensionContributionType !== 'none' && (() => {
+              const monthly = settings.pensionContributionType === 'flat' && (monthlyEntry['pension-value'] ?? false)
+              const resolved = settings.pensionContributionType === 'percentage'
+                ? Math.min(pensionEligibleIncome * ((settings.pensionContributionValue || 0) / 100), pensionEligibleIncome)
+                : settings.pensionContributionType === 'qualifying'
+                  ? qualifyingEarningsTotal * ((settings.pensionContributionValue || 0) / 100)
+                  : (settings.pensionContributionValue || 0)
+              return (
               <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
-                <Label htmlFor="pension-value">
-                  {settings.pensionContributionType === 'flat' ? 'Annual Amount (£)'
-                    : settings.pensionContributionType === 'qualifying' ? 'Contribution (% of qualifying earnings)'
-                    : 'Contribution (%)'}
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="pension-value">
+                    {settings.pensionContributionType === 'flat' ? (monthly ? 'Amount (£/month)' : 'Annual Amount (£)')
+                      : settings.pensionContributionType === 'qualifying' ? 'Contribution (% of qualifying earnings)'
+                      : 'Contribution (%)'}
+                  </Label>
+                  {settings.pensionContributionType === 'flat' && (
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                      onClick={() => toggleMonthly('pension-value')}
+                    >
+                      Enter {monthly ? 'yearly' : 'monthly'}
+                    </button>
+                  )}
+                </div>
                 <Input
                   id="pension-value"
                   type="number"
                   min="0"
                   max={settings.pensionContributionType !== 'flat' ? 100 : undefined}
-                  step={settings.pensionContributionType !== 'flat' ? '0.5' : '100'}
-                  value={settings.pensionContributionValue || ''}
-                  onChange={e => update({ pensionContributionValue: parseFloat(e.target.value) || 0 })}
-                  placeholder={settings.pensionContributionType === 'flat' ? '2000' : '5'}
+                  step={settings.pensionContributionType !== 'flat' ? '0.5' : monthly ? '10' : '100'}
+                  value={settings.pensionContributionValue
+                    ? (monthly ? +(settings.pensionContributionValue / 12).toFixed(2) : settings.pensionContributionValue)
+                    : ''}
+                  onChange={e => update({ pensionContributionValue: (parseFloat(e.target.value) || 0) * (monthly ? 12 : 1) })}
+                  placeholder={settings.pensionContributionType === 'flat' ? (monthly ? '200' : '2000') : '5'}
                 />
+                {settings.pensionContributionType === 'percentage' && (settings.pensionContributionValue || 0) > 0 && (
+                  <p className="text-xs text-muted-foreground">= £{Math.round(resolved).toLocaleString()}/yr</p>
+                )}
                 {settings.pensionContributionType === 'qualifying' && (settings.pensionContributionValue || 0) > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    = £{Math.round(qualifyingEarningsTotal * (settings.pensionContributionValue / 100)).toLocaleString()}/yr
+                    = £{Math.round(resolved).toLocaleString()}/yr
                     on qualifying earnings of £{Math.round(qualifyingEarningsTotal).toLocaleString()}
                     (the £{rules.qualifyingEarningsLower.toLocaleString()}–£{rules.qualifyingEarningsUpper.toLocaleString()} band per job — the auto-enrolment minimum employee rate is 5%).
+                  </p>
+                )}
+                {settings.pensionContributionType === 'flat' && resolved > pensionEligibleIncome && pensionEligibleIncome > 0 && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    ⚠ Capped at your relevant earnings of {formatCurrency(pensionEligibleIncome)} — the excess gets no tax relief.
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground">
                   Net pay (workplace scheme) contributions are deducted from your salary before tax, so you
                   get full marginal-rate relief automatically through payroll — but they do <strong>not</strong> reduce
                   National Insurance (use salary sacrifice above for that). If your pension is relief at
-                  source, use the SIPP row below instead.
+                  source, use the row below instead.
                 </p>
               </div>
-            )}
+              )
+            })()}
           </div>
 
           {/* SIPP contributions */}
           <div className="space-y-3 pt-2 border-t">
-            <p className="text-sm font-medium">SIPP / personal pension (relief at source)</p>
+            <p className="text-sm font-medium">Taken from take-home pay (relief at source)</p>
+            <p className="text-xs text-muted-foreground -mt-2">NEST, most group personal pensions and all SIPPs — your provider adds 20% on top of what you pay.</p>
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
               <Label>Contribution Type</Label>
               <Select
@@ -330,21 +482,41 @@ export function SettingsView() {
               </Select>
             </div>
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
-              <Label htmlFor="sipp-contribution">
-                {(settings.sippContributionType ?? 'flat') === 'flat' ? 'Annual Contribution (£)'
-                  : settings.sippContributionType === 'qualifying' ? 'Contribution (% of qualifying earnings)'
-                  : 'Contribution (% of income)'}
-              </Label>
+              {(() => {
+                const sippMonthly = (settings.sippContributionType ?? 'flat') === 'flat' && (monthlyEntry['sipp-contribution'] ?? false)
+                return (
+                  <>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="sipp-contribution">
+                  {(settings.sippContributionType ?? 'flat') === 'flat' ? (sippMonthly ? 'Contribution (£/month)' : 'Annual Contribution (£)')
+                    : settings.sippContributionType === 'qualifying' ? 'Contribution (% of qualifying earnings)'
+                    : 'Contribution (% of income)'}
+                </Label>
+                {(settings.sippContributionType ?? 'flat') === 'flat' && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    onClick={() => toggleMonthly('sipp-contribution')}
+                  >
+                    Enter {sippMonthly ? 'yearly' : 'monthly'}
+                  </button>
+                )}
+              </div>
               <Input
                 id="sipp-contribution"
                 type="number"
                 min="0"
                 max={(settings.sippContributionType ?? 'flat') !== 'flat' ? 100 : undefined}
-                step={(settings.sippContributionType ?? 'flat') !== 'flat' ? '0.5' : '100'}
+                step={(settings.sippContributionType ?? 'flat') !== 'flat' ? '0.5' : sippMonthly ? '10' : '100'}
                 placeholder={(settings.sippContributionType ?? 'flat') === 'flat' ? '0' : '5'}
-                value={settings.sippContribution || ''}
-                onChange={e => update({ sippContribution: parseFloat(e.target.value) || 0 })}
+                value={settings.sippContribution
+                  ? (sippMonthly ? +(settings.sippContribution / 12).toFixed(2) : settings.sippContribution)
+                  : ''}
+                onChange={e => update({ sippContribution: (parseFloat(e.target.value) || 0) * (sippMonthly ? 12 : 1) })}
               />
+                  </>
+                )
+              })()}
               {(settings.sippContributionType === 'percentage' || settings.sippContributionType === 'qualifying') && (settings.sippContribution || 0) > 0 && (() => {
                 const base = settings.sippContributionType === 'qualifying' ? qualifyingEarningsTotal : pensionEligibleIncome
                 const net = base * (settings.sippContribution / 100)
@@ -355,6 +527,13 @@ export function SettingsView() {
                   </p>
                 )
               })()}
+              {taxSummary.sippNetContribution / 0.8 > Math.max(3600, pensionEligibleIncome) + 0.005 && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  ⚠ Above your relevant earnings — relief is capped at
+                  {' '}{formatCurrency(Math.max(3600, pensionEligibleIncome))} gross; the portion over
+                  {' '}{formatCurrency(Math.max(3600, pensionEligibleIncome) * 0.8)} paid gets no tax relief.
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 The amount is what you actually pay (percentages resolve to the amount paid).
                 SIPP contributions are relief at source — your provider claims 20% basic rate tax relief automatically (e.g. you pay £800 and £1,000 goes into your pension).
@@ -384,24 +563,44 @@ export function SettingsView() {
               </Select>
             </div>
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
-              <Label htmlFor="employer-pension">
-                {(settings.employerPensionContributionType ?? 'flat') === 'flat'
-                  ? 'Annual Employer Contribution (£)'
-                  : (settings.employerPensionContributionType === 'qualifying'
-                      ? 'Employer Contribution (% of qualifying earnings)'
-                      : 'Employer Contribution (%)')}
-              </Label>
+              {(() => {
+                const empMonthly = (settings.employerPensionContributionType ?? 'flat') === 'flat' && (monthlyEntry['employer-pension'] ?? false)
+                return (
+                  <>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="employer-pension">
+                  {(settings.employerPensionContributionType ?? 'flat') === 'flat'
+                    ? (empMonthly ? 'Employer Contribution (£/month)' : 'Annual Employer Contribution (£)')
+                    : (settings.employerPensionContributionType === 'qualifying'
+                        ? 'Employer Contribution (% of qualifying earnings)'
+                        : 'Employer Contribution (%)')}
+                </Label>
+                {(settings.employerPensionContributionType ?? 'flat') === 'flat' && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    onClick={() => toggleMonthly('employer-pension')}
+                  >
+                    Enter {empMonthly ? 'yearly' : 'monthly'}
+                  </button>
+                )}
+              </div>
               <Input
                 id="employer-pension"
                 type="number"
                 min="0"
                 max={(settings.employerPensionContributionType ?? 'flat') !== 'flat' ? 100 : undefined}
-                step={(settings.employerPensionContributionType ?? 'flat') !== 'flat' ? '0.5' : '100'}
+                step={(settings.employerPensionContributionType ?? 'flat') !== 'flat' ? '0.5' : empMonthly ? '10' : '100'}
                 placeholder={settings.employerPensionContributionType === 'qualifying' ? '3'
                   : settings.employerPensionContributionType === 'percentage' ? '5' : '0'}
-                value={settings.employerPensionContributionValue || ''}
-                onChange={e => update({ employerPensionContributionValue: parseFloat(e.target.value) || 0 })}
+                value={settings.employerPensionContributionValue
+                  ? (empMonthly ? +(settings.employerPensionContributionValue / 12).toFixed(2) : settings.employerPensionContributionValue)
+                  : ''}
+                onChange={e => update({ employerPensionContributionValue: (parseFloat(e.target.value) || 0) * (empMonthly ? 12 : 1) })}
               />
+                  </>
+                )
+              })()}
               {settings.employerPensionContributionType === 'qualifying' && (() => {
                 const qualifyingEarnings = employmentSources.reduce((sum, s) => {
                   const sacrifice = (s.salarySacrificeItems ?? []).reduce((a, i) =>
@@ -446,6 +645,10 @@ export function SettingsView() {
                 <HelpTooltip content="If you have flexibly accessed any defined contribution pension (e.g. taken income via drawdown or an uncrystallised funds pension lump sum), your annual allowance for DC contributions drops to £10,000." />
               </Label>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Unused Annual Allowance from the previous 3 years?{' '}
+              Enter it in <a href="#planning" className="underline underline-offset-2 hover:text-foreground">Planning → Annual Allowance</a>.
+            </p>
           </div>
 
         </CardContent>
