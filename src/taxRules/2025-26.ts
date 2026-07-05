@@ -6,20 +6,25 @@ const rules: TaxRules = {
   label: '2025/26',
   personalAllowance: 12570,
   personalAllowanceTaperThreshold: 100000,
-  // England / Wales / Northern Ireland bands (width above personal allowance)
+  // England / Wales / Northern Ireland bands, applied to TAXABLE income (after
+  // the personal allowance). The statutory higher rate limit is £125,140 of
+  // taxable income (ITA 2007 s.10): the 45% rate starts there even when the
+  // personal allowance is fully tapered away, so the boundary must NOT be
+  // encoded as £125,140 − PA.
   incomeTaxBands: [
     { from: 0, to: 37700, rate: 0.20 },        // Basic rate
-    { from: 37700, to: 112570, rate: 0.40 },   // Higher rate
-    { from: 112570, to: Infinity, rate: 0.45 }, // Additional rate
+    { from: 37700, to: 125140, rate: 0.40 },   // Higher rate
+    { from: 125140, to: Infinity, rate: 0.45 }, // Additional rate
   ],
-  // Scotland bands (width above personal allowance)
+  // Scotland bands on taxable income; top rate limit is £125,140 of taxable
+  // income per the Scottish Rate Resolution
   scottishIncomeTaxBands: [
     { from: 0, to: 2827, rate: 0.19 },         // Starter
     { from: 2827, to: 14921, rate: 0.20 },     // Basic
     { from: 14921, to: 31092, rate: 0.21 },    // Intermediate
     { from: 31092, to: 62430, rate: 0.42 },    // Higher
-    { from: 62430, to: 112570, rate: 0.45 },   // Advanced
-    { from: 112570, to: Infinity, rate: 0.48 }, // Top
+    { from: 62430, to: 125140, rate: 0.45 },   // Advanced
+    { from: 125140, to: Infinity, rate: 0.48 }, // Top
   ],
   niPrimaryThreshold: 12570,
   niUpperEarningsLimit: 50270,

@@ -211,13 +211,15 @@ describe('calculateTax — 2025/26 rules', () => {
       expect(result.effectivePersonalAllowance).toBe(0)
     })
 
-    it('taxes at additional rate for income above £112,570 of taxable income', () => {
-      // At £125,140 with zero PA: taxable = £125,140
-      // Income tax: £37,700 × 20% + (£112,570 − £37,700) × 40% + (£125,140 − £112,570) × 45%
-      //           = £7,540 + £74,870 × 40% + £12,570 × 45%
-      //           = £7,540 + £29,948 + £5,656.50 = £43,144.50
-      const result = calculateTax([employment(125140)], defaultSettings, rules)
-      expectGBP(result.incomeTax, 43144.50)
+    it('taxes at additional rate only above £125,140 of taxable income', () => {
+      // The statutory higher rate limit is £125,140 of TAXABLE income, so at
+      // £125,140 gross with zero PA nothing is taxed at 45%:
+      //   £37,700 × 20% + (£125,140 − £37,700) × 40% = £7,540 + £34,976 = £42,516
+      const atLimit = calculateTax([employment(125140)], defaultSettings, rules)
+      expectGBP(atLimit.incomeTax, 42516)
+      // £150,000: 45% applies to £24,860 → £42,516 + £11,187 = £53,703
+      const above = calculateTax([employment(150000)], defaultSettings, rules)
+      expectGBP(above.incomeTax, 53703)
     })
   })
 

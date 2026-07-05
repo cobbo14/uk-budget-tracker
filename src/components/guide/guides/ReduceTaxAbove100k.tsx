@@ -77,13 +77,12 @@ export function ReduceTaxAbove100k() {
               ['£12,571 – £50,270', '20%', '8%', '28%'],
               ['£50,271 – £100,000', '40%', '2%', '42%'],
               ['£100,001 – £125,140', '40% + 20% taper', '2%', '62%'],
-              ['£125,141 – £150,000', '40%', '2%', '42%'],
-              ['Over £150,000', '45%', '2%', '47%'],
+              ['Over £125,140', '45%', '2%', '47%'],
             ]}
           />
           <p>
             Notice the &ldquo;hump&rdquo;: you pay a higher marginal rate between £100k and
-            £125k than at any other income level, including incomes above £150,000.
+            £125k than at any other income level, including incomes above £125,140.
           </p>
         </CardContent>
       </Card>
