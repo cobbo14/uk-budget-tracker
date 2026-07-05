@@ -4,6 +4,7 @@ import { generateId } from '@/utils/ids'
 import type { IncomeSource, IncomeType, SalarySacrificeType, SalarySacrificeItem, BenefitInKindType } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 import { formatCurrency } from '@/utils/formatting'
+import { resolveSalarySacrificeItem } from '@/utils/taxCalculations'
 import { Plus, X } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { HelpTooltip } from '@/components/ui/tooltip'
@@ -25,7 +26,7 @@ interface SalarySacrificeFormItem {
   type: SalarySacrificeType
   name: string
   annualAmount: string
-  amountType: 'flat' | 'percentage'
+  amountType: 'flat' | 'percentage' | 'qualifying'
 }
 
 interface BenefitInKindFormItem {
@@ -229,7 +230,7 @@ export function IncomeFormDialog() {
         const val = parseFloat(i.annualAmount) || 0
         return sum + (i.amountType === 'percentage' ? gross * (val / 100) : val)
       }, 0) + form.heldPensionSacrifice.reduce((sum, i) =>
-        sum + (i.amountType === 'percentage' ? gross * (i.annualAmount / 100) : i.annualAmount), 0)
+        sum + resolveSalarySacrificeItem(i, { grossAmount: gross, bonus: parseFloat(form.bonus) || 0 }, rules), 0)
       if (totalSacrifice > gross) errs.grossAmount = 'Total salary sacrifice cannot exceed gross amount'
     }
     if (form.type === 'employment' && form.benefitsInKindItems.length > 0) {
@@ -494,9 +495,10 @@ export function IncomeFormDialog() {
               {form.heldPensionSacrifice.length > 0 && (
                 <p className="text-xs text-muted-foreground">
                   Plus pension salary sacrifice of £{form.heldPensionSacrifice.reduce((sum, i) =>
-                    sum + (i.amountType === 'percentage'
-                      ? (parseFloat(form.grossAmount) || 0) * (i.annualAmount / 100)
-                      : i.annualAmount), 0).toLocaleString('en-GB', { maximumFractionDigits: 0 })}/yr
+                    sum + resolveSalarySacrificeItem(i, {
+                      grossAmount: parseFloat(form.grossAmount) || 0,
+                      bonus: parseFloat(form.bonus) || 0,
+                    }, rules), 0).toLocaleString('en-GB', { maximumFractionDigits: 0 })}/yr
                   — managed in Settings → Pension Contributions.
                 </p>
               )}

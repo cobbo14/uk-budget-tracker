@@ -323,6 +323,62 @@ describe('pension contributions £90k–£150k', () => {
     expect(sacrificed.employerPensionFunding).toBeCloseTo(38760 * 0.03, 2) // £1,162.80
   })
 
+  it('salary sacrifice on qualifying earnings resolves against pre-sacrifice pay incl. bonus', () => {
+    // £90,000 salary + £10,000 bonus → QE = £50,270 − £6,240 = £44,030 (capped);
+    // 5% sacrifice = £2,201.50
+    const source: IncomeSource = {
+      id: '1', name: 'Job', type: 'employment', grossAmount: 90000, bonus: 10000,
+      salarySacrificeItems: [
+        { id: 's1', type: 'pension', name: 'Pension', annualAmount: 5, amountType: 'qualifying' },
+      ],
+    }
+    const base = calculateTax([job(90000, 10000)], baseSettings, rules2627)
+    const r = calculateTax([source], baseSettings, rules2627)
+    expect(r.salarySacrificeTotal).toBeCloseTo(2201.50, 2)
+    expect(r.salarySacrificePension).toBeCloseTo(2201.50, 2)
+    // Sacrifice saves NI at 2% here (pay above the UEL)
+    expect(base.nationalInsurance - r.nationalInsurance).toBeCloseTo(2201.50 * 0.02, 2)
+    expect(r.totalPensionFunding).toBeCloseTo(2201.50, 2)
+  })
+
+  it('SIPP as a percentage of qualifying earnings resolves to the net amount paid', () => {
+    // £95,000: QE £44,030 → 3% = £1,320.90 net, £1,651.13 gross
+    const r = calculateTax(
+      [job(95000)],
+      { ...baseSettings, sippContributionType: 'qualifying', sippContribution: 3 },
+      rules2627,
+    )
+    expect(r.totalDeductions).toBeCloseTo(1320.90, 2)   // cash paid
+    expect(r.sippNetContribution).toBeCloseTo(1320.90, 2)
+    expect(r.sippGrossContribution).toBeCloseTo(1320.90 / 0.8, 2)
+    expect(r.adjustedNetIncome).toBeCloseTo(95000 - 1320.90 / 0.8, 2)
+    expect(r.totalPensionFunding).toBeCloseTo(1320.90 / 0.8, 2)
+  })
+
+  it('SIPP as a percentage of income resolves against pension-eligible income', () => {
+    // £95,000 × 4% = £3,800 net, £4,750 gross
+    const r = calculateTax(
+      [job(95000)],
+      { ...baseSettings, sippContributionType: 'percentage', sippContribution: 4 },
+      rules2627,
+    )
+    expect(r.sippNetContribution).toBeCloseTo(3800, 2)
+    expect(r.sippGrossContribution).toBeCloseTo(4750, 2)
+  })
+
+  it('workplace net-pay contribution on qualifying earnings', () => {
+    // £95,000: QE £44,030 → 5% = £2,201.50 deducted from taxable income
+    const base = calculateTax([job(95000)], baseSettings, rules2627)
+    const r = calculateTax(
+      [job(95000)],
+      { ...baseSettings, pensionContributionType: 'qualifying', pensionContributionValue: 5 },
+      rules2627,
+    )
+    expect(r.totalDeductions).toBeCloseTo(2201.50, 2)
+    expect(base.incomeTax - r.incomeTax).toBeCloseTo(2201.50 * 0.40, 2) // 40% zone
+    expect(r.nationalInsurance).toBeCloseTo(base.nationalInsurance, 2)  // no NI saving
+  })
+
   it('caps a percentage net-pay contribution at 100% of relevant earnings', () => {
     const r = calculateTax(
       [job(110000)],

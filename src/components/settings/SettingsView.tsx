@@ -15,6 +15,7 @@ import { getAvailableTaxYears, getTaxRules } from '@/taxRules'
 import { exportStateAsJSON, parseImportedState, mergeWithDefaults } from '@/services/localStorage'
 import { generateCSV } from '@/utils/exportUtils'
 import { generateId } from '@/utils/ids'
+import { resolveSalarySacrificeItem } from '@/utils/taxCalculations'
 import type { StudentLoanPlan, AppSettings, IncomeSource } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
 
@@ -49,7 +50,17 @@ export function SettingsView() {
   const pensionSacrificeItems = (s: IncomeSource) =>
     (s.salarySacrificeItems ?? []).filter(i => i.type === 'pension')
 
-  function updateSacrifice(source: IncomeSource, amount: number, amountType: 'flat' | 'percentage') {
+  // Bases for percentage-type contributions (mirror the engine)
+  const qualifyingEarningsTotal = employmentSources.reduce((sum, s) => {
+    const sacrifice = (s.salarySacrificeItems ?? []).reduce((a, i) => a + resolveSalarySacrificeItem(i, s, rules), 0)
+    const pay = Math.max(0, s.grossAmount + (s.bonus ?? 0) - sacrifice)
+    return sum + Math.max(0, Math.min(pay, rules.qualifyingEarningsUpper) - rules.qualifyingEarningsLower)
+  }, 0)
+  const pensionEligibleIncome =
+    Math.max(0, taxSummary.employmentGross - taxSummary.salarySacrificeTotal) +
+    Math.max(0, taxSummary.selfEmploymentGross - taxSummary.selfEmploymentAllowableExpenses)
+
+  function updateSacrifice(source: IncomeSource, amount: number, amountType: 'flat' | 'percentage' | 'qualifying') {
     const items = source.salarySacrificeItems ?? []
     const pension = items.filter(i => i.type === 'pension')
     const others = items.filter(i => i.type !== 'pension')
@@ -184,7 +195,7 @@ export function SettingsView() {
             <div className="space-y-3">
               <p className="text-sm font-medium">
                 Salary sacrifice
-                <HelpTooltip content="Deducted from gross pay before tax and NI — saves both Income Tax and National Insurance. Percentages apply to that job's base salary (bonuses excluded)." />
+                <HelpTooltip content="Deducted from gross pay before tax and NI — saves both Income Tax and National Insurance. '% of pay' applies to that job's base salary (bonuses excluded); '% of QE' applies to the job's qualifying earnings — the £6,240–£50,270 auto-enrolment band of pay including bonus." />
               </p>
               {employmentSources.map(source => {
                 const pension = pensionSacrificeItems(source)
@@ -204,15 +215,15 @@ export function SettingsView() {
                   <div key={source.id} className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
                     <Label htmlFor={`sacrifice-${source.id}`}>
                       {employmentSources.length > 1 ? source.name : 'Your salary sacrifice'}
-                      {amountType === 'percentage' ? ' (%)' : ' (£/year)'}
+                      {amountType === 'flat' ? ' (£/year)' : amountType === 'qualifying' ? ' (% of qualifying earnings)' : ' (%)'}
                     </Label>
                     <div className="flex gap-2">
                       <Input
                         id={`sacrifice-${source.id}`}
                         type="number"
                         min="0"
-                        max={amountType === 'percentage' ? 100 : undefined}
-                        step={amountType === 'percentage' ? '0.5' : '100'}
+                        max={amountType !== 'flat' ? 100 : undefined}
+                        step={amountType !== 'flat' ? '0.5' : '100'}
                         placeholder="0"
                         className="flex-1"
                         value={item?.annualAmount || ''}
@@ -220,17 +231,24 @@ export function SettingsView() {
                       />
                       <Select
                         value={amountType}
-                        onValueChange={v => item && updateSacrifice(source, item.annualAmount, v as 'flat' | 'percentage')}
+                        onValueChange={v => item && updateSacrifice(source, item.annualAmount, v as 'flat' | 'percentage' | 'qualifying')}
                       >
-                        <SelectTrigger className="w-28 shrink-0">
+                        <SelectTrigger className="w-32 shrink-0">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="percentage">% of pay</SelectItem>
+                          <SelectItem value="qualifying">% of QE</SelectItem>
                           <SelectItem value="flat">£/year</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+                    {item && amountType !== 'flat' && item.annualAmount > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        = £{Math.round(resolveSalarySacrificeItem(item, source, rules)).toLocaleString()}/yr
+                        {amountType === 'qualifying' && ' on this job\'s qualifying earnings'}
+                      </p>
+                    )}
                   </div>
                 )
               })}
@@ -252,6 +270,7 @@ export function SettingsView() {
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   <SelectItem value="percentage">Percentage of income</SelectItem>
+                  <SelectItem value="qualifying">Percentage of qualifying earnings</SelectItem>
                   <SelectItem value="flat">Fixed annual amount (£)</SelectItem>
                 </SelectContent>
               </Select>
@@ -260,18 +279,27 @@ export function SettingsView() {
             {settings.pensionContributionType !== 'none' && (
               <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
                 <Label htmlFor="pension-value">
-                  {settings.pensionContributionType === 'percentage' ? 'Contribution (%)' : 'Annual Amount (£)'}
+                  {settings.pensionContributionType === 'flat' ? 'Annual Amount (£)'
+                    : settings.pensionContributionType === 'qualifying' ? 'Contribution (% of qualifying earnings)'
+                    : 'Contribution (%)'}
                 </Label>
                 <Input
                   id="pension-value"
                   type="number"
                   min="0"
-                  max={settings.pensionContributionType === 'percentage' ? 100 : undefined}
-                  step={settings.pensionContributionType === 'percentage' ? '0.5' : '100'}
+                  max={settings.pensionContributionType !== 'flat' ? 100 : undefined}
+                  step={settings.pensionContributionType !== 'flat' ? '0.5' : '100'}
                   value={settings.pensionContributionValue || ''}
                   onChange={e => update({ pensionContributionValue: parseFloat(e.target.value) || 0 })}
-                  placeholder={settings.pensionContributionType === 'percentage' ? '5' : '2000'}
+                  placeholder={settings.pensionContributionType === 'flat' ? '2000' : '5'}
                 />
+                {settings.pensionContributionType === 'qualifying' && (settings.pensionContributionValue || 0) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    = £{Math.round(qualifyingEarningsTotal * (settings.pensionContributionValue / 100)).toLocaleString()}/yr
+                    on qualifying earnings of £{Math.round(qualifyingEarningsTotal).toLocaleString()}
+                    (the £{rules.qualifyingEarningsLower.toLocaleString()}–£{rules.qualifyingEarningsUpper.toLocaleString()} band per job — the auto-enrolment minimum employee rate is 5%).
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Net pay (workplace scheme) contributions are deducted from your salary before tax, so you
                   get full marginal-rate relief automatically through payroll — but they do <strong>not</strong> reduce
@@ -286,18 +314,50 @@ export function SettingsView() {
           <div className="space-y-3 pt-2 border-t">
             <p className="text-sm font-medium">SIPP / personal pension (relief at source)</p>
             <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
-              <Label htmlFor="sipp-contribution">Annual Contribution (£)</Label>
+              <Label>Contribution Type</Label>
+              <Select
+                value={settings.sippContributionType ?? 'flat'}
+                onValueChange={v => update({ sippContributionType: v as AppSettings['sippContributionType'] })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Fixed annual amount (£)</SelectItem>
+                  <SelectItem value="percentage">Percentage of income</SelectItem>
+                  <SelectItem value="qualifying">Percentage of qualifying earnings</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
+              <Label htmlFor="sipp-contribution">
+                {(settings.sippContributionType ?? 'flat') === 'flat' ? 'Annual Contribution (£)'
+                  : settings.sippContributionType === 'qualifying' ? 'Contribution (% of qualifying earnings)'
+                  : 'Contribution (% of income)'}
+              </Label>
               <Input
                 id="sipp-contribution"
                 type="number"
                 min="0"
-                step="100"
-                placeholder="0"
+                max={(settings.sippContributionType ?? 'flat') !== 'flat' ? 100 : undefined}
+                step={(settings.sippContributionType ?? 'flat') !== 'flat' ? '0.5' : '100'}
+                placeholder={(settings.sippContributionType ?? 'flat') === 'flat' ? '0' : '5'}
                 value={settings.sippContribution || ''}
                 onChange={e => update({ sippContribution: parseFloat(e.target.value) || 0 })}
               />
+              {(settings.sippContributionType === 'percentage' || settings.sippContributionType === 'qualifying') && (settings.sippContribution || 0) > 0 && (() => {
+                const base = settings.sippContributionType === 'qualifying' ? qualifyingEarningsTotal : pensionEligibleIncome
+                const net = base * (settings.sippContribution / 100)
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    = £{Math.round(net).toLocaleString()}/yr paid
+                    (£{Math.round(net / 0.8).toLocaleString()} into your pension after the 20% provider top-up).
+                  </p>
+                )
+              })()}
               <p className="text-xs text-muted-foreground">
-                Enter the amount you actually pay. SIPP contributions are relief at source — your provider claims 20% basic rate tax relief automatically (e.g. you pay £800 and £1,000 goes into your pension).
+                The amount is what you actually pay (percentages resolve to the amount paid).
+                SIPP contributions are relief at source — your provider claims 20% basic rate tax relief automatically (e.g. you pay £800 and £1,000 goes into your pension).
                 Higher and additional rate relief is modelled by extending your basic-rate band (claim it via self-assessment or a tax code adjustment).
                 The gross amount counts toward the Annual Allowance.
               </p>

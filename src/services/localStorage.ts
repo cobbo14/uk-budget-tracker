@@ -1,6 +1,7 @@
 import type { AppState, Expense, Profile } from '@/types'
 import { generateId } from '@/utils/ids'
 import { DEFAULT_TAX_YEAR, TAX_RULES } from '@/taxRules'
+import { resolveSalarySacrificeItem } from '@/utils/taxCalculations'
 
 const LEGACY_KEY = 'uk_budget_tracker_v1'
 const PROFILES_KEY = 'uk_budget_tracker_profiles'
@@ -22,6 +23,7 @@ export const DEFAULT_STATE: AppState = {
     employerPensionContributionType: 'flat',
     employerPensionContributionValue: 0,
     sippContribution: 0,
+    sippContributionType: 'flat',
     pensionCarryForward: { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 },
     studentLoanPlan: 'none',
     hasPostgradLoan: false,
@@ -122,7 +124,7 @@ export function mergeWithDefaults(partial: Partial<AppState>): AppState {
       const eligible = merged.incomeSources.reduce((sum, s) => {
         if (s.type === 'employment') {
           const sacrifice = (s.salarySacrificeItems ?? []).reduce((a, i) =>
-            a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
+            a + resolveSalarySacrificeItem(i, s, TAX_RULES[merged.settings.taxYear]), 0)
           return sum + Math.max(0, s.grossAmount + (s.bonus ?? 0) - sacrifice)
         }
         if (s.type === 'self-employment') {

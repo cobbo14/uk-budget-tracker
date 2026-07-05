@@ -99,14 +99,15 @@ export function WhatIfCalculator() {
               >
                 <option value="none">None</option>
                 <option value="percentage">%</option>
+                <option value="qualifying">% of QE</option>
                 <option value="flat">£ flat</option>
               </select>
               {pensionType !== 'none' && (
                 <input
                   type="number"
                   min={0}
-                  max={pensionType === 'percentage' ? 100 : 200000}
-                  step={pensionType === 'percentage' ? 0.5 : 100}
+                  max={pensionType === 'flat' ? 200000 : 100}
+                  step={pensionType === 'flat' ? 100 : 0.5}
                   value={pensionValue}
                   onChange={e => setPensionValue(Number(e.target.value))}
                   className="text-sm border rounded-md px-2 py-1 bg-background w-24"

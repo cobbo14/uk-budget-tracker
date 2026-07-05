@@ -136,20 +136,9 @@ export function getPensionScenarios(
     { amount: rules.personalAllowanceTaperThreshold + rules.personalAllowance, name: 'Taper End' },
   ]
 
-  // Mirror the engine's pension-eligible income: employment net of salary
-  // sacrifice, plus self-employment profit including any transitional spread
-  const pensionEligibleIncome =
-    Math.max(0, baseSummary.employmentGross - baseSummary.salarySacrificeTotal) +
-    Math.max(0, baseSummary.selfEmploymentGross - baseSummary.selfEmploymentAllowableExpenses) +
-    (settings.transitionalProfitSpread ?? 0)
-
-  // Current flat pension contribution
-  let currentContributionFlat = 0
-  if (settings.pensionContributionType === 'flat') {
-    currentContributionFlat = settings.pensionContributionValue
-  } else if (settings.pensionContributionType === 'percentage') {
-    currentContributionFlat = pensionEligibleIncome * (settings.pensionContributionValue / 100)
-  }
+  // Current flat pension contribution — the engine already resolved every
+  // basis (flat / percentage / qualifying earnings) into totalDeductions
+  const currentContributionFlat = Math.max(0, baseSummary.totalDeductions - baseSummary.sippNetContribution)
 
   const candidates: { amount: number; label: string; crossesThreshold?: string }[] = [
     { amount: currentContributionFlat, label: 'Current' },

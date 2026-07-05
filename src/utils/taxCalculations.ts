@@ -1,5 +1,24 @@
-import type { IncomeSource, GainSource, AppSettings, TaxSummary } from '@/types'
+import type { IncomeSource, GainSource, AppSettings, TaxSummary, SalarySacrificeItem } from '@/types'
 import type { TaxRules, TaxBand } from '@/taxRules/types'
+
+/** A job's auto-enrolment qualifying earnings: the £6,240–£50,270 band of pay. */
+export function qualifyingEarnings(pay: number, rules: TaxRules): number {
+  return Math.max(0, Math.min(pay, rules.qualifyingEarningsUpper) - rules.qualifyingEarningsLower)
+}
+
+/** Resolve a salary-sacrifice item against its employment source. The
+ *  'qualifying' basis uses the job's pre-sacrifice pay including bonus. */
+export function resolveSalarySacrificeItem(
+  item: SalarySacrificeItem,
+  source: Pick<IncomeSource, 'grossAmount' | 'bonus'>,
+  rules: TaxRules,
+): number {
+  if (item.amountType === 'percentage') return source.grossAmount * (item.annualAmount / 100)
+  if (item.amountType === 'qualifying') {
+    return qualifyingEarnings(source.grossAmount + (source.bonus ?? 0), rules) * (item.annualAmount / 100)
+  }
+  return item.annualAmount
+}
 
 // Result cache — avoids repeated calculations in planning loops (pension chart, what-if, etc.)
 const _taxCache = new Map<string, TaxSummary>()
@@ -77,13 +96,18 @@ export function calculateTax(
 
   // --- Salary sacrifice ---
   const sourceSalarySacrifice = (s: IncomeSource): number =>
-    (s.salarySacrificeItems ?? []).reduce((a, i) =>
-      a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
+    (s.salarySacrificeItems ?? []).reduce((a, i) => a + resolveSalarySacrificeItem(i, s, rules), 0)
   const totalSalarySacrifice = employmentSources.reduce((sum, s) => sum + sourceSalarySacrifice(s), 0)
   // Pension portion of salary sacrifice (counts toward Annual Allowance)
   const salarySacrificePension = employmentSources.reduce((sum, s) =>
     sum + (s.salarySacrificeItems ?? []).filter(i => i.type === 'pension').reduce((a, i) =>
-      a + (i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0), 0)
+      a + resolveSalarySacrificeItem(i, s, rules), 0), 0)
+  // Total qualifying earnings (post-sacrifice pay, banded per job) — the base
+  // for 'qualifying'-type workplace, SIPP and employer contributions
+  const qualifyingEarningsTotal = employmentSources.reduce((sum, s) => {
+    const pay = Math.max(0, s.grossAmount + (s.bonus ?? 0) - sourceSalarySacrifice(s))
+    return sum + qualifyingEarnings(pay, rules)
+  }, 0)
   // effectiveEmploymentGross: employment pay after salary sacrifice (pre-BIK)
   const effectiveEmploymentGross = Math.max(0, employmentGross - totalSalarySacrifice)
   // --- Benefits in Kind (P11D) ---
@@ -149,6 +173,8 @@ export function calculateTax(
   if (settings.pensionContributionType === 'percentage') {
     // Net-pay contributions cannot exceed relevant earnings (cap percentage at 100%)
     pensionDeduction = Math.min(pensionEligibleIncome * (settings.pensionContributionValue / 100), pensionEligibleIncome)
+  } else if (settings.pensionContributionType === 'qualifying') {
+    pensionDeduction = Math.min(qualifyingEarningsTotal * (settings.pensionContributionValue / 100), pensionEligibleIncome)
   } else if (settings.pensionContributionType === 'flat') {
     pensionDeduction = Math.min(settings.pensionContributionValue, pensionEligibleIncome)
   }
@@ -157,7 +183,13 @@ export function calculateTax(
   // Relief is capped at 100% of relevant UK earnings (employment + self-employment),
   // with a £3,600 gross floor for low/no earners; contributions above the cap get
   // no relief (no band extension, no adjusted-net-income reduction).
-  const sippContribution = settings.sippContribution ?? 0
+  // Resolve the SIPP amount: 'percentage'/'qualifying' give the NET amount paid
+  const sippType = settings.sippContributionType ?? 'flat'
+  const sippContribution = sippType === 'percentage'
+    ? pensionEligibleIncome * ((settings.sippContribution ?? 0) / 100)
+    : sippType === 'qualifying'
+      ? qualifyingEarningsTotal * ((settings.sippContribution ?? 0) / 100)
+      : (settings.sippContribution ?? 0)
   const sippGross = Math.min(sippContribution / 0.8, Math.max(3600, pensionEligibleIncome))
   // totalDeductions = cash the user paid into pensions (net-pay + net SIPP)
   const totalDeductions = pensionDeduction + sippContribution
@@ -521,11 +553,7 @@ export function calculateTax(
   } else if (settings.employerPensionContributionType === 'qualifying') {
     // Auto-enrolment basis: percentage of each job's qualifying earnings —
     // the band between £6,240 and £50,270 of post-sacrifice pay
-    const qualifyingEarnings = employmentSources.reduce((sum, s) => {
-      const pay = Math.max(0, s.grossAmount + (s.bonus ?? 0) - sourceSalarySacrifice(s))
-      return sum + Math.max(0, Math.min(pay, rules.qualifyingEarningsUpper) - rules.qualifyingEarningsLower)
-    }, 0)
-    employerPension = qualifyingEarnings * ((settings.employerPensionContributionValue ?? 0) / 100)
+    employerPension = qualifyingEarningsTotal * ((settings.employerPensionContributionValue ?? 0) / 100)
   } else {
     employerPension = settings.employerPensionContributionValue ?? 0
   }
@@ -667,6 +695,7 @@ export function calculateTax(
     startingSavingsRateApplied,
     nonSavingsIncomeAfterDeductions: nonSavingsAfterDeductions,
     sippGrossContribution: sippGross,
+    sippNetContribution: sippContribution,
   }
 
   // Store in cache (clear if full)

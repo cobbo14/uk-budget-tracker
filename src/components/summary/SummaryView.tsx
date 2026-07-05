@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import { useBudget } from '@/hooks/useBudget'
-import { calculateTax } from '@/utils/taxCalculations'
+import { calculateTax, resolveSalarySacrificeItem } from '@/utils/taxCalculations'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -144,7 +144,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
     const ssItems = emp.flatMap(s =>
       (s.salarySacrificeItems ?? []).map(i => ({
         name: i.name || i.type,
-        amount: i.amountType === 'percentage' ? s.grossAmount * (i.annualAmount / 100) : i.annualAmount,
+        amount: resolveSalarySacrificeItem(i, s, rules),
       }))
     )
     const bikItems = emp.flatMap(s =>
@@ -165,7 +165,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
     const ni4Upper = Math.max(0, seProfit - rules.selfEmployedClass4UpperThreshold)
 
     // Pension breakdown
-    const sipp = settings.sippContribution ?? 0
+    const sipp = t.sippNetContribution
     const employeePension = t.totalDeductions - sipp
 
     // PA breakdown — adjustedNetIncome follows the HMRC definition (all income

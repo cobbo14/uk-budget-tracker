@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { formatCurrency } from '@/utils/formatting'
+import { resolveSalarySacrificeItem } from '@/utils/taxCalculations'
 import { useBudget } from '@/hooks/useBudget'
 import { DELETE_INCOME, OPEN_EDIT_INCOME_DIALOG } from '@/store/actions'
 
@@ -38,7 +39,7 @@ export function IncomeCard({ source }: IncomeCardProps) {
       : source.grossAmount
 
   const totalSacrifice = (source.salarySacrificeItems ?? []).reduce((sum, i) =>
-    sum + (i.amountType === 'percentage' ? source.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
+    sum + resolveSalarySacrificeItem(i, source, rules), 0)
   const totalBIK = (source.benefitsInKind ?? []).reduce((sum, i) => {
     if (i.type === 'companyCar' && i.bikRate != null) return sum + i.annualValue * (i.bikRate / 100)
     return sum + i.annualValue
@@ -89,10 +90,12 @@ export function IncomeCard({ source }: IncomeCardProps) {
         {totalSacrifice > 0 && source.salarySacrificeItems && source.salarySacrificeItems.length > 0 && (
           <div className="mt-0.5 text-xs text-muted-foreground/70">
             {source.salarySacrificeItems.map(i => {
-              const resolved = i.amountType === 'percentage' ? source.grossAmount * (i.annualAmount / 100) : i.annualAmount
+              const resolved = resolveSalarySacrificeItem(i, source, rules)
               return (
                 <span key={i.id} className="mr-2">
-                  {i.name}: {i.amountType === 'percentage' ? `${i.annualAmount}% (${formatCurrency(resolved)})` : formatCurrency(i.annualAmount)}
+                  {i.name}: {i.amountType === 'percentage' || i.amountType === 'qualifying'
+                    ? `${i.annualAmount}%${i.amountType === 'qualifying' ? ' of QE' : ''} (${formatCurrency(resolved)})`
+                    : formatCurrency(i.annualAmount)}
                 </span>
               )
             })}

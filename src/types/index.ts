@@ -7,8 +7,10 @@ export interface SalarySacrificeItem {
   type: SalarySacrificeType
   name: string
   annualAmount: number
-  /** 'flat' (default) = fixed £ amount, 'percentage' = % of gross salary */
-  amountType?: 'flat' | 'percentage'
+  /** 'flat' (default) = fixed £ amount, 'percentage' = % of gross salary,
+   *  'qualifying' = % of the job's auto-enrolment qualifying earnings
+   *  (the £6,240–£50,270 band of gross pay incl. bonus, pre-sacrifice) */
+  amountType?: 'flat' | 'percentage' | 'qualifying'
 }
 
 export type BenefitInKindType = 'companyCar' | 'privateHealthcare' | 'accommodation' | 'other'
@@ -176,15 +178,19 @@ export interface PensionProjectionSettings {
 export interface AppSettings {
   taxYear: string
   scottishTaxpayer: boolean
-  pensionContributionType: 'none' | 'percentage' | 'flat'
+  // 'qualifying' = percentage of auto-enrolment qualifying earnings
+  pensionContributionType: 'none' | 'percentage' | 'flat' | 'qualifying'
   pensionContributionValue: number
   // Employer pension contributions (not salary sacrifice — recorded separately)
   // 'qualifying' = percentage of auto-enrolment qualifying earnings
   // (the £6,240–£50,270 band of each job's pay)
   employerPensionContributionType: 'flat' | 'percentage' | 'qualifying'
   employerPensionContributionValue: number
-  // SIPP (Self-Invested Personal Pension) — annual contribution in £
+  // SIPP (Self-Invested Personal Pension) — the amount you actually pay (net).
+  // With 'percentage'/'qualifying' the value is a % that resolves to the net
+  // amount paid; 'flat' (default) is a £ figure
   sippContribution: number
+  sippContributionType?: 'flat' | 'percentage' | 'qualifying'
   // Unused pension Annual Allowance carried forward from prior 3 years
   pensionCarryForward: PensionCarryForward
   studentLoanPlan: StudentLoanPlan
@@ -329,4 +335,5 @@ export interface TaxSummary {
   nonSavingsIncomeAfterDeductions: number
   // Gross (grossed-up) SIPP contribution — relief at source
   sippGrossContribution: number
+  sippNetContribution: number
 }
