@@ -16,6 +16,7 @@ import { exportStateAsJSON, parseImportedState, mergeWithDefaults } from '@/serv
 import { generateCSV } from '@/utils/exportUtils'
 import { generateId } from '@/utils/ids'
 import { calculateTax, resolveSalarySacrificeItem } from '@/utils/taxCalculations'
+import { applyExtraSacrifice } from '@/utils/planningUtils'
 import { formatCurrency } from '@/utils/formatting'
 import type { StudentLoanPlan, AppSettings, IncomeSource } from '@/types'
 import { useEmployeeMode } from '@/hooks/useEmployeeMode'
@@ -302,13 +303,26 @@ export function SettingsView() {
               {employmentSources.map(source => {
                 const pension = pensionSacrificeItems(source)
                 if (pension.length > 1) {
-                  const total = pension.reduce((a, i) =>
-                    a + (i.amountType === 'percentage' ? source.grossAmount * (i.annualAmount / 100) : i.annualAmount), 0)
+                  const total = pension.reduce((a, i) => a + resolveSalarySacrificeItem(i, source, rules), 0)
                   return (
-                    <p key={source.id} className="text-xs text-muted-foreground">
-                      {source.name}: £{Math.round(total).toLocaleString()}/year across {pension.length} pension
-                      sacrifice items — edit them on the Income tab.
-                    </p>
+                    <div key={source.id} className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>
+                        {source.name}: £{Math.round(total).toLocaleString()}/year across {pension.length} pension
+                        sacrifice items.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => dispatch({
+                          type: UPDATE_INCOME,
+                          payload: { ...source, salarySacrificeItems: applyExtraSacrifice(source, 0, rules) },
+                        })}
+                      >
+                        Combine into one
+                      </Button>
+                    </div>
                   )
                 }
                 const item = pension[0]

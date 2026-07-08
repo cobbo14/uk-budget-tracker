@@ -4,22 +4,26 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { formatCurrency, formatPercent } from '@/utils/formatting'
 import {
   getPensionScenarios, getPensionChartPoints, getPensionRecommendations,
-  solveMaxContribution, compareContributionMethods,
+  solveMaxContribution, compareContributionMethods, applyExtraSacrifice,
+  type MethodComparison,
 } from '@/utils/planningUtils'
+import { UPDATE_INCOME, UPDATE_SETTINGS } from '@/store/actions'
 import { cn } from '@/lib/utils'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine,
 } from 'recharts'
 
 export function PensionOptimiser() {
-  const { taxSummary, incomeSources, gainSources, settings, rules } = useBudget()
+  const { taxSummary, incomeSources, gainSources, settings, rules, dispatch, undo, canUndo } = useBudget()
 
   const [selectedExtra, setSelectedExtra] = useState<number | null>(null)
   const [chartView, setChartView] = useState<'marginal' | 'takehome'>('marginal')
   const [targetMonthly, setTargetMonthly] = useState('')
+  const [applied, setApplied] = useState<{ label: string; amount: number } | null>(null)
 
   const recommendations = useMemo(
     () => getPensionRecommendations(incomeSources, settings, rules, gainSources),
@@ -80,6 +84,33 @@ export function PensionOptimiser() {
     ? currentFlat + (taxSummary.adjustedNetIncome - rules.personalAllowanceTaperThreshold)
     : null
 
+  function applyRoute(m: MethodComparison) {
+    if (m.method === 'salary-sacrifice') {
+      const employments = incomeSources.filter(s => s.type === 'employment')
+      if (employments.length === 0) return
+      const target = employments.reduce((a, b) => (b.grossAmount > a.grossAmount ? b : a))
+      dispatch({
+        type: UPDATE_INCOME,
+        payload: { ...target, salarySacrificeItems: applyExtraSacrifice(target, advisorAmount, rules) },
+      })
+    } else if (m.method === 'net-pay') {
+      dispatch({
+        type: UPDATE_SETTINGS,
+        payload: { pensionContributionType: 'flat', pensionContributionValue: Math.round(currentFlat + advisorAmount) },
+      })
+    } else {
+      dispatch({
+        type: UPDATE_SETTINGS,
+        payload: {
+          sippContributionType: 'flat',
+          sippContribution: Math.round((taxSummary.sippNetContribution + advisorAmount * 0.8) * 100) / 100,
+        },
+      })
+    }
+    setApplied({ label: m.label.toLowerCase(), amount: advisorAmount })
+    setSelectedExtra(null)
+  }
+
   return (
     <div data-tour="pension-optimiser" className="space-y-3">
       <div>
@@ -89,6 +120,31 @@ export function PensionOptimiser() {
           &ldquo;Net cost&rdquo; is what you actually give up in take-home pay.
         </p>
       </div>
+
+      {/* Applied confirmation */}
+      {applied && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20 px-3 py-2 text-xs">
+          <span className="text-emerald-700 dark:text-emerald-300 font-medium">
+            ✓ Applied {formatCurrency(applied.amount)}/yr via {applied.label}
+          </span>
+          <span className="text-muted-foreground">
+            — your recommendations below have updated to reflect it.
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-6 text-xs"
+            disabled={!canUndo}
+            onClick={() => { undo(); setApplied(null) }}
+          >
+            Undo
+          </Button>
+          <a href="#settings" className="underline underline-offset-2 text-muted-foreground hover:text-foreground">
+            View in Settings
+          </a>
+        </div>
+      )}
 
       {/* Recommendations */}
       {recommendations.length > 0 && (
@@ -307,6 +363,15 @@ export function PensionOptimiser() {
                             + {formatCurrency(Math.round(m.employerBonus))} employer match
                           </div>
                         )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-6 mt-1.5 text-xs"
+                          onClick={() => applyRoute(m)}
+                        >
+                          Apply
+                        </Button>
                       </td>
                       <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap align-top">{formatCurrency(m.cashPaid)}</td>
                       <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap align-top text-emerald-600 dark:text-emerald-400">

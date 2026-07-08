@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { calculateTax } from './taxCalculations'
 import {
   getThresholdAlerts, getPensionRecommendations, solveMaxContribution, compareContributionMethods,
+  applyExtraSacrifice,
 } from './planningUtils'
 import rules2627 from '@/taxRules/2026-27'
 import type { IncomeSource, AppSettings } from '@/types'
@@ -142,6 +143,59 @@ describe('solveMaxContribution', () => {
   it('returns null when the target is unreachable even now', () => {
     const result = solveMaxContribution(90000, [employment(110000)], baseSettings, rules2627)
     expect(result).toBeNull()
+  })
+})
+
+describe('applyExtraSacrifice', () => {
+  const source = (items?: IncomeSource['salarySacrificeItems']): IncomeSource =>
+    ({ id: '1', name: 'Job', type: 'employment', grossAmount: 60000, salarySacrificeItems: items })
+
+  it('creates a flat pension item when none exists', () => {
+    const items = applyExtraSacrifice(source(), 3000, rules2627)
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({ type: 'pension', amountType: 'flat', annualAmount: 3000 })
+  })
+
+  it('increments an existing flat pension item', () => {
+    const items = applyExtraSacrifice(
+      source([{ id: 'p', type: 'pension', name: 'Pension', annualAmount: 2000, amountType: 'flat' }]),
+      3000, rules2627,
+    )
+    expect(items).toHaveLength(1)
+    expect(items[0].annualAmount).toBe(5000)
+  })
+
+  it('converts a percentage item to flat with the identical resolved value', () => {
+    // 5% of £60,000 = £3,000, plus £1,000 extra → flat £4,000
+    const items = applyExtraSacrifice(
+      source([{ id: 'p', type: 'pension', name: 'Pension', annualAmount: 5, amountType: 'percentage' }]),
+      1000, rules2627,
+    )
+    expect(items[0]).toMatchObject({ amountType: 'flat', annualAmount: 4000 })
+  })
+
+  it('merges multiple pension items and preserves non-pension items', () => {
+    // flat £2,000 + qualifying 3% of (£60,000 − £6,240 band → £44,030? no: min(60000,50270)−6240 = £44,030)
+    // 3% × £44,030 = £1,320.90 → merged flat £3,320.90; cycle-to-work untouched
+    const items = applyExtraSacrifice(
+      source([
+        { id: 'a', type: 'pension', name: 'A', annualAmount: 2000, amountType: 'flat' },
+        { id: 'b', type: 'pension', name: 'B', annualAmount: 3, amountType: 'qualifying' },
+        { id: 'c', type: 'cycleToWork', name: 'Bike', annualAmount: 500, amountType: 'flat' },
+      ]),
+      0, rules2627,
+    )
+    expect(items).toHaveLength(2)
+    expect(items.find(i => i.type === 'cycleToWork')?.annualAmount).toBe(500)
+    expect(items.find(i => i.type === 'pension')).toMatchObject({ amountType: 'flat', annualAmount: 3320.90 })
+  })
+
+  it('removes the pension item when consolidating to zero', () => {
+    const items = applyExtraSacrifice(
+      source([{ id: 'p', type: 'pension', name: 'Pension', annualAmount: 0, amountType: 'percentage' }]),
+      0, rules2627,
+    )
+    expect(items).toHaveLength(0)
   })
 })
 

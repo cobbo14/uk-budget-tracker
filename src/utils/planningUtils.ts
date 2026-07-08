@@ -1,7 +1,8 @@
-import type { IncomeSource, GainSource, AppSettings, TaxSummary } from '@/types'
+import type { IncomeSource, GainSource, AppSettings, TaxSummary, SalarySacrificeItem } from '@/types'
 import type { TaxRules } from '@/taxRules/types'
-import { calculateTax } from '@/utils/taxCalculations'
+import { calculateTax, resolveSalarySacrificeItem } from '@/utils/taxCalculations'
 import { getHigherRateThreshold } from '@/taxRules'
+import { generateId } from '@/utils/ids'
 
 export interface ThresholdAlert {
   name: string
@@ -258,6 +259,39 @@ export function getPensionRecommendations(
   }
 
   return recs
+}
+
+// ─── Applying a recommendation ───────────────────────────────────────────────
+
+/** New salarySacrificeItems for a source after adding extraGross £/yr of
+ *  pension sacrifice. Keeps the single-pension-item invariant the Settings
+ *  card relies on: %/qualifying items and multiple items are merged into one
+ *  flat item with the identical resolved value (same tax outcome). Pass
+ *  extraGross = 0 to consolidate without adding. */
+export function applyExtraSacrifice(
+  source: IncomeSource,
+  extraGross: number,
+  rules: TaxRules,
+): SalarySacrificeItem[] {
+  const items = source.salarySacrificeItems ?? []
+  const pension = items.filter(i => i.type === 'pension')
+  const others = items.filter(i => i.type !== 'pension')
+
+  if (pension.length === 1 && (pension[0].amountType ?? 'flat') === 'flat') {
+    return [...others, { ...pension[0], annualAmount: pension[0].annualAmount + extraGross }]
+  }
+  const existingResolved = pension.reduce(
+    (a, i) => a + resolveSalarySacrificeItem(i, source, rules), 0,
+  )
+  const total = existingResolved + extraGross
+  if (total <= 0) return others
+  return [...others, {
+    id: pension[0]?.id ?? generateId(),
+    type: 'pension',
+    name: pension[0]?.name ?? 'Salary Sacrifice Pension',
+    annualAmount: Math.round(total * 100) / 100,
+    amountType: 'flat',
+  }]
 }
 
 // ─── Goal solver ─────────────────────────────────────────────────────────────
