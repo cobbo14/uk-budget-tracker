@@ -199,8 +199,13 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Free UK Tax Calculator 2025–27</h1>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Free UK Tax Calculator 2025–27</h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Last updated {new Date(__BUILD_DATE__).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
         <div className="flex items-center gap-1 rounded-lg border p-1 text-sm">
           <button
             onClick={() => onShowMonthlyChange(true)}
