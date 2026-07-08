@@ -186,6 +186,11 @@ export interface AppSettings {
   // (the £6,240–£50,270 band of each job's pay)
   employerPensionContributionType: 'flat' | 'percentage' | 'qualifying'
   employerPensionContributionValue: number
+  // Employer matching: employer adds matchRate% of the employee's
+  // workplace-route contributions (salary sacrifice + net pay), capped at
+  // matchCapPercent% of pre-sacrifice employment pay. SIPPs are not matched.
+  employerMatchRate?: number        // 100 = £1 for £1
+  employerMatchCapPercent?: number  // e.g. 5 = matches up to 5% of pay
   // SIPP (Self-Invested Personal Pension) — the amount you actually pay (net).
   // With 'percentage'/'qualifying' the value is a % that resolves to the net
   // amount paid; 'flat' (default) is a £ figure
@@ -303,7 +308,8 @@ export interface TaxSummary {
   // Blind Person's Allowance applied
   blindPersonsAllowanceApplied: number
   // Pension Annual Allowance
-  employerPensionFunding: number        // resolved employer contribution (flat or % of eligible income)
+  employerPensionFunding: number
+  employerMatchAmount: number        // resolved employer contribution (flat or % of eligible income)
   totalPensionFunding: number           // employee + employer contributions
   effectiveAnnualAllowance: number      // AA after taper (£60k → £10k)
   totalAnnualAllowanceAvailable: number // effectiveAA + carry-forward

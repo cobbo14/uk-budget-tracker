@@ -627,6 +627,46 @@ export function SettingsView() {
                 Allowance but do not reduce your taxable income.
               </p>
             </div>
+            {/* Employer matching */}
+            <div className="grid gap-1.5 w-full max-w-xs sm:max-w-sm">
+              <Label>
+                Employer matching (optional)
+                <HelpTooltip content="Many schemes match what you pay in — e.g. '100% match up to 5% of pay' means every £1 you contribute through the workplace scheme (salary sacrifice or net pay) is matched with £1, until your contributions reach 5% of pay. SIPP contributions are not matched." />
+              </Label>
+              <div className="flex items-center gap-2 text-sm">
+                <Input
+                  id="employer-match-rate"
+                  type="number"
+                  min="0"
+                  max="200"
+                  step="25"
+                  placeholder="100"
+                  className="w-20"
+                  value={settings.employerMatchRate || ''}
+                  onChange={e => update({ employerMatchRate: parseFloat(e.target.value) || 0 })}
+                  aria-label="Employer match rate (%)"
+                />
+                <span className="text-muted-foreground whitespace-nowrap">% match, up to</span>
+                <Input
+                  id="employer-match-cap"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  placeholder="5"
+                  className="w-20"
+                  value={settings.employerMatchCapPercent || ''}
+                  onChange={e => update({ employerMatchCapPercent: parseFloat(e.target.value) || 0 })}
+                  aria-label="Employer match cap (% of pay)"
+                />
+                <span className="text-muted-foreground whitespace-nowrap">% of pay</span>
+              </div>
+              {taxSummary.employerMatchAmount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Current match: £{Math.round(taxSummary.employerMatchAmount).toLocaleString()}/yr on top of the contribution above.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* MPAA toggle */}

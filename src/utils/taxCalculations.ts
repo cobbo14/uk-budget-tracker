@@ -566,6 +566,16 @@ export function calculateTax(
     return sum + s.employerPensionAmount
   }, 0)
   employerPension += perSourceEmployerPension
+  // Employer matching: matchRate% of workplace-route employee contributions
+  // (salary sacrifice + net pay — SIPPs are not matched), capped at
+  // matchCapPercent% of pre-sacrifice employment pay
+  let employerMatchAmount = 0
+  if ((settings.employerMatchRate ?? 0) > 0 && (settings.employerMatchCapPercent ?? 0) > 0) {
+    const workplaceEmployee = salarySacrificePension + pensionDeduction
+    const matchCapBase = employmentGross * ((settings.employerMatchCapPercent ?? 0) / 100)
+    employerMatchAmount = Math.min(workplaceEmployee, matchCapBase) * ((settings.employerMatchRate ?? 0) / 100)
+    employerPension += employerMatchAmount
+  }
   // AA funding counts the GROSS SIPP contribution (net + provider-claimed relief)
   const totalPensionFunding = pensionDeduction + sippGross + employerPension + salarySacrificePension
   // Threshold income: total income after net-pay deductions, minus gross RAS (SIPP),
@@ -674,6 +684,7 @@ export function calculateTax(
     vctRelief,
     blindPersonsAllowanceApplied,
     employerPensionFunding: employerPension,
+    employerMatchAmount,
     totalPensionFunding,
     effectiveAnnualAllowance,
     totalAnnualAllowanceAvailable,

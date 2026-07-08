@@ -94,7 +94,7 @@ export const TOUR_STEPS: TourStep[] = [
     scrollToTarget: true,
     title: 'Pension Optimiser',
     description:
-      "The Pension Optimiser chart shows how increasing your pension contributions affects your take-home pay. It highlights the points where contributions unlock tax relief and push you below key thresholds — making it easy to spot the most efficient contribution level.",
+      "The Pension Optimiser recommends what to contribute and why — capturing your employer match, escaping the 60% zone, keeping Child Benefit and childcare support — shows the marginal relief on every extra pound, works out what you can afford, and compares salary sacrifice, net pay and SIPP routes.",
   },
   {
     id: 'tab-settings',

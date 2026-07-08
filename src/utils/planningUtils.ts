@@ -110,6 +110,284 @@ export function getThresholdAlerts(
   return alerts
 }
 
+// ─── Pension recommendations ─────────────────────────────────────────────────
+
+export interface PensionRecommendation {
+  id: 'employer-match' | 'keep-childcare' | 'escape-60-zone' | 'keep-child-benefit'
+    | 'stay-basic-rate' | 'use-annual-allowance'
+  title: string
+  reason: string
+  /** additional gross contribution on top of current, £/yr */
+  extraContribution: number
+  taxSaved: number
+  netCost: number
+  effectiveReliefRate: number
+  /** extra employer money unlocked (employer-match only) */
+  employerBonus?: number
+  /** carry-forward from 3 years ago that lapses at the end of this tax year */
+  expiringCarryForward?: number
+  /** true when acting on this would exceed the available Annual Allowance */
+  aaWarning?: boolean
+}
+
+/** Ranked, named contribution targets with the tax/NI effect of hitting each.
+ *  Extra contributions are modelled as flat net-pay amounts (which reduce
+ *  adjusted net income £1 for £1); the method advisor handles "how to pay". */
+export function getPensionRecommendations(
+  incomeSources: IncomeSource[],
+  settings: AppSettings,
+  rules: TaxRules,
+  gainSources: GainSource[] = [],
+): PensionRecommendation[] {
+  const baseline = calculateTax(incomeSources, settings, rules, gainSources)
+  const ani = baseline.adjustedNetIncome
+  const currentFlat = Math.max(0, baseline.totalDeductions - baseline.sippNetContribution)
+  const pensionEligible =
+    Math.max(0, baseline.employmentGross - baseline.salarySacrificeTotal) +
+    Math.max(0, baseline.selfEmploymentGross - baseline.selfEmploymentAllowableExpenses) +
+    (settings.transitionalProfitSpread ?? 0)
+  const remainingEligible = Math.max(0, pensionEligible - currentFlat)
+  const aaHeadroom = Math.max(0, baseline.totalAnnualAllowanceAvailable - baseline.totalPensionFunding)
+
+  const recs: PensionRecommendation[] = []
+
+  const evaluate = (extra: number) => {
+    const scenario = calculateTax(
+      incomeSources,
+      { ...settings, pensionContributionType: 'flat', pensionContributionValue: currentFlat + extra },
+      rules,
+      gainSources,
+    )
+    return {
+      scenario,
+      taxSaved: Math.max(0, baseline.totalTax - scenario.totalTax),
+      netCost: baseline.netIncome - scenario.netIncome,
+    }
+  }
+
+  const push = (
+    id: PensionRecommendation['id'],
+    title: string,
+    reason: string,
+    extra: number,
+    overrides: Partial<PensionRecommendation> = {},
+  ) => {
+    if (extra <= 0 || extra > remainingEligible) return
+    const { scenario, taxSaved, netCost } = evaluate(extra)
+    recs.push({
+      id, title, reason,
+      extraContribution: Math.ceil(extra),
+      taxSaved,
+      netCost,
+      effectiveReliefRate: extra > 0 ? taxSaved / extra : 0,
+      aaWarning: extra > aaHeadroom || scenario.annualAllowanceExcess > 0,
+      ...overrides,
+    })
+  }
+
+  // 1. Capture the full employer match — free money first
+  if ((settings.employerMatchRate ?? 0) > 0 && (settings.employerMatchCapPercent ?? 0) > 0) {
+    const workplaceEmployee = currentFlat + baseline.salarySacrificePension
+    const capBase = baseline.employmentGross * ((settings.employerMatchCapPercent ?? 0) / 100)
+    const shortfall = capBase - workplaceEmployee
+    if (shortfall > 0) {
+      const { scenario, taxSaved, netCost } = evaluate(shortfall)
+      const bonus = scenario.employerMatchAmount - baseline.employerMatchAmount
+      recs.push({
+        id: 'employer-match',
+        title: 'Capture your full employer match',
+        reason: `Free money: your employer adds another ${Math.round(bonus).toLocaleString('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 })}/yr when you contribute up to the match cap.`,
+        extraContribution: Math.ceil(shortfall),
+        taxSaved,
+        netCost,
+        effectiveReliefRate: shortfall > 0 ? (taxSaved + bonus) / shortfall : 0,
+        employerBonus: bonus,
+        aaWarning: shortfall > aaHeadroom,
+      })
+    }
+  }
+
+  // 2. Escape the 60% zone / keep childcare support (ANI → £100,000)
+  const taperStart = rules.personalAllowanceTaperThreshold
+  if (ani > taperStart) {
+    const hasChildren = (settings.numberOfChildren ?? 0) > 0
+    push(
+      hasChildren ? 'keep-childcare' : 'escape-60-zone',
+      hasChildren ? 'Keep childcare support & escape the 60% zone' : 'Escape the 60% tax zone',
+      hasChildren
+        ? 'Brings adjusted net income to £100,000: restores your Personal Allowance taper relief AND keeps Tax-Free Childcare (worth up to £2,000/child/yr) and 30 free hours — a cliff edge, not a taper.'
+        : 'Brings adjusted net income to £100,000, ending the 60% effective marginal rate from the Personal Allowance taper.',
+      ani - taperStart,
+    )
+  }
+
+  // 3. Keep full Child Benefit (ANI → £60,000)
+  if ((settings.childBenefitClaiming ?? false) && baseline.hicbc > 0) {
+    push(
+      'keep-child-benefit',
+      'Keep your full Child Benefit',
+      `Brings adjusted net income to £${rules.hicbcThreshold.toLocaleString()}, removing the High Income Child Benefit Charge of ${Math.round(baseline.hicbc).toLocaleString('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 })}/yr.`,
+      ani - rules.hicbcThreshold,
+    )
+  }
+
+  // 4. Stay a basic-rate taxpayer (ANI → higher-rate threshold)
+  const higherRateThreshold = getHigherRateThreshold(rules, settings.scottishTaxpayer)
+  if (ani > higherRateThreshold && ani <= taperStart) {
+    push(
+      'stay-basic-rate',
+      'Stay below the higher rate',
+      `Brings adjusted net income to £${higherRateThreshold.toLocaleString()} so no income is taxed at the higher rate.`,
+      ani - higherRateThreshold,
+    )
+  }
+
+  // 5. Use the full Annual Allowance (carry-forward expires oldest-first)
+  if (aaHeadroom > 0 && remainingEligible > 0) {
+    const expiring = settings.pensionCarryForward?.threeYearsAgo ?? 0
+    const endYear = parseInt(settings.taxYear.split('-')[0]) + 1
+    push(
+      'use-annual-allowance',
+      'Use your full Annual Allowance',
+      expiring > 0
+        ? `You have £${Math.round(aaHeadroom).toLocaleString()} of unused allowance — including £${Math.round(expiring).toLocaleString()} of carry-forward that expires on 5 April ${endYear}.`
+        : `You have £${Math.round(aaHeadroom).toLocaleString()} of unused Annual Allowance this year — contributions up to that get full tax relief.`,
+      Math.min(aaHeadroom, remainingEligible),
+      expiring > 0 ? { expiringCarryForward: expiring } : {},
+    )
+  }
+
+  return recs
+}
+
+// ─── Goal solver ─────────────────────────────────────────────────────────────
+
+/** Largest flat contribution (total, £/yr) that keeps net income at or above
+ *  the given annual take-home target. Returns null if even the current
+ *  contribution level falls below the target. netIncome is monotonically
+ *  decreasing in the contribution, so binary search is exact enough at £1. */
+export function solveMaxContribution(
+  minAnnualTakeHome: number,
+  incomeSources: IncomeSource[],
+  settings: AppSettings,
+  rules: TaxRules,
+  gainSources: GainSource[] = [],
+): { contribution: number; summary: TaxSummary } | null {
+  const baseline = calculateTax(incomeSources, settings, rules, gainSources)
+  const currentFlat = Math.max(0, baseline.totalDeductions - baseline.sippNetContribution)
+  const pensionEligible =
+    Math.max(0, baseline.employmentGross - baseline.salarySacrificeTotal) +
+    Math.max(0, baseline.selfEmploymentGross - baseline.selfEmploymentAllowableExpenses) +
+    (settings.transitionalProfitSpread ?? 0)
+  const at = (contribution: number) => calculateTax(
+    incomeSources,
+    { ...settings, pensionContributionType: 'flat', pensionContributionValue: contribution },
+    rules,
+    gainSources,
+  )
+  if (at(currentFlat).netIncome < minAnnualTakeHome) return null
+  let lo = currentFlat
+  let hi = pensionEligible
+  if (at(hi).netIncome >= minAnnualTakeHome) {
+    return { contribution: Math.floor(hi), summary: at(Math.floor(hi)) }
+  }
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (at(mid).netIncome >= minAnnualTakeHome) lo = mid
+    else hi = mid
+  }
+  return { contribution: lo, summary: at(lo) }
+}
+
+// ─── Method advisor ──────────────────────────────────────────────────────────
+
+export interface MethodComparison {
+  method: 'salary-sacrifice' | 'net-pay' | 'sipp'
+  label: string
+  cashPaid: number      // what leaves your pay/bank for the extra £G gross
+  taxSaved: number      // vs current position (incl. NI where applicable)
+  netCost: number       // reduction in net income
+  employerBonus: number // extra employer match unlocked
+  note: string
+}
+
+/** Compare paying the same extra gross £G into a pension via each route. */
+export function compareContributionMethods(
+  extraGross: number,
+  incomeSources: IncomeSource[],
+  settings: AppSettings,
+  rules: TaxRules,
+  gainSources: GainSource[] = [],
+): MethodComparison[] {
+  if (extraGross <= 0) return []
+  const baseline = calculateTax(incomeSources, settings, rules, gainSources)
+  const currentFlat = Math.max(0, baseline.totalDeductions - baseline.sippNetContribution)
+  const results: MethodComparison[] = []
+
+  const diff = (summary: TaxSummary) => ({
+    taxSaved: Math.max(0, baseline.totalTax - summary.totalTax),
+    netCost: baseline.netIncome - summary.netIncome,
+    employerBonus: Math.max(0, summary.employerMatchAmount - baseline.employerMatchAmount),
+  })
+
+  // Salary sacrifice: add a flat pension sacrifice to the largest employment source
+  const employments = incomeSources.filter(s => s.type === 'employment')
+  if (employments.length > 0) {
+    const target = employments.reduce((a, b) => (b.grossAmount > a.grossAmount ? b : a))
+    const sacrificedSources = incomeSources.map(s => s.id !== target.id ? s : {
+      ...s,
+      salarySacrificeItems: [
+        ...(s.salarySacrificeItems ?? []),
+        { id: '__advisor', type: 'pension' as const, name: 'Extra sacrifice', annualAmount: extraGross, amountType: 'flat' as const },
+      ],
+    })
+    const summary = calculateTax(sacrificedSources, settings, rules, gainSources)
+    results.push({
+      method: 'salary-sacrifice',
+      label: 'Salary sacrifice',
+      cashPaid: extraGross,
+      ...diff(summary),
+      note: 'Saves Income Tax and NI. Needs your employer to offer a sacrifice arrangement.',
+    })
+  }
+
+  // Net pay: increase the flat workplace contribution
+  const netPaySummary = calculateTax(
+    incomeSources,
+    { ...settings, pensionContributionType: 'flat', pensionContributionValue: currentFlat + extraGross },
+    rules,
+    gainSources,
+  )
+  results.push({
+    method: 'net-pay',
+    label: 'Workplace (net pay)',
+    cashPaid: extraGross,
+    ...diff(netPaySummary),
+    note: 'Full relief through payroll automatically. No NI saving.',
+  })
+
+  // SIPP (relief at source): pay 0.8×G net, provider adds 20%
+  const sippSummary = calculateTax(
+    incomeSources,
+    {
+      ...settings,
+      sippContributionType: 'flat',
+      sippContribution: baseline.sippNetContribution + extraGross * 0.8,
+    },
+    rules,
+    gainSources,
+  )
+  results.push({
+    method: 'sipp',
+    label: 'SIPP (relief at source)',
+    cashPaid: extraGross * 0.8,
+    ...diff(sippSummary),
+    note: 'Pay £' + Math.round(extraGross * 0.8).toLocaleString() + ', provider adds 20%. Higher-rate relief comes back via self-assessment. Not matched by employers.',
+  })
+
+  return results
+}
+
 export interface PensionScenario {
   label: string
   contributionFlat: number

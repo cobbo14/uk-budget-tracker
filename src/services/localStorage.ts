@@ -24,6 +24,8 @@ export const DEFAULT_STATE: AppState = {
     employerPensionContributionValue: 0,
     sippContribution: 0,
     sippContributionType: 'flat',
+    employerMatchRate: 0,
+    employerMatchCapPercent: 0,
     pensionCarryForward: { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 },
     studentLoanPlan: 'none',
     hasPostgradLoan: false,
@@ -268,6 +270,7 @@ export function parseImportedState(json: string): Partial<AppState> | null {
     const s = parsed.settings as Record<string, unknown>
     const numericKeys = [
       'pensionContributionValue', 'employerPensionContributionValue', 'sippContribution',
+      'employerMatchRate', 'employerMatchCapPercent',
       'giftAidDonations', 'numberOfChildren', 'seisInvestment', 'eisInvestment', 'vctInvestment',
       'capitalLossCarryForward', 'previousYearSaTaxBill', 'badrLifetimeUsed', 'partnerIncome',
       'transitionalProfitSpread',

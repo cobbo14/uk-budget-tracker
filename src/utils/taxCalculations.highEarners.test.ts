@@ -379,6 +379,44 @@ describe('pension contributions £90k–£150k', () => {
     expect(r.nationalInsurance).toBeCloseTo(base.nationalInsurance, 2)  // no NI saving
   })
 
+  it('employer match: matchRate% of workplace contributions, capped at cap% of pay', () => {
+    // £95,000, 100% match up to 5% of pay (£4,750 cap)
+    const match = (over: Partial<typeof baseSettings>) => calculateTax(
+      [job(95000)],
+      { ...baseSettings, employerMatchRate: 100, employerMatchCapPercent: 5, ...over },
+      rules2627,
+    )
+    // Employee pays exactly the cap → full match
+    const atCap = match({ pensionContributionType: 'flat', pensionContributionValue: 4750 })
+    expect(atCap.employerMatchAmount).toBeCloseTo(4750, 2)
+    expect(atCap.totalPensionFunding).toBeCloseTo(4750 + 4750, 2)
+    // Below the cap → matched £1 for £1
+    const below = match({ pensionContributionType: 'flat', pensionContributionValue: 2850 })
+    expect(below.employerMatchAmount).toBeCloseTo(2850, 2)
+    // Above the cap → match capped at £4,750
+    const above = match({ pensionContributionType: 'flat', pensionContributionValue: 9500 })
+    expect(above.employerMatchAmount).toBeCloseTo(4750, 2)
+    expect(above.totalPensionFunding).toBeCloseTo(9500 + 4750, 2)
+    // SIPPs are not matched
+    const sippOnly = match({ sippContribution: 4000 })
+    expect(sippOnly.employerMatchAmount).toBe(0)
+    // Salary sacrifice IS matched (workplace route)
+    const sacrificed = calculateTax(
+      [sacrificeJob(95000, 3000)],
+      { ...baseSettings, employerMatchRate: 100, employerMatchCapPercent: 5 },
+      rules2627,
+    )
+    expect(sacrificed.employerMatchAmount).toBeCloseTo(3000, 2)
+    // Match never changes the employee's own tax
+    const noMatch = calculateTax(
+      [job(95000)],
+      { ...baseSettings, pensionContributionType: 'flat', pensionContributionValue: 4750 },
+      rules2627,
+    )
+    expect(atCap.incomeTax).toBeCloseTo(noMatch.incomeTax, 2)
+    expect(atCap.nationalInsurance).toBeCloseTo(noMatch.nationalInsurance, 2)
+  })
+
   it('caps a percentage net-pay contribution at 100% of relevant earnings', () => {
     const r = calculateTax(
       [job(110000)],
