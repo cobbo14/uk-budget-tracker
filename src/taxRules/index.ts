@@ -32,6 +32,45 @@ export function getAvailableTaxYears(): string[] {
   return Object.keys(TAX_RULES)
 }
 
+/** Annual Allowance by tax year, for carry-forward caps. Years before
+ *  2023/24 had a £40,000 allowance; anything not listed defaults to the
+ *  current £60,000 when looked up via getCarryForwardCaps. */
+export const HISTORIC_ANNUAL_ALLOWANCES: Record<string, number> = {
+  '2022-23': 40000,
+  '2023-24': 60000,
+  '2024-25': 60000,
+  '2025-26': 60000,
+  '2026-27': 60000,
+}
+
+/** '2022-23' for startYear 2022 */
+function taxYearKey(startYear: number): string {
+  return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`
+}
+
+/** The three carry-forward years for a tax year, oldest first:
+ *  getPriorTaxYears('2025-26') → ['2022-23', '2023-24', '2024-25'] */
+export function getPriorTaxYears(taxYear: string): [string, string, string] {
+  const startYear = parseInt(taxYear.split('-')[0], 10)
+  return [taxYearKey(startYear - 3), taxYearKey(startYear - 2), taxYearKey(startYear - 1)]
+}
+
+/** Maximum unused Annual Allowance enterable per carry-forward year — that
+ *  year's historic AA (£40k for 2022/23 and earlier). */
+export function getCarryForwardCaps(taxYear: string): { threeYearsAgo: number; twoYearsAgo: number; oneYearAgo: number } {
+  const [threeAgo, twoAgo, oneAgo] = getPriorTaxYears(taxYear)
+  return {
+    threeYearsAgo: HISTORIC_ANNUAL_ALLOWANCES[threeAgo] ?? 60000,
+    twoYearsAgo: HISTORIC_ANNUAL_ALLOWANCES[twoAgo] ?? 60000,
+    oneYearAgo: HISTORIC_ANNUAL_ALLOWANCES[oneAgo] ?? 60000,
+  }
+}
+
+/** '2022-23' → '2022/23' for display */
+export function formatTaxYearLabel(taxYear: string): string {
+  return taxYear.replace('-', '/')
+}
+
 /** Total income at which higher-rate tax begins (PA + basic-rate width).
  *  Scottish taxpayers hit their Higher band earlier than the rUK threshold. */
 export function getHigherRateThreshold(rules: TaxRules, scottishTaxpayer: boolean): number {

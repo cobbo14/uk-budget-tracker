@@ -318,6 +318,8 @@ export interface TaxSummary {
   annualAllowanceExcess: number         // amount over total available (0 = compliant)
   annualAllowanceCharge: number         // tax charge on excess at marginal rate(s)
   annualAllowanceRemaining: number      // unused AA this year (before carry-forward)
+  carryForwardUsedByYear: PensionCarryForward // consumed oldest-first from prior years' unused allowance
+  carryForwardExpiringUnused: number    // oldest year's unused allowance lapsing on 5 April this tax year
   // Capital Gains: losses applied
   carryForwardLossesApplied: number
   // Self-assessment tax estimate (for Payments on Account)

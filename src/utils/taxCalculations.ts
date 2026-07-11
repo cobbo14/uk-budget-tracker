@@ -1,5 +1,6 @@
-import type { IncomeSource, GainSource, AppSettings, TaxSummary, SalarySacrificeItem } from '@/types'
+import type { IncomeSource, GainSource, AppSettings, TaxSummary, SalarySacrificeItem, PensionCarryForward } from '@/types'
 import type { TaxRules, TaxBand } from '@/taxRules/types'
+import { getCarryForwardCaps } from '@/taxRules'
 
 /** A job's auto-enrolment qualifying earnings: the £6,240–£50,270 band of pay. */
 export function qualifyingEarnings(pay: number, rules: TaxRules): number {
@@ -31,6 +32,21 @@ const EIS_RELIEF_RATE = 0.30
 const EIS_INVESTMENT_LIMIT = 1_000_000
 const VCT_RELIEF_RATE = 0.30
 const VCT_INVESTMENT_LIMIT = 200_000
+
+/** Carry-forward amounts clamped per year to that year's historic Annual
+ *  Allowance (£40,000 for 2022/23 and earlier) — imported or stale data can
+ *  exceed the caps even though the inputs enforce them. */
+export function resolveCarryForward(
+  settings: Pick<AppSettings, 'pensionCarryForward' | 'taxYear'>,
+): PensionCarryForward {
+  const entered = settings.pensionCarryForward ?? { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 }
+  const caps = getCarryForwardCaps(settings.taxYear)
+  return {
+    threeYearsAgo: Math.min(Math.max(0, entered.threeYearsAgo ?? 0), caps.threeYearsAgo),
+    twoYearsAgo: Math.min(Math.max(0, entered.twoYearsAgo ?? 0), caps.twoYearsAgo),
+    oneYearAgo: Math.min(Math.max(0, entered.oneYearAgo ?? 0), caps.oneYearAgo),
+  }
+}
 
 /** Apply tax bands to a given income amount, starting at an offset (already-used band space). */
 function applyBands(bands: TaxBand[], income: number, offset: number): number {
@@ -624,11 +640,17 @@ export function calculateTax(
     const taper = Math.floor((adjustedIncomeForAA - rules.pensionTaperAdjustedIncome) / 2)
     effectiveAnnualAllowance = Math.max(rules.pensionAnnualAllowanceMinimum, baseAnnualAllowance - taper)
   }
-  const carryForward = settings.pensionCarryForward ?? { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 }
-  const totalCarryForward = (carryForward.threeYearsAgo ?? 0) + (carryForward.twoYearsAgo ?? 0) + (carryForward.oneYearAgo ?? 0)
-  // Carry-forward can only be used once the current year's AA is fully used
+  const carryForward = resolveCarryForward(settings)
+  // Carry-forward can only be used once the current year's AA is fully used,
+  // and is consumed oldest year first (HMRC ordering). The total applied is
+  // the same as a pooled sum — per-year usage exists to report what expires.
   const carryForwardUsable = Math.max(0, totalPensionFunding - effectiveAnnualAllowance)
-  const carryForwardApplied = Math.min(carryForwardUsable, totalCarryForward)
+  const cfUsedThreeAgo = Math.min(carryForward.threeYearsAgo, carryForwardUsable)
+  const cfUsedTwoAgo = Math.min(carryForward.twoYearsAgo, carryForwardUsable - cfUsedThreeAgo)
+  const cfUsedOneAgo = Math.min(carryForward.oneYearAgo, carryForwardUsable - cfUsedThreeAgo - cfUsedTwoAgo)
+  const carryForwardApplied = cfUsedThreeAgo + cfUsedTwoAgo + cfUsedOneAgo
+  // The oldest year's unused allowance lapses on 5 April of this tax year
+  const carryForwardExpiringUnused = carryForward.threeYearsAgo - cfUsedThreeAgo
   const totalAnnualAllowanceAvailable = effectiveAnnualAllowance + carryForwardApplied
   const annualAllowanceExcess = Math.max(0, totalPensionFunding - totalAnnualAllowanceAvailable)
   const annualAllowanceRemaining = Math.max(0, effectiveAnnualAllowance - totalPensionFunding)
@@ -720,6 +742,12 @@ export function calculateTax(
     annualAllowanceExcess,
     annualAllowanceCharge,
     annualAllowanceRemaining,
+    carryForwardUsedByYear: {
+      threeYearsAgo: cfUsedThreeAgo,
+      twoYearsAgo: cfUsedTwoAgo,
+      oneYearAgo: cfUsedOneAgo,
+    },
+    carryForwardExpiringUnused,
     carryForwardLossesApplied,
     selfAssessmentTaxEstimate,
     poaRelevantTax,

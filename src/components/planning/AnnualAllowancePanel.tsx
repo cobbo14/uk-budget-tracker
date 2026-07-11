@@ -7,6 +7,8 @@ import { formatCurrency } from '@/utils/formatting'
 import { cn } from '@/lib/utils'
 import { UPDATE_SETTINGS } from '@/store/actions'
 import { HelpTooltip } from '@/components/ui/tooltip'
+import { getPriorTaxYears, getCarryForwardCaps, formatTaxYearLabel } from '@/taxRules'
+import { resolveCarryForward } from '@/utils/taxCalculations'
 import type { PensionCarryForward } from '@/types'
 
 export function AnnualAllowancePanel() {
@@ -25,8 +27,18 @@ export function AnnualAllowancePanel() {
   // Only show if the user has any pension activity or employer contributions
   if (totalPensionFunding === 0 && employerPensionFunding === 0) return null
 
-  const carryForward = settings.pensionCarryForward ?? { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 }
-  const totalCarryForward = (carryForward.threeYearsAgo ?? 0) + (carryForward.twoYearsAgo ?? 0) + (carryForward.oneYearAgo ?? 0)
+  // Clamped per-year to each year's historic AA (2022/23 was £40,000)
+  const carryForward = resolveCarryForward(settings)
+  const totalCarryForward = carryForward.threeYearsAgo + carryForward.twoYearsAgo + carryForward.oneYearAgo
+  const priorYears = getPriorTaxYears(settings.taxYear)
+  const caps = getCarryForwardCaps(settings.taxYear)
+  // Unused allowance from 3 years ago lapses on 5 April at the end of this tax year
+  const expiryDate = `5 April ${parseInt(settings.taxYear.split('-')[0], 10) + 1}`
+  const cfRows: Array<[keyof PensionCarryForward, string]> = [
+    ['threeYearsAgo', priorYears[0]],
+    ['twoYearsAgo', priorYears[1]],
+    ['oneYearAgo', priorYears[2]],
+  ]
 
   const isOver = annualAllowanceExcess > 0
   const isTapered = effectiveAnnualAllowance < rules.pensionAnnualAllowance
@@ -160,16 +172,23 @@ export function AnnualAllowancePanel() {
           {totalCarryForward > 0 && (
             <div className="text-xs text-muted-foreground space-y-0.5 border-t pt-2">
               <p className="font-medium">Carry-forward breakdown</p>
-              {(carryForward.threeYearsAgo ?? 0) > 0 && (
-                <p>3 years ago: {formatCurrency(carryForward.threeYearsAgo)}</p>
-              )}
-              {(carryForward.twoYearsAgo ?? 0) > 0 && (
-                <p>2 years ago: {formatCurrency(carryForward.twoYearsAgo)}</p>
-              )}
-              {(carryForward.oneYearAgo ?? 0) > 0 && (
-                <p>1 year ago: {formatCurrency(carryForward.oneYearAgo)}</p>
-              )}
+              {cfRows.map(([key, year]) => (carryForward[key] ?? 0) > 0 && (
+                <p key={key}>
+                  {formatTaxYearLabel(year)}: {formatCurrency(carryForward[key])}
+                  {(taxSummary.carryForwardUsedByYear[key] ?? 0) > 0 && (
+                    <> · {formatCurrency(taxSummary.carryForwardUsedByYear[key])} used this year</>
+                  )}
+                </p>
+              ))}
             </div>
+          )}
+
+          {/* Expiring unused allowance warning */}
+          {taxSummary.carryForwardExpiringUnused > 0 && (
+            <p className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
+              {formatCurrency(taxSummary.carryForwardExpiringUnused)} of your {formatTaxYearLabel(priorYears[0])} unused
+              allowance expires on {expiryDate} — it can only be used by contributing before then.
+            </p>
           )}
 
           {/* Carry-forward inputs */}
@@ -181,25 +200,21 @@ export function AnnualAllowancePanel() {
             <p className="text-xs text-muted-foreground">
               Carry-forward can only be used once the current year's AA (£{rules.pensionAnnualAllowance.toLocaleString()}) is fully used.
             </p>
-            {(
-              [
-                ['threeYearsAgo', '3 years ago'] as const,
-                ['twoYearsAgo', '2 years ago'] as const,
-                ['oneYearAgo', '1 year ago'] as const,
-              ] as Array<[keyof PensionCarryForward, string]>
-            ).map(([key, label]) => (
+            {cfRows.map(([key, year]) => (
               <div key={key} className="grid gap-1.5 max-w-xs">
-                <Label htmlFor={`aa-carry-${key}`}>Unused AA — {label} (£)</Label>
+                <Label htmlFor={`aa-carry-${key}`}>
+                  Unused AA — {formatTaxYearLabel(year)} (£, max £{caps[key].toLocaleString()})
+                </Label>
                 <Input
                   id={`aa-carry-${key}`}
                   type="number"
                   min="0"
-                  max={rules.pensionAnnualAllowance}
+                  max={caps[key]}
                   step="100"
                   placeholder="0"
                   value={(settings.pensionCarryForward?.[key] ?? 0) || ''}
                   onChange={e => {
-                    const val = parseFloat(e.target.value) || 0
+                    const val = Math.min(parseFloat(e.target.value) || 0, caps[key])
                     dispatch({
                       type: UPDATE_SETTINGS,
                       payload: {
@@ -211,6 +226,9 @@ export function AnnualAllowancePanel() {
                     })
                   }}
                 />
+                {key === 'threeYearsAgo' && (
+                  <p className="text-xs text-muted-foreground">Expires {expiryDate} if unused.</p>
+                )}
               </div>
             ))}
           </div>

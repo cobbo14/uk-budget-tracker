@@ -1,6 +1,6 @@
 import type { IncomeSource, GainSource, AppSettings, TaxSummary, SalarySacrificeItem } from '@/types'
 import type { TaxRules } from '@/taxRules/types'
-import { calculateTax, resolveSalarySacrificeItem } from '@/utils/taxCalculations'
+import { calculateTax, resolveSalarySacrificeItem, resolveCarryForward } from '@/utils/taxCalculations'
 import { getHigherRateThreshold } from '@/taxRules'
 import { generateId } from '@/utils/ids'
 
@@ -243,9 +243,11 @@ export function getPensionRecommendations(
     )
   }
 
-  // 5. Use the full Annual Allowance (carry-forward expires oldest-first)
+  // 5. Use the full Annual Allowance (carry-forward expires oldest-first).
+  // "Expiring" = the oldest year's allowance still unused at the CURRENT
+  // contribution level — that's what lapses on 5 April if nothing changes.
   if (aaHeadroom > 0 && remainingEligible > 0) {
-    const expiring = settings.pensionCarryForward?.threeYearsAgo ?? 0
+    const expiring = baseline.carryForwardExpiringUnused
     const endYear = parseInt(settings.taxYear.split('-')[0]) + 1
     push(
       'use-annual-allowance',
@@ -477,8 +479,8 @@ export function getPensionScenarios(
   // allowance. Employer funding comes from the engine so every contribution
   // basis (flat / percentage / qualifying earnings) is resolved consistently.
   const employerPension = baseSummary.employerPensionFunding
-  const carryForward = settings.pensionCarryForward ?? { threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 }
-  const totalCarryForward = (carryForward.threeYearsAgo ?? 0) + (carryForward.twoYearsAgo ?? 0) + (carryForward.oneYearAgo ?? 0)
+  const carryForward = resolveCarryForward(settings)
+  const totalCarryForward = carryForward.threeYearsAgo + carryForward.twoYearsAgo + carryForward.oneYearAgo
   const aaEmployeeLimit = Math.max(0, baseSummary.effectiveAnnualAllowance + totalCarryForward - employerPension)
   if (aaEmployeeLimit > currentContributionFlat && aaEmployeeLimit < comparatorIncome) {
     candidates.push({ amount: Math.ceil(aaEmployeeLimit), label: 'AA Limit', crossesThreshold: 'Annual Allowance' })

@@ -1494,3 +1494,75 @@ describe('calculateTax — PSA tier uses extended bands (2025/26)', () => {
     expectGBP(result.savingsTax, 0)
   })
 })
+
+// ─── Pension carry-forward — per-year consumption ────────────────────────────
+
+describe('pension carry-forward — oldest-first consumption and expiry', () => {
+  // Flat employer contributions set totalPensionFunding exactly, with no
+  // earnings needed and no effect on the employee's own income tax
+  const funding = (
+    amount: number,
+    cf: { threeYearsAgo: number; twoYearsAgo: number; oneYearAgo: number },
+    extra: Partial<AppSettings> = {},
+  ): AppSettings => settings({
+    employerPensionContributionType: 'flat',
+    employerPensionContributionValue: amount,
+    pensionCarryForward: cf,
+    ...extra,
+  })
+  const cf = { threeYearsAgo: 10000, twoYearsAgo: 20000, oneYearAgo: 30000 }
+
+  it('consumes the oldest year first once the current AA is used', () => {
+    // £75,000 funding − £60,000 AA = £15,000 needed:
+    // £10,000 from 3 years ago, £5,000 from 2 years ago, none from last year
+    const r = calculateTax([], funding(75000, cf), rules)
+    expect(r.carryForwardUsedByYear).toEqual({ threeYearsAgo: 10000, twoYearsAgo: 5000, oneYearAgo: 0 })
+    expect(r.carryForwardExpiringUnused).toBe(0)
+    expect(r.annualAllowanceExcess).toBe(0)
+    expectGBP(r.totalAnnualAllowanceAvailable, 75000)
+  })
+
+  it('reports the oldest year allowance left unused as expiring', () => {
+    // £65,000 funding needs only £5,000 of the £10,000 from 3 years ago —
+    // the remaining £5,000 lapses on 5 April
+    const r = calculateTax([], funding(65000, cf), rules)
+    expect(r.carryForwardUsedByYear).toEqual({ threeYearsAgo: 5000, twoYearsAgo: 0, oneYearAgo: 0 })
+    expect(r.carryForwardExpiringUnused).toBe(5000)
+    expect(r.annualAllowanceExcess).toBe(0)
+  })
+
+  it('reports the full oldest year as expiring when no carry-forward is needed', () => {
+    const r = calculateTax([], funding(50000, cf), rules)
+    expect(r.carryForwardUsedByYear).toEqual({ threeYearsAgo: 0, twoYearsAgo: 0, oneYearAgo: 0 })
+    expect(r.carryForwardExpiringUnused).toBe(10000)
+    expectGBP(r.annualAllowanceRemaining, 10000)
+  })
+
+  it('charges the excess after all carry-forward years are consumed', () => {
+    // £130,000 funding − £60,000 AA − £60,000 carry-forward = £10,000 excess.
+    // With no other income the charge falls in the basic band: £10,000 × 20%
+    const r = calculateTax([], funding(130000, cf), rules)
+    expect(r.carryForwardUsedByYear).toEqual(cf)
+    expect(r.carryForwardExpiringUnused).toBe(0)
+    expect(r.annualAllowanceExcess).toBe(10000)
+    expectGBP(r.annualAllowanceCharge, 2000)
+  })
+
+  it('clamps the oldest year to the £40,000 AA that applied in 2022/23', () => {
+    // Under 2025/26, "3 years ago" is 2022/23 (AA £40,000): an entered
+    // £60,000 resolves to £40,000, so £130,000 funding leaves £30,000 excess
+    const r = calculateTax([], funding(130000, { threeYearsAgo: 60000, twoYearsAgo: 0, oneYearAgo: 0 }), rules)
+    expect(r.carryForwardUsedByYear.threeYearsAgo).toBe(40000)
+    expect(r.annualAllowanceExcess).toBe(30000)
+  })
+
+  it('does not clamp under 2026/27, where 3 years ago is 2023/24 (£60,000 AA)', () => {
+    const r = calculateTax(
+      [],
+      funding(130000, { threeYearsAgo: 60000, twoYearsAgo: 0, oneYearAgo: 0 }, { taxYear: '2026-27' }),
+      rules2627,
+    )
+    expect(r.carryForwardUsedByYear.threeYearsAgo).toBe(60000)
+    expect(r.annualAllowanceExcess).toBe(10000)
+  })
+})
