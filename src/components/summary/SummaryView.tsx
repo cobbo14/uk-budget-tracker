@@ -138,7 +138,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
     const se = incomeSources.filter(s => s.type === 'self-employment')
     const rent = incomeSources.filter(s => s.type === 'rental')
     const div = incomeSources.filter(s => s.type === 'dividend' && !s.fromISA)
-    const sav = incomeSources.filter(s => s.type === 'savings')
+    const sav = incomeSources.filter(s => s.type === 'savings' && !s.fromISA)
     const pen = incomeSources.filter(s => s.type === 'pension')
 
     const ssItems = emp.flatMap(s =>
@@ -425,8 +425,9 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               {t.dividendTax > 0 && <Row label="Dividend Tax" value={formatCurrency(v(t.dividendTax))} highlight="red" showBonusCol={showBonusCol}
                 tooltip={<TooltipBreakdown items={[
                   { label: 'Gross dividends', value: formatCurrency(v(t.dividendGross)) },
-                  { label: `Less allowance`, value: `−${formatCurrency(v(rules.dividendAllowance))}` },
-                  { label: 'Taxable dividends', value: formatCurrency(v(Math.max(0, t.dividendGross - rules.dividendAllowance))), bold: true },
+                  ...(t.dividendsCoveredByPA > 0 ? [{ label: 'Covered by personal allowance', value: `−${formatCurrency(v(t.dividendsCoveredByPA))}` }] : []),
+                  { label: `Less allowance`, value: `−${formatCurrency(v(Math.min(rules.dividendAllowance, t.dividendGross - t.dividendsCoveredByPA)))}` },
+                  { label: 'Taxable dividends', value: formatCurrency(v(t.taxableDividends)), bold: true },
                 ]} />}
               />}
               {t.mortgageTaxCredit > 0 && (

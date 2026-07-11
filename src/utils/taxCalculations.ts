@@ -73,7 +73,14 @@ export function calculateTax(
   gainSources: GainSource[] = [],
 ): TaxSummary {
   // --- Cache check ---
-  const _cacheKey = JSON.stringify([incomeSources, settings, gainSources, rules.label])
+  // Strip settings that never affect the tax result (denylist fails safe:
+  // an unknown new key still busts the cache rather than serving stale results)
+  const {
+    pensionProjection: _pp, isaContributions: _ic, taxCode: _tc,
+    previousYearSaTaxBill: _pb, partnerIncome: _pi,
+    ...taxRelevantSettings
+  } = settings
+  const _cacheKey = JSON.stringify([incomeSources, taxRelevantSettings, gainSources, rules.label])
   const _cached = _taxCache.get(_cacheKey)
   if (_cached) return _cached
 
@@ -386,6 +393,9 @@ export function calculateTax(
   // England/Wales/NI bands. Any personal allowance left after non-savings and
   // savings income covers dividends first, then the dividend allowance applies.
   const dividendAfterAllowance = Math.max(0, dividendGross - remainingPAForDividends - rules.dividendAllowance)
+  // Exposed for display: how the gross dividend splits into PA-covered,
+  // allowance-covered and taxed portions
+  const dividendsCoveredByPA = Math.min(remainingPAForDividends, dividendGross)
   let dividendTax = 0
   if (dividendAfterAllowance > 0) {
     let remaining = dividendAfterAllowance
@@ -500,23 +510,40 @@ export function calculateTax(
   const totalBadrGainsRaw = badrSources.reduce((sum, g) => sum + (g.gainAmount - g.allowableCosts), 0)
   const totalGains = totalNonBadrGains + totalBadrGainsRaw
 
+  // In-year losses are mandatory: a net loss in one category must offset the
+  // other category's gains in full BEFORE the AEA and brought-forward losses
+  // (unlike carry-forward losses, in-year losses can waste the AEA).
+  let netNonBadr = totalNonBadrGains
+  let netBadr = totalBadrGainsRaw
+  if (netNonBadr < 0 && netBadr > 0) {
+    const offset = Math.min(-netNonBadr, netBadr)
+    netBadr -= offset
+    netNonBadr += offset
+  } else if (netBadr < 0 && netNonBadr > 0) {
+    const offset = Math.min(-netBadr, netNonBadr)
+    netNonBadr -= offset
+    netBadr += offset
+  }
+  netNonBadr = Math.max(0, netNonBadr)
+  netBadr = Math.max(0, netBadr)
+
   // Brought-forward losses only reduce net gains down to the annual exempt
   // amount — never below it, so the AEA is not wasted and the unused loss pool
   // carries forward again. Applied to non-BADR gains first (maximises BADR benefit).
   const lossPool = settings.capitalLossCarryForward ?? 0
-  const netGainsTotal = Math.max(0, totalNonBadrGains) + Math.max(0, totalBadrGainsRaw)
+  const netGainsTotal = netNonBadr + netBadr
   const lossesUsable = Math.min(lossPool, Math.max(0, netGainsTotal - rules.cgtAnnualExemptAmount))
-  const lossAgainstNonBadr = Math.min(lossesUsable, Math.max(0, totalNonBadrGains))
-  const lossAgainstBadr = Math.min(lossesUsable - lossAgainstNonBadr, Math.max(0, totalBadrGainsRaw))
+  const lossAgainstNonBadr = Math.min(lossesUsable, netNonBadr)
+  const lossAgainstBadr = Math.min(lossesUsable - lossAgainstNonBadr, netBadr)
   const carryForwardLossesApplied = lossAgainstNonBadr + lossAgainstBadr
 
   // Annual exempt amount: applied to non-BADR gains first
-  const nonBadrAfterLosses = Math.max(0, totalNonBadrGains - lossAgainstNonBadr)
+  const nonBadrAfterLosses = Math.max(0, netNonBadr - lossAgainstNonBadr)
   const aemtUsedByNonBadr = Math.min(rules.cgtAnnualExemptAmount, nonBadrAfterLosses)
   const aemtRemainder = rules.cgtAnnualExemptAmount - aemtUsedByNonBadr
   const taxableNonBadr = Math.max(0, nonBadrAfterLosses - aemtUsedByNonBadr)
 
-  const badrGainsAfterLosses = Math.max(0, totalBadrGainsRaw - lossAgainstBadr)
+  const badrGainsAfterLosses = Math.max(0, netBadr - lossAgainstBadr)
   const taxableBadrGainFull = Math.max(0, badrGainsAfterLosses - aemtRemainder)
 
   const taxableGain = taxableNonBadr + taxableBadrGainFull
@@ -668,6 +695,8 @@ export function calculateTax(
     rentalNetBeforeMortgage,
     rentalMortgageInterest: mortgageInterestTotal,
     dividendGross,
+    dividendsCoveredByPA,
+    taxableDividends: dividendAfterAllowance,
     class1NI,
     class1NILowerBandTax,
     class1NIUpperBandTax,

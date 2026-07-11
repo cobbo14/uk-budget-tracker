@@ -5,9 +5,13 @@ import {
   saveProfileState,
   parseImportedState,
   mergeWithDefaults,
+  syncSplitToOtherProfiles,
+  deleteSplitFromOtherProfiles,
+  removeParticipantFromSplit,
+  detachSplitCopies,
 } from './localStorage'
 import { DEFAULT_TAX_YEAR } from '@/taxRules'
-import type { AppState } from '@/types'
+import type { AppState, Expense } from '@/types'
 
 // ─── In-memory localStorage mock ─────────────────────────────────────────────
 
@@ -269,6 +273,110 @@ describe('mergeWithDefaults', () => {
       expect(merged.settings.employerPensionContributionType).toBe('percentage')
       expect(merged.settings.employerPensionContributionValue).toBe(3)
     })
+  })
+})
+
+// ─── Split expense lifecycle ─────────────────────────────────────────────────
+
+describe('split expense lifecycle', () => {
+  function seedProfiles(ids: string[]) {
+    localStorage.setItem('uk_budget_tracker_profiles', JSON.stringify({
+      profiles: ids.map(id => ({ id, name: id })),
+      activeProfileId: ids[0],
+    }))
+  }
+
+  function splitExpense(overrides: Partial<Expense> = {}): Expense {
+    return {
+      id: 'e1',
+      name: 'Rent',
+      category: 'housing',
+      amount: 1000,
+      frequency: 'monthly',
+      splitGroupId: 'g1',
+      splitPercentage: 50,
+      splitOriginProfileId: 'a',
+      splitConfig: [
+        { profileId: 'a', percentage: 50 },
+        { profileId: 'b', percentage: 50 },
+      ],
+      ...overrides,
+    }
+  }
+
+  it('syncSplitToOtherProfiles upserts a copy into each participant profile', () => {
+    seedProfiles(['a', 'b'])
+    syncSplitToOtherProfiles(splitExpense(), 'a')
+    const b = loadProfileState('b')
+    expect(b.expenses).toHaveLength(1)
+    expect(b.expenses[0].splitGroupId).toBe('g1')
+    expect(b.expenses[0].splitPercentage).toBe(50)
+    expect(b.expenses[0].splitConfig).toBeUndefined() // only origin keeps the config
+  })
+
+  it('prunes stale copies from profiles removed from the split', () => {
+    seedProfiles(['a', 'b', 'c'])
+    // Initial sync includes b and c
+    syncSplitToOtherProfiles(splitExpense({
+      splitConfig: [
+        { profileId: 'a', percentage: 40 },
+        { profileId: 'b', percentage: 30 },
+        { profileId: 'c', percentage: 30 },
+      ],
+    }), 'a')
+    expect(loadProfileState('c').expenses).toHaveLength(1)
+    // c is removed from the split — its copy must disappear on the next sync
+    syncSplitToOtherProfiles(splitExpense({
+      splitConfig: [
+        { profileId: 'a', percentage: 50 },
+        { profileId: 'b', percentage: 50 },
+      ],
+    }), 'a')
+    expect(loadProfileState('c').expenses).toHaveLength(0)
+    expect(loadProfileState('b').expenses).toHaveLength(1)
+  })
+
+  it('skips participants that are not real profiles (imported foreign data)', () => {
+    seedProfiles(['a', 'b'])
+    syncSplitToOtherProfiles(splitExpense({
+      splitConfig: [
+        { profileId: 'a', percentage: 50 },
+        { profileId: 'ghost', percentage: 50 },
+      ],
+    }), 'a')
+    expect(localStorage.getItem('uk_budget_tracker_state_ghost')).toBeNull()
+  })
+
+  it('deleteSplitFromOtherProfiles removes copies from every other profile', () => {
+    seedProfiles(['a', 'b', 'c'])
+    syncSplitToOtherProfiles(splitExpense({
+      splitConfig: [
+        { profileId: 'a', percentage: 40 },
+        { profileId: 'b', percentage: 30 },
+        { profileId: 'c', percentage: 30 },
+      ],
+    }), 'a')
+    deleteSplitFromOtherProfiles('g1', 'a')
+    expect(loadProfileState('b').expenses).toHaveLength(0)
+    expect(loadProfileState('c').expenses).toHaveLength(0)
+  })
+
+  it('removeParticipantFromSplit drops the participant from the origin config', () => {
+    seedProfiles(['a', 'b'])
+    saveProfileState('a', { ...DEFAULT_STATE, expenses: [splitExpense()] })
+    removeParticipantFromSplit('g1', 'b', 'a')
+    const origin = loadProfileState('a')
+    expect(origin.expenses[0].splitConfig).toEqual([{ profileId: 'a', percentage: 50 }])
+  })
+
+  it('detachSplitCopies turns other profiles’ copies into standalone expenses', () => {
+    seedProfiles(['a', 'b'])
+    syncSplitToOtherProfiles(splitExpense(), 'a')
+    detachSplitCopies('g1', 'a')
+    const copy = loadProfileState('b').expenses[0]
+    expect(copy.splitGroupId).toBeUndefined()
+    expect(copy.splitOriginProfileId).toBeUndefined()
+    expect(copy.splitPercentage).toBe(50) // effective amount unchanged
   })
 })
 

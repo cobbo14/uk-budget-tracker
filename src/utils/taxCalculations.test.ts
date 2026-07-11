@@ -638,6 +638,64 @@ describe('calculateTax — 2025/26 rules', () => {
     })
   })
 
+  // ── In-year capital losses — cross-category netting ────────────────────────
+
+  describe('in-year losses net across BADR / non-BADR categories', () => {
+    it('offsets a non-BADR in-year loss against BADR gains before the AEA', () => {
+      // Non-BADR net: −£5,000 (costs exceed gain); BADR net: +£10,000
+      // In-year netting: BADR = £10,000 − £5,000 = £5,000
+      // AEA (£3,000, non-BADR first but non-BADR is £0) → taxable BADR = £2,000
+      // CGT = £2,000 × 14% = £280
+      const result = calculateTax([], defaultSettings, rules, [
+        gain(0, 5000, false, false, '1'),
+        gain(10000, 0, true, false, '2'),
+      ])
+      expectGBP(result.capitalGainsTax, 280)
+      expectGBP(result.badrGains, 2000)
+      expectGBP(result.totalGains, 5000)
+    })
+
+    it('offsets a BADR in-year loss against non-BADR gains before the AEA', () => {
+      // BADR net: −£4,000; non-BADR net: +£10,000
+      // In-year netting: non-BADR = £10,000 − £4,000 = £6,000
+      // AEA £3,000 → taxable £3,000; no other income so basic rate applies
+      // CGT = £3,000 × 18% = £540
+      const result = calculateTax([], defaultSettings, rules, [
+        gain(0, 4000, true, false, '1'),
+        gain(10000, 0, false, false, '2'),
+      ])
+      expectGBP(result.capitalGainsTax, 540)
+      expect(result.badrGains).toBe(0)
+      expect(result.badrTax).toBe(0)
+    })
+
+    it('charges no CGT when in-year losses exceed all gains', () => {
+      // Non-BADR net: −£20,000; BADR net: +£10,000 → fully absorbed
+      const result = calculateTax([], defaultSettings, rules, [
+        gain(0, 20000, false, false, '1'),
+        gain(10000, 0, true, false, '2'),
+      ])
+      expect(result.capitalGainsTax).toBe(0)
+      expect(result.taxableGain).toBe(0)
+      expectGBP(result.totalGains, -10000)
+    })
+
+    it('applies in-year netting before carry-forward losses (which stop at the AEA)', () => {
+      // Non-BADR net: −£2,000; BADR net: +£10,000 → netted BADR = £8,000
+      // Carry-forward pool £10,000, usable only down to the AEA:
+      // lossesUsable = £8,000 − £3,000 = £5,000 → BADR after losses = £3,000
+      // AEA covers the remaining £3,000 → CGT = £0
+      const result = calculateTax(
+        [],
+        settings({ capitalLossCarryForward: 10000 }),
+        rules,
+        [gain(0, 2000, false, false, '1'), gain(10000, 0, true, false, '2')],
+      )
+      expect(result.capitalGainsTax).toBe(0)
+      expectGBP(result.carryForwardLossesApplied, 5000)
+    })
+  })
+
   // ── Bond income & top-slicing relief ──────────────────────────────────────
 
   describe('bond income and top-slicing relief', () => {

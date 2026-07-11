@@ -181,24 +181,41 @@ export function saveProfileState(profileId: string, state: AppState): boolean {
 /**
  * Sync a split expense to other profiles' localStorage.
  * For each participant (excl. currentProfileId): load their state, upsert
- * an expense copy with matching splitGroupId, save back.
+ * an expense copy with matching splitGroupId, save back. Profiles that are
+ * NOT in splitConfig have any stale copy removed (participant was removed
+ * from the split). Participants that don't exist in the profile list are
+ * skipped, so imported data can't create orphan storage keys.
  */
 export function syncSplitToOtherProfiles(expense: Expense, currentProfileId: string): void {
   if (!expense.splitConfig || !expense.splitGroupId) return
 
-  for (const participant of expense.splitConfig) {
-    if (participant.profileId === currentProfileId) continue
+  const participantIds = new Set(expense.splitConfig.map(p => p.profileId))
+  for (const profile of loadProfiles().profiles) {
+    if (profile.id === currentProfileId) continue
 
-    const profileState = loadProfileState(participant.profileId)
+    const participant = expense.splitConfig.find(p => p.profileId === profile.id)
+    const profileState = loadProfileState(profile.id)
     const existingIndex = profileState.expenses.findIndex(
       e => e.splitGroupId === expense.splitGroupId
     )
+
+    if (!participantIds.has(profile.id)) {
+      // No longer part of the split — remove any stale copy
+      if (existingIndex >= 0) {
+        saveProfileState(profile.id, {
+          ...profileState,
+          expenses: profileState.expenses.filter((_, i) => i !== existingIndex),
+        })
+      }
+      continue
+    }
+
     const copy: Expense = {
       ...expense,
       id: existingIndex >= 0
         ? profileState.expenses[existingIndex].id
         : generateId(),
-      splitPercentage: participant.percentage,
+      splitPercentage: participant!.percentage,
       splitOriginProfileId: expense.splitOriginProfileId,
       splitConfig: undefined, // only origin keeps the config
     }
@@ -207,7 +224,7 @@ export function syncSplitToOtherProfiles(expense: Expense, currentProfileId: str
       ? profileState.expenses.map((e, i) => i === existingIndex ? copy : e)
       : [...profileState.expenses, copy]
 
-    saveProfileState(participant.profileId, {
+    saveProfileState(profile.id, {
       ...profileState,
       expenses: updatedExpenses,
     })
@@ -215,19 +232,58 @@ export function syncSplitToOtherProfiles(expense: Expense, currentProfileId: str
 }
 
 /**
- * Remove a split expense from other profiles' localStorage.
+ * Remove a split expense from all other profiles' localStorage.
  */
 export function deleteSplitFromOtherProfiles(
   splitGroupId: string,
   currentProfileId: string,
-  allProfileIds: string[],
 ): void {
-  for (const profileId of allProfileIds) {
-    if (profileId === currentProfileId) continue
-    const profileState = loadProfileState(profileId)
+  for (const profile of loadProfiles().profiles) {
+    if (profile.id === currentProfileId) continue
+    const profileState = loadProfileState(profile.id)
     const filtered = profileState.expenses.filter(e => e.splitGroupId !== splitGroupId)
     if (filtered.length !== profileState.expenses.length) {
-      saveProfileState(profileId, { ...profileState, expenses: filtered })
+      saveProfileState(profile.id, { ...profileState, expenses: filtered })
+    }
+  }
+}
+
+/**
+ * Remove a participant from the origin profile's split config (a non-origin
+ * profile opting out of a split). Percentages are left untouched — the origin
+ * sees the "must add up to 100%" validation on their next edit and rebalances.
+ */
+export function removeParticipantFromSplit(
+  splitGroupId: string,
+  participantProfileId: string,
+  originProfileId: string,
+): void {
+  const originState = loadProfileState(originProfileId)
+  const updated = originState.expenses.map(e => {
+    if (e.splitGroupId !== splitGroupId || !e.splitConfig) return e
+    return { ...e, splitConfig: e.splitConfig.filter(p => p.profileId !== participantProfileId) }
+  })
+  saveProfileState(originProfileId, { ...originState, expenses: updated })
+}
+
+/**
+ * Detach other profiles' copies of a split when the ORIGIN removes only its
+ * own copy: the copies become standalone expenses (splitGroupId and
+ * splitOriginProfileId stripped, splitPercentage kept so the effective
+ * amount is unchanged).
+ */
+export function detachSplitCopies(splitGroupId: string, originProfileId: string): void {
+  for (const profile of loadProfiles().profiles) {
+    if (profile.id === originProfileId) continue
+    const profileState = loadProfileState(profile.id)
+    let dirty = false
+    const updated = profileState.expenses.map(e => {
+      if (e.splitGroupId !== splitGroupId) return e
+      dirty = true
+      return { ...e, splitGroupId: undefined, splitOriginProfileId: undefined, splitConfig: undefined }
+    })
+    if (dirty) {
+      saveProfileState(profile.id, { ...profileState, expenses: updated })
     }
   }
 }

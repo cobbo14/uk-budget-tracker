@@ -13,7 +13,7 @@ import { formatCurrency } from '@/utils/formatting'
 import { effectiveAmount, toAnnual, isRenewalSoon } from '@/store/selectors'
 import { useBudget } from '@/hooks/useBudget'
 import { useProfiles } from '@/store/ProfilesContext'
-import { deleteSplitFromOtherProfiles } from '@/services/localStorage'
+import { deleteSplitFromOtherProfiles, removeParticipantFromSplit, detachSplitCopies } from '@/services/localStorage'
 import { DELETE_EXPENSE, OPEN_EDIT_EXPENSE_DIALOG } from '@/store/actions'
 
 const FREQ_LABELS: Record<Expense['frequency'], string> = {
@@ -28,11 +28,12 @@ interface ExpenseCardProps {
 
 export function ExpenseCard({ expense }: ExpenseCardProps) {
   const { dispatch } = useBudget()
-  const { profiles, activeProfileId } = useProfiles()
+  const { activeProfileId } = useProfiles()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [splitDeleteOpen, setSplitDeleteOpen] = useState(false)
 
   const isSplit = !!expense.splitGroupId
+  const isSplitOrigin = isSplit && expense.splitOriginProfileId === activeProfileId
   const effectiveAmt = effectiveAmount(expense)
   const annual = toAnnual(effectiveAmt, expense.frequency)
 
@@ -132,6 +133,21 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
                 variant="outline"
                 onClick={() => {
                   dispatch({ type: DELETE_EXPENSE, payload: expense.id })
+                  if (expense.splitGroupId) {
+                    if (isSplitOrigin) {
+                      // Origin leaving: other profiles keep their share as
+                      // standalone expenses they can manage themselves
+                      detachSplitCopies(expense.splitGroupId, activeProfileId)
+                    } else if (expense.splitOriginProfileId) {
+                      // Participant opting out: remove ourselves from the
+                      // origin's split config so the copy doesn't come back
+                      removeParticipantFromSplit(
+                        expense.splitGroupId,
+                        activeProfileId,
+                        expense.splitOriginProfileId,
+                      )
+                    }
+                  }
                   setSplitDeleteOpen(false)
                 }}
               >
@@ -142,11 +158,7 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
                 onClick={() => {
                   dispatch({ type: DELETE_EXPENSE, payload: expense.id })
                   if (expense.splitGroupId) {
-                    deleteSplitFromOtherProfiles(
-                      expense.splitGroupId,
-                      activeProfileId,
-                      profiles.map(p => p.id),
-                    )
+                    deleteSplitFromOtherProfiles(expense.splitGroupId, activeProfileId)
                   }
                   setSplitDeleteOpen(false)
                 }}

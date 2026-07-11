@@ -59,10 +59,16 @@ export function AnnualAllowancePanel() {
                 <span className="text-right font-medium">{formatCurrency(taxSummary.salarySacrificePension)}</span>
               </>
             )}
-            {taxSummary.totalDeductions > 0 && (
+            {taxSummary.totalDeductions - taxSummary.sippNetContribution > 0 && (
               <>
-                <span className="text-muted-foreground">Personal pension contributions</span>
-                <span className="text-right font-medium">{formatCurrency(taxSummary.totalDeductions)}</span>
+                <span className="text-muted-foreground">Workplace pension (net pay)</span>
+                <span className="text-right font-medium">{formatCurrency(taxSummary.totalDeductions - taxSummary.sippNetContribution)}</span>
+              </>
+            )}
+            {taxSummary.sippGrossContribution > 0 && (
+              <>
+                <span className="text-muted-foreground">SIPP (gross, incl. basic-rate relief)</span>
+                <span className="text-right font-medium">{formatCurrency(taxSummary.sippGrossContribution)}</span>
               </>
             )}
             {employerPensionFunding > 0 && (

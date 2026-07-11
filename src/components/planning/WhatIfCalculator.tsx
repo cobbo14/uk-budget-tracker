@@ -27,7 +27,7 @@ function CompareRow({ label, current, scenario }: {
 }
 
 export function WhatIfCalculator() {
-  const { taxSummary, incomeSources, settings, rules, totalAnnualExpenses } = useBudget()
+  const { taxSummary, incomeSources, gainSources, settings, rules, totalAnnualExpenses } = useBudget()
 
   const [incomeAdjustment, setIncomeAdjustment] = useState(0)
   const [pensionType, setPensionType] = useState<AppSettings['pensionContributionType']>(settings.pensionContributionType)
@@ -38,8 +38,9 @@ export function WhatIfCalculator() {
     () => computeWhatIf(
       incomeSources, settings, rules, totalAnnualExpenses,
       incomeAdjustment, pensionType, pensionValue, scottish,
+      gainSources,
     ),
-    [incomeSources, settings, rules, totalAnnualExpenses,
+    [incomeSources, gainSources, settings, rules, totalAnnualExpenses,
      incomeAdjustment, pensionType, pensionValue, scottish],
   )
 
@@ -62,7 +63,7 @@ export function WhatIfCalculator() {
           {/* Income adjustment */}
           <div>
             <label htmlFor="whatif-income-adj" className="text-sm font-medium">Income adjustment</label>
-            <p className="text-xs text-muted-foreground mb-1">Applied across your employment income</p>
+            <p className="text-xs text-muted-foreground mb-1">Applied across your employment and self-employment income</p>
             <div className="flex items-center gap-3">
               <input
                 id="whatif-income-adj"

@@ -69,9 +69,13 @@ function AppContent() {
     localStorage.setItem('budgetingMode', budgetingMode ? 'true' : 'false')
   }, [budgetingMode])
 
-  // Update document title per tab (guide pages set their own titles)
+  // Update document title per tab (guide pages set their own titles).
+  // Uses the effective tab so hidden tabs (budgeting mode) title as Summary.
   useEffect(() => {
     if (activeTab === 'guide') return
+    const titleTab = budgetingMode && (activeTab === 'planning' || activeTab === 'gains')
+      ? 'summary'
+      : activeTab
     const BASE = 'UK Budget Tracker'
     const TAB_TITLES: Record<string, string> = {
       summary: `${BASE} — Free Tax Calculator & Pension Optimiser 2025-27`,
@@ -89,8 +93,8 @@ function AppContent() {
       privacy: `Privacy Policy — ${BASE}`,
       terms: `Terms of Use — ${BASE}`,
     }
-    document.title = (legalPage && LEGAL_TITLES[legalPage]) || TAB_TITLES[activeTab] || BASE
-  }, [activeTab, legalPage])
+    document.title = (legalPage && LEGAL_TITLES[legalPage]) || TAB_TITLES[titleTab] || BASE
+  }, [activeTab, legalPage, budgetingMode])
 
   // Global Ctrl+Z / Cmd+Z undo shortcut
   useEffect(() => {
@@ -144,6 +148,12 @@ function AppContent() {
     setEmployeeMode(enabled) // external store: persists and notifies all subscribers
   }, [])
 
+  // Budgeting mode hides the Planning and Gains tabs — a direct #planning /
+  // #gains hash must not render them either
+  const effectiveTab: TabId = budgetingMode && (activeTab === 'planning' || activeTab === 'gains')
+    ? 'summary'
+    : activeTab
+
   function handleBudgetingModeChange(enabled: boolean) {
     setBudgetingMode(enabled)
     if (enabled && (activeTab === 'planning' || activeTab === 'gains')) {
@@ -153,21 +163,21 @@ function AppContent() {
 
   return (
     <>
-      <AppShell activeTab={activeTab} onTabChange={handleTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={handleBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={handleEmployeeModeChange} onSearchOpen={() => setSearchOpen(true)}>
+      <AppShell activeTab={effectiveTab} onTabChange={handleTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={handleBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={handleEmployeeModeChange} onSearchOpen={() => setSearchOpen(true)}>
         <ErrorBoundary>
           <Suspense fallback={<div className="p-8 text-sm text-muted-foreground min-h-[60vh]">Loading…</div>}>
             {legalPage ? (
               <LegalView page={legalPage} />
             ) : (
               <>
-                {activeTab === 'summary' && <SummaryView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
-                {activeTab === 'income' && <IncomeView />}
-                {activeTab === 'gains' && <GainsView />}
-                {activeTab === 'expenses' && <ExpensesView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
-                {activeTab === 'planning' && <PlanningView />}
-                {activeTab === 'settings' && <SettingsView />}
-                {activeTab === 'help' && <HelpView />}
-                {activeTab === 'guide' && <GuideView />}
+                {effectiveTab === 'summary' && <SummaryView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
+                {effectiveTab === 'income' && <IncomeView />}
+                {effectiveTab === 'gains' && <GainsView />}
+                {effectiveTab === 'expenses' && <ExpensesView showMonthly={showMonthly} onShowMonthlyChange={setShowMonthly} />}
+                {effectiveTab === 'planning' && <PlanningView />}
+                {effectiveTab === 'settings' && <SettingsView />}
+                {effectiveTab === 'help' && <HelpView />}
+                {effectiveTab === 'guide' && <GuideView />}
               </>
             )}
           </Suspense>

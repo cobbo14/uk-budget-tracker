@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, useEffect, useRef, useState, use
 import type { AppState, Expense } from '@/types'
 import type { AppAction } from './actions'
 import { reducer, DEFAULT_STATE } from './reducer'
-import { loadProfileState, saveProfileState, syncSplitToOtherProfiles } from '@/services/localStorage'
+import { loadProfiles, loadProfileState, saveProfileState, syncSplitToOtherProfiles, deleteSplitFromOtherProfiles } from '@/services/localStorage'
 import {
   ADD_INCOME, UPDATE_INCOME, DELETE_INCOME,
   ADD_GAIN, UPDATE_GAIN, DELETE_GAIN,
@@ -50,6 +50,9 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
 
   // Queue of split syncs to run after the next localStorage save
   const pendingSplitSyncRef = useRef<Expense | null>(null)
+  // Split group ids whose copies need removing from other profiles (split
+  // toggled off on an expense), drained after the next save
+  const pendingSplitCleanupRef = useRef<string[]>([])
   // Last state object actually written to localStorage (reference equality)
   const savedStateRef = useRef<AppState | null>(null)
   // Timestamp of the last undo snapshot taken for UPDATE_SETTINGS
@@ -82,10 +85,35 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
       ) {
         pendingSplitSyncRef.current = action.payload
       }
+      // Split toggled off: the previous version had a splitGroupId the new one
+      // lacks — queue removal of the synced copies from other profiles
+      if (action.type === UPDATE_EXPENSE) {
+        const previous = stateRef.current.expenses.find(e => e.id === action.payload.id)
+        if (previous?.splitGroupId && previous.splitGroupId !== action.payload.splitGroupId) {
+          pendingSplitCleanupRef.current = [...pendingSplitCleanupRef.current, previous.splitGroupId]
+        }
+      }
     } else {
       baseDispatch(action)
     }
   }, [])
+
+  // Run deferred cross-profile split work after a successful save: removals
+  // first (split toggled off), then the upsert/prune sync
+  const drainSplitQueues = useCallback(() => {
+    const cleanups = pendingSplitCleanupRef.current
+    if (cleanups.length > 0) {
+      pendingSplitCleanupRef.current = []
+      for (const groupId of cleanups) {
+        deleteSplitFromOtherProfiles(groupId, profileId)
+      }
+    }
+    const pending = pendingSplitSyncRef.current
+    if (pending) {
+      pendingSplitSyncRef.current = null
+      syncSplitToOtherProfiles(pending, profileId)
+    }
+  }, [profileId])
 
   const undo = useCallback(() => {
     const stack = undoStackRef.current
@@ -113,18 +141,13 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
         savedStateRef.current = state
         setSavedAt(Date.now())
         setSaveError(false)
-        // Run deferred split sync after the save completes
-        const pending = pendingSplitSyncRef.current
-        if (pending) {
-          pendingSplitSyncRef.current = null
-          syncSplitToOtherProfiles(pending, profileId)
-        }
+        drainSplitQueues()
       } else {
         setSaveError(true)
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [state, profileId])
+  }, [state, profileId, drainSplitQueues])
 
   // Flush any pending debounced save when the provider unmounts (profile
   // switch remounts it via key) and when the page is hidden or closed —
@@ -133,13 +156,12 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
     const flush = () => {
       if (!hydratedRef.current) return
       if (savedStateRef.current === stateRef.current) return
+      // Never write back a profile that has just been deleted (the unmount
+      // flush would otherwise resurrect its localStorage key)
+      if (!loadProfiles().profiles.some(p => p.id === profileId)) return
       if (saveProfileState(profileId, stateRef.current)) {
         savedStateRef.current = stateRef.current
-        const pending = pendingSplitSyncRef.current
-        if (pending) {
-          pendingSplitSyncRef.current = null
-          syncSplitToOtherProfiles(pending, profileId)
-        }
+        drainSplitQueues()
       }
     }
     const onVisibilityChange = () => {
@@ -152,7 +174,7 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
       document.removeEventListener('visibilitychange', onVisibilityChange)
       flush()
     }
-  }, [profileId])
+  }, [profileId, drainSplitQueues])
 
   return (
     <AppContext.Provider value={{ state, dispatch, savedAt, saveError, canUndo, undo }}>

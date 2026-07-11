@@ -289,6 +289,8 @@ export interface TaxSummary {
   rentalNetBeforeMortgage: number
   rentalMortgageInterest: number // annual mortgage interest cash cost (subtracted from netIncome)
   dividendGross: number
+  dividendsCoveredByPA: number // dividends absorbed by leftover personal allowance
+  taxableDividends: number // dividends actually taxed (after PA remainder and dividend allowance)
   class2NI: number
   class4NI: number
   class1NI: number
