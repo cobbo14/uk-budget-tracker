@@ -220,6 +220,18 @@ function prerender() {
     console.log(`  → ${outFile}`)
   }
 
+  // Sitemap — robots.txt already declares /sitemap.xml
+  const urls = [`${BASE_URL}/`, ...PAGES.map(page => `${BASE_URL}/${page.path}/`)]
+  const sitemap = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...urls.map(url => `  <url><loc>${url}</loc><lastmod>${TODAY}</lastmod></url>`),
+    '</urlset>',
+    '',
+  ].join('\n')
+  writeFileSync(join(DIST, 'sitemap.xml'), sitemap)
+  console.log(`  → ${join(DIST, 'sitemap.xml')} (${urls.length} URLs)`)
+
   console.log('Prerendering complete!')
 }
 
