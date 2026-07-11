@@ -57,6 +57,24 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
   const savedStateRef = useRef<AppState | null>(null)
   // Timestamp of the last undo snapshot taken for UPDATE_SETTINGS
   const lastSettingsSnapshotRef = useRef(0)
+  // Whether we've asked the browser for persistent storage this session
+  const persistRequestedRef = useRef(false)
+
+  // Ask the browser to protect localStorage from eviction (Safari ITP deletes
+  // it after 7 days of no visits otherwise). Only once per session and only
+  // when the user has real data — Firefox surfaces persist() as a permission
+  // prompt, which empty-state visitors should never see.
+  const requestPersistentStorage = useCallback((saved: AppState) => {
+    if (persistRequestedRef.current) return
+    const hasData = saved.incomeSources.length > 0
+      || saved.expenses.length > 0
+      || saved.gainSources.length > 0
+    if (!hasData || !navigator.storage?.persist) return
+    persistRequestedRef.current = true
+    navigator.storage.persisted()
+      .then(persisted => { if (!persisted) return navigator.storage.persist() })
+      .catch(() => { /* unsupported or denied — nothing to do */ })
+  }, [])
 
   // Wrapped dispatch: push snapshot for data-modifying actions
   const dispatch = useCallback((action: AppAction) => {
@@ -142,12 +160,13 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
         setSavedAt(Date.now())
         setSaveError(false)
         drainSplitQueues()
+        requestPersistentStorage(state)
       } else {
         setSaveError(true)
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [state, profileId, drainSplitQueues])
+  }, [state, profileId, drainSplitQueues, requestPersistentStorage])
 
   // Flush any pending debounced save when the provider unmounts (profile
   // switch remounts it via key) and when the page is hidden or closed —

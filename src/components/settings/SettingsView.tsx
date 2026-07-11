@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Download, Upload } from 'lucide-react'
 import { useBudget } from '@/hooks/useBudget'
 import { HelpTooltip } from '@/components/ui/tooltip'
@@ -12,7 +12,8 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { UPDATE_SETTINGS, UPDATE_INCOME, HYDRATE } from '@/store/actions'
 import { getAvailableTaxYears, getTaxRules } from '@/taxRules'
-import { exportStateAsJSON, parseImportedState, mergeWithDefaults } from '@/services/localStorage'
+import { parseImportedState, mergeWithDefaults } from '@/services/localStorage'
+import { downloadBackup, getLastExported } from '@/utils/backup'
 import { generateCSV } from '@/utils/exportUtils'
 import { generateId } from '@/utils/ids'
 import { calculateTax, resolveSalarySacrificeItem } from '@/utils/taxCalculations'
@@ -38,9 +39,18 @@ export function SettingsView() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [lastExported, setLastExported] = useState<string | null>(() => {
-    const stored = localStorage.getItem('lastExported')
-    return stored ? new Date(parseInt(stored)).toLocaleDateString('en-GB') : null
+    const stored = getLastExported()
+    return stored ? new Date(stored).toLocaleDateString('en-GB') : null
   })
+  // null = unsupported / unknown; boolean once navigator.storage answers
+  const [storagePersisted, setStoragePersisted] = useState<boolean | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    navigator.storage?.persisted?.()
+      .then(p => { if (!cancelled) setStoragePersisted(p) })
+      .catch(() => { /* leave as unknown */ })
+    return () => { cancelled = true }
+  }, [])
 
   function update(partial: Partial<AppSettings>) {
     dispatch({ type: UPDATE_SETTINGS, payload: partial })
@@ -107,17 +117,8 @@ export function SettingsView() {
   const taxRuleInfo = getTaxRules(settings.taxYear)
 
   function handleExport() {
-    const json = exportStateAsJSON(state)
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'budget-tracker-export.json'
-    a.click()
-    URL.revokeObjectURL(url)
-    const now = new Date().toLocaleDateString('en-GB')
-    setLastExported(now)
-    localStorage.setItem('lastExported', Date.now().toString())
+    downloadBackup(state)
+    setLastExported(new Date().toLocaleDateString('en-GB'))
   }
 
   function handleExportCSV() {
@@ -1114,6 +1115,14 @@ export function SettingsView() {
         <CardContent className="space-y-4">
           <p className="text-xs text-muted-foreground">
             {lastExported ? `Last exported: ${lastExported}` : 'Never backed up — export your data to keep a copy.'}
+            {storagePersisted !== null && (
+              <>
+                {' · '}Persistent storage:{' '}
+                {storagePersisted
+                  ? 'granted — the browser will not auto-delete your data'
+                  : 'not granted — the browser may evict data under storage pressure'}
+              </>
+            )}
           </p>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" onClick={handleExport}>

@@ -7,9 +7,12 @@ Client-side UK tax planning PWA. No backend, no env vars — all state lives in 
 - `npm run dev` — Vite dev server (auto-picks port)
 - `npm run build` — tsc + Vite build + prerender script
 - `npm run preview` — preview build at localhost:4173 (use this to install as PWA)
-- `npm run test` — run vitest once
+- `npm run test` — run vitest once (unit tests, `src/**/*.test.ts` only)
 - `npm run test:watch` — vitest watch mode
+- `npm run test:e2e` — Playwright e2e suite (`e2e/*.spec.ts`; starts its own dev server on port 5173, or reuses a running one)
 - `npm run lint` — ESLint check (needs `@babel/core` devDependency — required by eslint-plugin-react-hooks v7)
+
+CI (`.github/workflows/ci.yml`) runs lint + unit tests + build and the e2e suite on pushes to main and PRs.
 
 ## Stack
 

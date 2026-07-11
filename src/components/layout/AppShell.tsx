@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Header } from './Header'
 import { TabNav, type TabId } from './TabNav'
+import { BackupNudge } from './BackupNudge'
 import { TourOverlay } from '@/components/tour/TourOverlay'
 
 interface AppShellProps {
@@ -19,6 +20,7 @@ export function AppShell({ activeTab, onTabChange, budgetingMode, onBudgetingMod
     <div className="min-h-screen bg-background flex flex-col">
       <Header onSearchOpen={onSearchOpen} />
       <TabNav activeTab={activeTab} onTabChange={onTabChange} budgetingMode={budgetingMode} onBudgetingModeChange={onBudgetingModeChange} employeeMode={employeeMode} onEmployeeModeChange={onEmployeeModeChange} />
+      <BackupNudge />
       <main className="mx-auto w-full max-w-5xl px-4 py-6 flex-1">
         {children}
       </main>
