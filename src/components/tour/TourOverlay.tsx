@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTour } from './TourContext'
-import { TOUR_STEPS } from './tourSteps'
 import { Button } from '@/components/ui/button'
 
 interface SpotlightRect {
@@ -12,10 +11,10 @@ interface SpotlightRect {
 }
 
 export function TourOverlay() {
-  const { isActive, stepIndex, totalSteps, nextStep, prevStep, endTour } = useTour()
+  const { isActive, stepIndex, totalSteps, steps, nextStep, prevStep, endTour } = useTour()
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null)
 
-  const step = TOUR_STEPS[stepIndex]
+  const step = steps[stepIndex]
 
   useEffect(() => {
     if (!isActive) return
@@ -135,7 +134,7 @@ export function TourOverlay() {
                 {stepIndex + 1} / {totalSteps}
               </span>
               <div className="flex gap-1">
-                {TOUR_STEPS.map((_, i) => (
+                {steps.map((_, i) => (
                   <div
                     key={i}
                     className={`h-1.5 rounded-full transition-all ${

@@ -467,7 +467,7 @@ export function PensionOptimiser() {
                             }
                             {scenario.netCost > 0 && scenario.contributionFlat !== baseline.contributionFlat && (
                               <div className="text-xs text-muted-foreground">
-                                {formatPercent(1 - scenario.taxSaved / (scenario.contributionFlat - baseline.contributionFlat))} effective relief
+                                {formatPercent(scenario.taxSaved / (scenario.contributionFlat - baseline.contributionFlat))} effective relief
                               </div>
                             )}
                           </>

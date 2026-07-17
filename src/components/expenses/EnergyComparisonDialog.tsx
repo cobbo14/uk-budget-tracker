@@ -50,7 +50,9 @@ function RateComparison({ rate, utilityType }: { rate: UtilityRate; utilityType:
   const absDiff = Math.abs(diff).toFixed(2)
   const absPct = Math.abs(pctDiff).toFixed(0)
 
-  if (Math.abs(diff) < 0.5) {
+  // Percentage-based tolerance — a flat pence threshold would be ±8% on gas
+  // unit rates but only ±2% on electricity
+  if (Math.abs(pctDiff) < 3) {
     return (
       <Badge variant="outline" className="text-xs gap-1 shrink-0">
         <Minus className="h-3 w-3" />

@@ -83,6 +83,39 @@ test('partner opting out removes them from the origin split config', async ({ pa
   expect(partner!.expenses).toHaveLength(0)
 })
 
+test('undo after "delete from all profiles" restores the partner copy', async ({ page }) => {
+  await seedApp(page, { profiles: PROFILES, states: splitStates() })
+  await page.goto('/#expenses')
+
+  await page.locator('[aria-label="Delete Rent"]').click()
+  await page.getByRole('button', { name: 'Delete from all profiles' }).click()
+  let partner = await readProfileState(page, 'partner')
+  expect(partner!.expenses).toHaveLength(0)
+
+  await page.getByRole('button', { name: 'Undo', exact: true }).click()
+  partner = await readProfileState(page, 'partner')
+  expect(partner!.expenses).toHaveLength(1)
+  expect((partner!.expenses as Expense[])[0].splitGroupId).toBe('grp1')
+  const me = await readProfileState(page, 'default')
+  expect(me!.expenses).toHaveLength(1)
+})
+
+test('undo after toggling a split off restores the partner copy', async ({ page }) => {
+  await seedApp(page, { profiles: PROFILES, states: splitStates() })
+  await page.goto('/#expenses')
+
+  await page.locator('[aria-label="Edit Rent"]').click()
+  await page.locator('#split-toggle').click()
+  await page.getByRole('button', { name: 'Save Changes' }).click()
+  let partner = await readProfileState(page, 'partner')
+  expect(partner!.expenses).toHaveLength(0)
+
+  await page.getByRole('button', { name: 'Undo', exact: true }).click()
+  partner = await readProfileState(page, 'partner')
+  expect(partner!.expenses).toHaveLength(1)
+  expect((partner!.expenses as Expense[])[0].splitPercentage).toBe(50)
+})
+
 test('origin removing only its copy detaches the partner copy', async ({ page }) => {
   await seedApp(page, { profiles: PROFILES, states: splitStates() })
   await page.goto('/#expenses')

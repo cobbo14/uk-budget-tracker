@@ -504,7 +504,7 @@ export function SummaryView({ showMonthly, onShowMonthlyChange }: SummaryViewPro
               />
               <Row label="Net Income" value={showBonusCol ? formatCurrency(v(t.netIncome - netBonus)) : formatCurrency(v(t.netIncome))} bold highlight="green" showBonusCol={showBonusCol} bonusValue={formatCurrency(netBonus)}
                 tooltip={<TooltipBreakdown items={[
-                  ...incomeSources.map(s => ({ label: s.name, value: formatCurrency(v(s.grossAmount + (s.bonus ?? 0))) })),
+                  ...incomeSources.filter(s => !s.fromISA).map(s => ({ label: s.name, value: formatCurrency(v(s.grossAmount + (s.bonus ?? 0))) })),
                   ...(t.selfEmploymentAllowableExpenses > 0 ? [{ label: 'Business expenses', value: `−${formatCurrency(v(t.selfEmploymentAllowableExpenses))}` }] : []),
                   ...(t.rentalAllowableExpenses > 0 ? [{ label: 'Rental expenses', value: `−${formatCurrency(v(t.rentalAllowableExpenses))}` }] : []),
                   ...(t.rentalMortgageInterest > 0 ? [{ label: 'Mortgage interest', value: `−${formatCurrency(v(t.rentalMortgageInterest))}` }] : []),

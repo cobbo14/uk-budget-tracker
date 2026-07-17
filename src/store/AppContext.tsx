@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, useEffect, useRef, useState, use
 import type { AppState, Expense } from '@/types'
 import type { AppAction } from './actions'
 import { reducer, DEFAULT_STATE } from './reducer'
-import { loadProfiles, loadProfileState, saveProfileState, syncSplitToOtherProfiles, deleteSplitFromOtherProfiles } from '@/services/localStorage'
+import { loadProfiles, loadProfileState, saveProfileState, syncSplitToOtherProfiles, deleteSplitFromOtherProfiles, isPersistenceSuppressed } from '@/services/localStorage'
 import {
   ADD_INCOME, UPDATE_INCOME, DELETE_INCOME,
   ADD_GAIN, UPDATE_GAIN, DELETE_GAIN,
@@ -48,8 +48,9 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
     stateRef.current = state
   }, [state])
 
-  // Queue of split syncs to run after the next localStorage save
-  const pendingSplitSyncRef = useRef<Expense | null>(null)
+  // Queue of split syncs to run after the next localStorage save, keyed by
+  // splitGroupId (undo can restore several split expenses at once)
+  const pendingSplitSyncRef = useRef<Map<string, Expense>>(new Map())
   // Split group ids whose copies need removing from other profiles (split
   // toggled off on an expense), drained after the next save
   const pendingSplitCleanupRef = useRef<string[]>([])
@@ -101,7 +102,7 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
         action.payload.splitGroupId &&
         action.payload.splitConfig
       ) {
-        pendingSplitSyncRef.current = action.payload
+        pendingSplitSyncRef.current.set(action.payload.splitGroupId, action.payload)
       }
       // Split toggled off: the previous version had a splitGroupId the new one
       // lacks — queue removal of the synced copies from other profiles
@@ -127,9 +128,11 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
       }
     }
     const pending = pendingSplitSyncRef.current
-    if (pending) {
-      pendingSplitSyncRef.current = null
-      syncSplitToOtherProfiles(pending, profileId)
+    if (pending.size > 0) {
+      pendingSplitSyncRef.current = new Map()
+      for (const expense of pending.values()) {
+        syncSplitToOtherProfiles(expense, profileId)
+      }
     }
   }, [profileId])
 
@@ -139,6 +142,25 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
     const previous = stack[stack.length - 1]
     undoStackRef.current = stack.slice(0, -1)
     setCanUndo(undoStackRef.current.length > 0)
+
+    // Reconcile split expenses across profiles: cross-profile side effects
+    // already ran for the undone action, so converge other profiles to the
+    // restored state. Every restored origin-owned split re-syncs (upsert +
+    // prune); splits that exist now but not in the restored state get their
+    // copies removed. (A participant's own opt-out is not undone — that
+    // edited the origin profile's config remotely.)
+    const originSplits = (s: AppState) =>
+      s.expenses.filter(e => e.splitGroupId && e.splitConfig)
+    const restoredSplits = new Map(originSplits(previous).map(e => [e.splitGroupId!, e]))
+    for (const [groupId, expense] of restoredSplits) {
+      pendingSplitSyncRef.current.set(groupId, expense)
+    }
+    for (const e of originSplits(stateRef.current)) {
+      if (!restoredSplits.has(e.splitGroupId!)) {
+        pendingSplitCleanupRef.current = [...pendingSplitCleanupRef.current, e.splitGroupId!]
+      }
+    }
+
     baseDispatch({ type: HYDRATE, payload: previous })
   }, [])
 
@@ -175,6 +197,9 @@ export function AppProvider({ children, profileId }: { children: ReactNode; prof
     const flush = () => {
       if (!hydratedRef.current) return
       if (savedStateRef.current === stateRef.current) return
+      // A deliberate storage wipe (ErrorBoundary reset) must not be undone by
+      // this flush — checked first, before loadProfiles() can recreate keys
+      if (isPersistenceSuppressed()) return
       // Never write back a profile that has just been deleted (the unmount
       // flush would otherwise resurrect its localStorage key)
       if (!loadProfiles().profiles.some(p => p.id === profileId)) return

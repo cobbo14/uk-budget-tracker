@@ -87,6 +87,24 @@ describe('projectPensionPotAdvanced', () => {
       expect(result.statePensionAnnual).toBeCloseTo(11973, 0)
     })
 
+    it('exposes the State Pension inflated to access-age prices', () => {
+      const result = projectPensionPotAdvanced({
+        currentAge: 47,
+        currentPotValue: 100_000,
+        pensionAccessAge: 57,
+        annualContribution: 0,
+        assumedGrowthRate: 4,
+        annualIncomeNeeded: 30000,
+        inflationRate: 3,
+        qualifyingNIYears: 35,
+        statePensionFullAnnual: 11973,
+        statePensionAge: 67,
+      })
+      // £11,973 × 1.03^10 = £11,973 × 1.343916… = £16,090.71
+      expect(result.statePensionAnnual).toBeCloseTo(11973, 0)
+      expect(result.statePensionAtAccess).toBeCloseTo(16090.71, 1)
+    })
+
     it('calculates partial State Pension with projected NI years', () => {
       const result = projectPensionPotAdvanced({
         currentAge: 56,

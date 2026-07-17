@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils'
 
 type Tab = 'income' | 'tax' | 'budget'
 
-const INCOME_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
-const TAX_COLORS    = ['#ef4444', '#f97316', '#ec4899', '#14b8a6', '#6366f1']
+const INCOME_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f43f5e', '#a855f7']
+const TAX_COLORS    = ['#ef4444', '#f97316', '#ec4899', '#14b8a6', '#6366f1', '#eab308']
 const BUDGET_COLORS = ['#ef4444', '#f59e0b', '#10b981']
 
 interface ChartEntry { name: string; value: number }
@@ -61,7 +61,10 @@ export const IncomeAndTaxCharts = memo(function IncomeAndTaxCharts({ showMonthly
     { name: 'Rental', value: v(t.rentalGross) },
     { name: 'Pension', value: v(t.pensionIncomeGross) },
     { name: 'Dividends', value: v(t.dividendGross) },
-  ].filter(d => d.value > 0), [v, t.employmentGross, t.selfEmploymentGross, t.rentalGross, t.pensionIncomeGross, t.dividendGross])
+    { name: 'Savings Interest', value: v(t.savingsIncome) },
+    { name: 'Bond Gains', value: v(t.bondIncome) },
+    { name: 'Child Benefit', value: v(t.childBenefitAnnual) },
+  ].filter(d => d.value > 0), [v, t.employmentGross, t.selfEmploymentGross, t.rentalGross, t.pensionIncomeGross, t.dividendGross, t.savingsIncome, t.bondIncome, t.childBenefitAnnual])
 
   const taxData = useMemo<ChartEntry[]>(() => [
     { name: 'Income Tax', value: v(t.incomeTax) },
@@ -69,8 +72,9 @@ export const IncomeAndTaxCharts = memo(function IncomeAndTaxCharts({ showMonthly
     { name: 'Dividend Tax', value: v(t.dividendTax) },
     { name: 'Capital Gains Tax', value: v(t.capitalGainsTax) },
     { name: 'Student Loan', value: v(t.studentLoan + t.postgradLoanRepayment) },
+    { name: 'Child Benefit Charge', value: v(t.hicbc) },
     { name: 'Pension AA Charge', value: v(t.annualAllowanceCharge) },
-  ].filter(d => d.value > 0), [v, t.incomeTax, t.class1NI, t.class4NI, t.dividendTax, t.capitalGainsTax, t.studentLoan, t.postgradLoanRepayment, t.annualAllowanceCharge])
+  ].filter(d => d.value > 0), [v, t.incomeTax, t.class1NI, t.class4NI, t.dividendTax, t.capitalGainsTax, t.studentLoan, t.postgradLoanRepayment, t.hicbc, t.annualAllowanceCharge])
 
   const budgetData = useMemo<ChartEntry[]>(() => [
     { name: 'Tax & Deductions', value: v(t.totalTax) },

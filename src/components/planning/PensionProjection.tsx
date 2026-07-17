@@ -169,7 +169,7 @@ export function PensionProjection() {
       })
       prevTotal = total
     }
-    let depleted = false
+    let depletedAtAge: number | null = null
     for (const y of projection.drawdownYears) {
       const yearsFromNow = y.age - proj.currentAge
       const pot = Math.round(discount(y.closingBalance, yearsFromNow))
@@ -182,17 +182,19 @@ export function PensionProjection() {
         withdrawal: Math.round(discount(y.withdrawal + y.isaWithdrawal, yearsFromNow)),
       })
       prevTotal = total
-      // Stop charting 3 years after both pots are depleted (or at age 100)
-      if (Math.round(y.closingBalance) <= 0 && Math.round(y.isaClosingBalance) <= 0) {
-        if (depleted && y.age >= Math.max(proj.pensionAccessAge + 5, 100)) break
-        depleted = true
+      // Stop charting 3 years after both pots are depleted
+      if (depletedAtAge == null && Math.round(y.closingBalance) <= 0 && Math.round(y.isaClosingBalance) <= 0) {
+        depletedAtAge = y.age
       }
+      if (depletedAtAge != null && y.age >= depletedAtAge + 3) break
     }
     return points
-  }, [hasInput, projection, proj.pensionAccessAge, proj.currentAge, proj.inflationRate, showInTodaysMoney])
+  }, [hasInput, projection, proj.currentAge, proj.inflationRate, showInTodaysMoney])
 
-  // Early return must come after all hooks (rules-of-hooks)
-  if (totalPensionFunding === 0) return null
+  // Early return must come after all hooks (rules-of-hooks).
+  // Show whenever there is anything to project — an existing pot or ISA
+  // counts even with no current-year contributions (e.g. paused or retired).
+  if (totalPensionFunding === 0 && totalPotValue === 0 && (proj.isaPots?.length ?? 0) === 0) return null
 
   // Pot management helpers
   const addPot = () => {
@@ -955,7 +957,9 @@ export function PensionProjection() {
                         )}
                       </span>
                       <span className="text-right font-medium text-emerald-600 dark:text-emerald-400">
-                        {showInTodaysMoney ? formatCurrency(projection.statePensionAnnual) : fmt(projection.statePensionAnnual)}/yr
+                        {showInTodaysMoney
+                          ? formatCurrency(projection.statePensionAnnual)
+                          : formatCurrency(projection.statePensionAtAccess)}/yr
                       </span>
                     </>
                   )}

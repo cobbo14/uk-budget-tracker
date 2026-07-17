@@ -46,6 +46,8 @@ export interface PensionProjectionResult {
   yearByYear: PensionProjectionYear[]
   drawdownYears: DrawdownYear[]
   statePensionAnnual: number
+  /** State Pension inflated to access-age prices (nominal £ at retirement) */
+  statePensionAtAccess: number
   projectedNIYears: number | undefined
   dbPensionAnnualAtAccess: number
   dcIncomeNeeded: number
@@ -521,6 +523,7 @@ export function projectPensionPotAdvanced(
     yearByYear,
     drawdownYears,
     statePensionAnnual,
+    statePensionAtAccess,
     projectedNIYears,
     dbPensionAnnualAtAccess: dbPensionAtAccess,
     dcIncomeNeeded,

@@ -2,12 +2,32 @@ import type { AppState, Expense, Profile } from '@/types'
 import { generateId } from '@/utils/ids'
 import { DEFAULT_TAX_YEAR, TAX_RULES } from '@/taxRules'
 import { resolveSalarySacrificeItem } from '@/utils/taxCalculations'
+import { EXPENSE_CATEGORIES } from '@/constants/expenseCategories'
 
 const LEGACY_KEY = 'uk_budget_tracker_v1'
 const PROFILES_KEY = 'uk_budget_tracker_profiles'
 const profileStateKey = (id: string) => `uk_budget_tracker_state_${id}`
 
 const SCHEMA_VERSION = 1
+
+// Set when the user deliberately wipes storage (ErrorBoundary reset) so the
+// beforeunload/unmount flush can't write the in-memory state straight back.
+// Per-page-load state — the reload that follows a reset clears it naturally.
+let persistenceSuppressed = false
+
+export function suppressPersistence(): void {
+  persistenceSuppressed = true
+}
+
+/** Counterpart for tests — production code never resumes after a reset
+ *  because the page reloads immediately. */
+export function resumePersistence(): void {
+  persistenceSuppressed = false
+}
+
+export function isPersistenceSuppressed(): boolean {
+  return persistenceSuppressed
+}
 
 export const DEFAULT_STATE: AppState = {
   version: SCHEMA_VERSION,
@@ -84,6 +104,7 @@ export function loadProfiles(): PersistedProfiles {
 }
 
 export function saveProfiles(data: PersistedProfiles): void {
+  if (persistenceSuppressed) return
   try {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(data))
   } catch {
@@ -169,6 +190,7 @@ export function loadProfileState(profileId: string): AppState {
 
 /** Returns true on success, false if quota exceeded or any storage error. */
 export function saveProfileState(profileId: string, state: AppState): boolean {
+  if (persistenceSuppressed) return false
   try {
     const { ui: _ui, ...persisted } = state
     localStorage.setItem(profileStateKey(profileId), JSON.stringify(persisted))
@@ -188,6 +210,12 @@ export function saveProfileState(profileId: string, state: AppState): boolean {
  */
 export function syncSplitToOtherProfiles(expense: Expense, currentProfileId: string): void {
   if (!expense.splitConfig || !expense.splitGroupId) return
+
+  // Custom categories are per-profile: the definition must travel with the
+  // copy or participants would hold a category id they can't render
+  const originCategory = !EXPENSE_CATEGORIES[expense.category]
+    ? loadProfileState(currentProfileId).customExpenseCategories.find(c => c.id === expense.category)
+    : undefined
 
   const participantIds = new Set(expense.splitConfig.map(p => p.profileId))
   for (const profile of loadProfiles().profiles) {
@@ -224,9 +252,15 @@ export function syncSplitToOtherProfiles(expense: Expense, currentProfileId: str
       ? profileState.expenses.map((e, i) => i === existingIndex ? copy : e)
       : [...profileState.expenses, copy]
 
+    const updatedCategories = originCategory
+      && !profileState.customExpenseCategories.some(c => c.id === originCategory.id)
+      ? [...profileState.customExpenseCategories, originCategory]
+      : profileState.customExpenseCategories
+
     saveProfileState(profile.id, {
       ...profileState,
       expenses: updatedExpenses,
+      customExpenseCategories: updatedCategories,
     })
   }
 }

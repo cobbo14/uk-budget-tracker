@@ -228,7 +228,9 @@ export function KeyDates() {
             <div className="rounded-md bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/40 px-3 py-2 mt-3">
               <p className="text-xs font-medium text-violet-800 dark:text-violet-300">Making Tax Digital for Income Tax</p>
               <p className="text-xs text-violet-700 dark:text-violet-400 mt-0.5">
-                Your self-employment income exceeds {mtdThreshold}, so you must submit quarterly updates using MTD-compatible software from {settings.taxYear}.
+                Your combined self-employment and property income exceeds {mtdThreshold}, so you must submit
+                quarterly updates using MTD-compatible software from {settings.taxYear}. (Based on this
+                year&rsquo;s figures — HMRC actually assesses the return filed for an earlier year.)
               </p>
             </div>
           )}

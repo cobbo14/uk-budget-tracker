@@ -39,7 +39,14 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
     ...EXPENSE_CATEGORY_LIST,
     ...customExpenseCategories.map(c => c.id),
   ]
-  const categoriesWithExpenses = allCategoryIds.filter(cat => (expensesByCategory.get(cat) ?? []).length > 0)
+  // Unknown category ids (e.g. legacy or imported data referencing a custom
+  // category this profile doesn't have) still render — an expense must never
+  // be counted in totals yet invisible in the list
+  const unknownCategories = [...expensesByCategory.keys()].filter(cat => !allCategoryIds.includes(cat))
+  const categoriesWithExpenses = [
+    ...allCategoryIds.filter(cat => (expensesByCategory.get(cat) ?? []).length > 0),
+    ...unknownCategories,
+  ]
 
   return (
     <div className="space-y-6">
@@ -108,7 +115,9 @@ export function ExpensesView({ showMonthly, onShowMonthlyChange }: ExpensesViewP
         <div className="space-y-6">
           {categoriesWithExpenses.map(cat => {
             const catExpenses = expensesByCategory.get(cat) ?? []
-            const catMeta = getCategoryMeta(cat, customExpenseCategories)
+            const catMeta = unknownCategories.includes(cat)
+              ? { label: 'Uncategorised', icon: 'Tag', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' }
+              : getCategoryMeta(cat, customExpenseCategories)
             const catAnnual = catExpenses.reduce((sum, e) => sum + effectiveAnnual(e), 0)
             const catDisplay = viewMode === 'monthly' ? catAnnual / 12 : catAnnual
 

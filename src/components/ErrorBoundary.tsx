@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { suppressPersistence } from '@/services/localStorage'
 
 interface Props { children: ReactNode }
 interface State { hasError: boolean; message: string }
@@ -12,6 +13,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleResetProfile = () => {
     if (!window.confirm('Reset the active profile’s data? This permanently deletes its saved data from this browser.')) return
+    // Stop the beforeunload flush from writing the in-memory state back
+    // over the key we're about to remove
+    suppressPersistence()
     try {
       const raw = localStorage.getItem('uk_budget_tracker_profiles')
       const activeId = raw ? (JSON.parse(raw) as { activeProfileId?: string }).activeProfileId : undefined
@@ -29,6 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleResetAll = () => {
     if (!window.confirm('Reset ALL profiles? This permanently deletes every profile’s data from this browser.')) return
+    suppressPersistence()
     this.clearAllKeys()
     window.location.reload()
   }

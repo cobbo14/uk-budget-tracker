@@ -3,12 +3,16 @@ import {
   DEFAULT_STATE,
   loadProfileState,
   saveProfileState,
+  saveProfiles,
   parseImportedState,
   mergeWithDefaults,
   syncSplitToOtherProfiles,
   deleteSplitFromOtherProfiles,
   removeParticipantFromSplit,
   detachSplitCopies,
+  suppressPersistence,
+  resumePersistence,
+  isPersistenceSuppressed,
 } from './localStorage'
 import { DEFAULT_TAX_YEAR } from '@/taxRules'
 import type { AppState, Expense } from '@/types'
@@ -32,6 +36,7 @@ let storageMock: ReturnType<typeof createLocalStorageMock>
 beforeEach(() => {
   storageMock = createLocalStorageMock()
   vi.stubGlobal('localStorage', storageMock)
+  resumePersistence()
 })
 
 // ─── loadProfileState ─────────────────────────────────────────────────────────
@@ -276,6 +281,28 @@ describe('mergeWithDefaults', () => {
   })
 })
 
+// ─── Persistence suppression (ErrorBoundary reset) ───────────────────────────
+
+describe('suppressPersistence', () => {
+  it('makes saveProfileState a no-op returning false', () => {
+    suppressPersistence()
+    expect(isPersistenceSuppressed()).toBe(true)
+    expect(saveProfileState('default', DEFAULT_STATE)).toBe(false)
+    expect(storageMock.setItem).not.toHaveBeenCalled()
+  })
+
+  it('makes saveProfiles a no-op', () => {
+    suppressPersistence()
+    saveProfiles({ profiles: [{ id: 'default', name: 'Default' }], activeProfileId: 'default' })
+    expect(storageMock.setItem).not.toHaveBeenCalled()
+  })
+
+  it('saves normally when not suppressed', () => {
+    expect(isPersistenceSuppressed()).toBe(false)
+    expect(saveProfileState('default', DEFAULT_STATE)).toBe(true)
+  })
+})
+
 // ─── Split expense lifecycle ─────────────────────────────────────────────────
 
 describe('split expense lifecycle', () => {
@@ -367,6 +394,41 @@ describe('split expense lifecycle', () => {
     removeParticipantFromSplit('g1', 'b', 'a')
     const origin = loadProfileState('a')
     expect(origin.expenses[0].splitConfig).toEqual([{ profileId: 'a', percentage: 50 }])
+  })
+
+  it('copies a custom category definition to participants on sync', () => {
+    seedProfiles(['a', 'b'])
+    // Origin has a custom category the partner doesn't
+    saveProfileState('a', {
+      ...DEFAULT_STATE,
+      customExpenseCategories: [{ id: 'cat-hobby', label: 'Hobbies' }],
+      expenses: [splitExpense({ category: 'cat-hobby' })],
+    })
+    syncSplitToOtherProfiles(splitExpense({ category: 'cat-hobby' }), 'a')
+    const partner = loadProfileState('b')
+    expect(partner.customExpenseCategories).toEqual([{ id: 'cat-hobby', label: 'Hobbies' }])
+    expect(partner.expenses[0].category).toBe('cat-hobby')
+  })
+
+  it('does not duplicate a custom category the participant already has', () => {
+    seedProfiles(['a', 'b'])
+    saveProfileState('a', {
+      ...DEFAULT_STATE,
+      customExpenseCategories: [{ id: 'cat-hobby', label: 'Hobbies' }],
+      expenses: [splitExpense({ category: 'cat-hobby' })],
+    })
+    saveProfileState('b', {
+      ...DEFAULT_STATE,
+      customExpenseCategories: [{ id: 'cat-hobby', label: 'Hobbies' }],
+    })
+    syncSplitToOtherProfiles(splitExpense({ category: 'cat-hobby' }), 'a')
+    expect(loadProfileState('b').customExpenseCategories).toHaveLength(1)
+  })
+
+  it('leaves categories untouched for built-in category expenses', () => {
+    seedProfiles(['a', 'b'])
+    syncSplitToOtherProfiles(splitExpense(), 'a') // category: 'housing'
+    expect(loadProfileState('b').customExpenseCategories).toEqual([])
   })
 
   it('detachSplitCopies turns other profiles’ copies into standalone expenses', () => {
